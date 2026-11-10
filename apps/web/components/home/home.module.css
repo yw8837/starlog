@@ -719,3 +719,12 @@
     margin-top: 0;
   }
 }
+
+/* Sales 2026-11-10 item 5: the 오픈 기념 무료 notice, one quiet line under the hero (gone from 12월 1일). */
+.openingNotice {
+  margin: 12px 0 0;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.5;
+  text-align: center;
+}

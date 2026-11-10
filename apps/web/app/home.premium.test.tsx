@@ -52,7 +52,7 @@ describe("the home's 더 깊게 보기 (plan-reconciled §4.1)", () => {
     });
   }
 
-  it("shows no premium row even where premium is visible (owner 2026-10-20: the home stays as it was; premium is entered from the tarot bridge and the saju list)", async () => {
+  it("shows one premium row where premium is visible: the 2027 신년운세 banner (owner 2026-11-10; the rest is entered from the tarot bridge and the saju list)", async () => {
     const fetchMock = stub(true);
     const { container } = render(<HomePage />);
     await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => url === "/api/premium/status")).toBe(true));
@@ -60,8 +60,8 @@ describe("the home's 더 깊게 보기 (plan-reconciled §4.1)", () => {
     await waitFor(() => expect(screen.getByRole("link", { name: /타로 보기/ }).getAttribute("href")).toBe("/tarot/start"));
     const main = screen.getByRole("main");
     expect(screen.queryByText("더 깊게 보기")).toBeNull();
-    expect(main.querySelector('a[href^="/premium/"]')).toBeNull();
-    expect(within(main).queryByText(/켈틱 크로스 10장|프리미엄 궁합|2027 신년운세/)).toBeNull();
+    await waitFor(() => expect([...main.querySelectorAll('a[href^="/premium/"]')].map((a) => a.getAttribute("href"))).toEqual(["/premium/newyear-2027"]));
+    expect(within(main).queryByText(/켈틱 크로스 10장|프리미엄 궁합/)).toBeNull();
     expect(container.querySelectorAll("h1")).toHaveLength(1);
   });
 });

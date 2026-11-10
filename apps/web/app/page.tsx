@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { BondsHomeRow } from "@/components/bonds/BondsHomeRow";
 import { HomeFaq, HomeGuide, HomeHero, QuickCards, SajuEntry, TarotEntry } from "@/components/home/HomeEntries";
 import { HomeTopBar } from "@/components/home/HomeTopBar";
+import { HomeYearBanner, OpeningNotice } from "@/components/home/HomeYearBanner";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { Footer } from "@/components/layout/Footer";
 import { TabBar } from "@/components/layout/TabBar";
@@ -30,6 +31,9 @@ export default function HomePage() {
         <JsonLd data={websiteJsonLd()} />
         <HomeTopBar />
         <HomeHero />
+        {/* Sales 2026-11-10 item 5: 오픈 기념 무료 until 11월 30일 (by the browser's clock), and the 2027 신년운세 banner where it is on sale. */}
+        <OpeningNotice />
+        <HomeYearBanner />
 
         {/* Rows are auto-placed: a row with nothing to show leaves no gap behind. */}
         <div className={s.grid}>
@@ -42,7 +46,7 @@ export default function HomePage() {
           <div className={s.wide}>
             <QuickCards />
           </div>
-          {/* 지난 풀이 돌아보기 lives in 내 정보 now (owner 2026-10-20). No premium row here (owner 2026-10-20: the home stays as it was); premium starts from the tarot bridge and the saju list. */}
+          {/* 지난 풀이 돌아보기 lives in 내 정보 now (owner 2026-10-20). The one premium row is the 2027 banner above (owner 2026-11-10); the rest starts from the tarot bridge and the saju list. */}
           {/* Row 4, 별자리 인연: renders nothing until this device's state is loaded (no empty gap). */}
           {SITE.features.bonds ? <BondsHomeRow className={s.wide} /> : null}
         </div>
