@@ -250,7 +250,8 @@ describe("별자리 랭킹 when the viewer logs in or out while it is open (code
   it("reads the page again once on a real answer, not for the first one, and not when /api/me failed", async () => {
     const now = { session: true, account: () => Response.json(MEMBER) as Response };
     const page = vi.fn(() => new Response(JSON.stringify({ ok: true, ...(now.session ? { ...VIEW, owner: OWNER, mine: mine(300, 3) } : VIEW) })));
-    vi.stubGlobal("fetch", vi.fn(async (url: string) => (url === "/api/me" ? now.account() : page())));
+    // The star list asks the premium status too (its 궁합 link, sales 2026-11-10): not a read of the page.
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => (url === "/api/me" ? now.account() : url === "/api/premium/status" ? Response.json({ products: [] }) : page())));
     render(<RankingView sign="aries" />);
     await within(await screen.findByRole("region", { name: "내 순위" })).findByText(/300/);
     await recheck();

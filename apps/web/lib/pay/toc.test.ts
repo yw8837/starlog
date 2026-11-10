@@ -25,9 +25,9 @@ describe("checkout's table of contents (sales 2026-11-10 item 1)", () => {
     const deep = Object.values(deepHeadings(ctx));
     expect(CHECKOUT_TOC["tarot-deep"].filter((t) => t !== "카드 10장 자리별 풀이").every((t) => deep.includes(t))).toBe(true);
     expect(CHECKOUT_TOC.saju).toEqual(SAJU_LOCKED_TOC.map(short));
-    const match = Object.values(MATCH_HEADINGS);
+    const match: readonly string[] = Object.values(MATCH_HEADINGS);
     expect(CHECKOUT_TOC.match.filter((t) => t !== "앞으로 1년, 석 달씩").every((t) => match.includes(t))).toBe(true);
-    const year = Object.values(NEWYEAR_HEADINGS);
+    const year: readonly string[] = Object.values(NEWYEAR_HEADINGS);
     expect(CHECKOUT_TOC["newyear-2027"].filter((t) => t !== "1월부터 12월까지 달마다" && t !== "일, 돈, 관계, 몸과 생활 리듬").every((t) => year.includes(t))).toBe(true);
   });
 });
