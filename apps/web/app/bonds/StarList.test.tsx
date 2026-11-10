@@ -24,9 +24,10 @@ afterEach(() => {
 it("links each friend's star to the 프리미엄 궁합 product, once, at its normal price (sales 2026-11-10 item 3)", async () => {
   stub(true);
   render(<StarList sign="aries" stars={[STAR]} fresh={new Set()} complete={false} otherFilling={null} onChanged={() => {}} />);
-  const link = await screen.findByRole("link", { name: /별님님과 자세한 궁합 보기/ });
+  const link = await screen.findByRole("link", { name: /프리미엄 궁합 보기/ });
   expect(link.getAttribute("href")).toBe("/premium/match");
-  expect(link.textContent).toContain("7,900원");
+  // Review LOW-1: the link does not carry the friend, so it does not name them.
+  expect(link.textContent).toBe("프리미엄 궁합 보기 · 7,900원");
   expect(within(screen.getByRole("list")).getAllByRole("link")).toHaveLength(1);
 });
 

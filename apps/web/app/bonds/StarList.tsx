@@ -109,10 +109,10 @@ export function StarList({ sign, stars, fresh, complete, otherFilling, onChanged
                   별 지우기
                 </button>
               </div>
-              {/* Sales 2026-11-10 item 3: the friend's star → the 프리미엄 궁합 product, at its normal price (its own login rules). */}
+              {/* Sales 2026-11-10 item 3: the friend's star → the 프리미엄 궁합 product, at its normal price (its own login rules); it does not carry the friend, so it does not name them. */}
               {matchOnSale ? (
                 <Link href={premiumPath("match")} className={b.textButton}>
-                  {`${star.nickname}님과 자세한 궁합 보기 · ${won(PREMIUM.match.krw)}`}
+                  {`프리미엄 궁합 보기 · ${won(PREMIUM.match.krw)}`}
                 </Link>
               ) : null}
               {t && typeof t === "object" ? (
