@@ -62,18 +62,48 @@ export function MetaPixel({ id = META_PIXEL_ID }: { id?: string }) {
 
 const SENT_KEY = "starlog.meta.purchase";
 
+/** How long /pay/success waits for fbevents.js, then for its request to leave, before it moves on. */
+const PURCHASE_WAIT = { loadMs: 1500, settleMs: 300 };
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/** The order's event id: a SHA-256 of the order id (never the id itself), so a repeat of the same Purchase is dropped by Meta. */
+async function purchaseEventId(orderId: string): Promise<string | null> {
+  try {
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(orderId));
+    const hex = [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+    return `purchase-${hex.slice(0, 32)}`;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Purchase, with its value in KRW, once per order (a reload of /pay/success confirms again), only where the pixel runs.
- * Called by /pay/success after the server confirmed the payment; the address no longer holds the payment's keys then.
+ * Called by /pay/success after the server confirmed the payment, which leaves the page as soon as this resolves: it
+ * waits (at most `loadMs`) for fbevents.js to take over the queue, sends, then pauses `settleMs` so the request leaves
+ * first. The order counts as sent only when fbevents.js ran the call; where the pixel does not run it resolves at once.
  */
-export function trackMetaPurchase(orderId: string, valueKrw: number, id: string = META_PIXEL_ID): void {
-  const fbq = (window as unknown as FbWindow).fbq;
-  if (!fbq || !pixelAllowed(id)) return;
+export async function trackMetaPurchase(orderId: string, valueKrw: number, id: string = META_PIXEL_ID, wait = PURCHASE_WAIT): Promise<void> {
+  const w = window as unknown as FbWindow;
+  if (!w.fbq || !pixelAllowed(id)) return;
+  const eventId = await purchaseEventId(orderId);
+  const mark = eventId ?? "sent";
   try {
-    if (window.sessionStorage.getItem(SENT_KEY) === orderId) return;
-    window.sessionStorage.setItem(SENT_KEY, orderId);
+    if (eventId && window.sessionStorage.getItem(SENT_KEY) === eventId) return;
   } catch {
-    // Storage refused: sent once on this page all the same.
+    // Storage refused: sent on this page all the same.
   }
-  fbq("track", "Purchase", { value: valueKrw, currency: "KRW" });
+  for (let waited = 0; !w.fbq?.callMethod && waited < wait.loadMs; waited += 50) await sleep(Math.min(50, wait.loadMs - waited));
+  const fbq = w.fbq;
+  if (!fbq) return;
+  const loaded = typeof fbq.callMethod === "function";
+  fbq("track", "Purchase", { value: valueKrw, currency: "KRW" }, ...(eventId ? [{ eventID: eventId }] : []));
+  if (!loaded) return;
+  try {
+    window.sessionStorage.setItem(SENT_KEY, mark);
+  } catch {
+    // Storage refused: nothing to keep.
+  }
+  await sleep(wait.settleMs);
 }

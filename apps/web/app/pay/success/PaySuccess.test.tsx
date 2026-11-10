@@ -4,8 +4,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { resetAccountForTests } from "@/lib/account/client";
 import { PaySuccess, pollSchedule } from "./PaySuccess";
 
-const meta = vi.hoisted(() => ({ purchases: [] as Array<[string, number]> }));
-vi.mock("@/components/seo/MetaPixel", () => ({ trackMetaPurchase: (orderId: string, value: number) => meta.purchases.push([orderId, value]) }));
+const meta = vi.hoisted(() => ({ purchases: [] as Array<[string, number]>, sent: Promise.resolve() as Promise<void> }));
+vi.mock("@/components/seo/MetaPixel", () => ({
+  trackMetaPurchase: (orderId: string, value: number) => {
+    meta.purchases.push([orderId, value]);
+    return meta.sent;
+  },
+}));
 
 const ORDER = "Ab3_dEf-Gh5iJk7Lm9No1Pq2";
 
@@ -46,6 +51,21 @@ describe("PaySuccess", () => {
     render(<PaySuccess paymentKey="tgen_1" orderId={ORDER} amount="14900" navigate={navigate} />);
     await waitFor(() => expect(navigate).toHaveBeenCalled());
     expect(meta.purchases).toEqual([[ORDER, 14900]]);
+  });
+
+  it("opens the reading only once the Purchase has gone, so leaving the page does not drop it (review MED-2)", async () => {
+    meta.purchases = [];
+    let sent: () => void = () => {};
+    meta.sent = new Promise<void>((resolve) => (sent = resolve));
+    stub({ "/api/pay/confirm": [paid] });
+    const navigate = vi.fn();
+    render(<PaySuccess paymentKey="tgen_1" orderId={ORDER} amount="14900" navigate={navigate} />);
+    await waitFor(() => expect(meta.purchases).toHaveLength(1));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(navigate).not.toHaveBeenCalled();
+    sent();
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith("/tarot/result?unlock=paid"));
+    meta.sent = Promise.resolve();
   });
 
   it("once the buyer has left the page, an answer that lands later neither opens the reading nor asks for a login (review M1)", async () => {

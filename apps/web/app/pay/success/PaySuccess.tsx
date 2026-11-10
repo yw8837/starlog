@@ -105,14 +105,16 @@ export function PaySuccess({ paymentKey, orderId, amount, navigate = (url) => wi
     }
     // A buyer who has left the page (내 정보로 가기) is not pulled back: opening the reading would start writing it and
     // end its refund (review M1, 2026-10-16). The payment stays in 내 정보, unopened.
-    const finish = (paid: { returnTo: string; signedIn?: boolean }) => {
+    const finish = async (paid: { returnTo: string; signedIn?: boolean }) => {
       if (!alive.current) return;
-      // Sales 2026-11-10 item 7: only where the visitor allowed the Meta pixel (it checks), once per order.
-      trackMetaPurchase(orderId, Number(amount));
+      // Sales 2026-11-10 item 7: only where the visitor allowed the Meta pixel (it checks), once per order. Leaving the
+      // page would drop it, so the reading opens once it has gone (at most about 2 s; at once where the pixel is off).
+      const sent = trackMetaPurchase(orderId, Number(amount));
       const target = withQuery(paid.returnTo, { unlock: "paid" });
       if (paid.signedIn === false) return setLoginTo(loginHref(target));
       void refreshAccount();
-      navigate(target);
+      await sent;
+      if (alive.current) navigate(target);
     };
     const confirm = (): Promise<ApiResult<Paid>> => postJson<Paid>("/api/pay/confirm", { paymentKey, orderId, amount: Number(amount) });
     /** Nothing was charged: say why, and find the way back to the reading. */
