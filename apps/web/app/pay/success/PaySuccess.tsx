@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { trackMetaPurchase } from "@/components/seo/MetaPixel";
 import { Button } from "@/components/ui/Button";
 import { loginHref, refreshAccount } from "@/lib/account/client";
 import { withQuery } from "@/lib/account/returnTo";
@@ -106,6 +107,8 @@ export function PaySuccess({ paymentKey, orderId, amount, navigate = (url) => wi
     // end its refund (review M1, 2026-10-16). The payment stays in 내 정보, unopened.
     const finish = (paid: { returnTo: string; signedIn?: boolean }) => {
       if (!alive.current) return;
+      // Sales 2026-11-10 item 7: only where the visitor allowed the Meta pixel (it checks), once per order.
+      trackMetaPurchase(orderId, Number(amount));
       const target = withQuery(paid.returnTo, { unlock: "paid" });
       if (paid.signedIn === false) return setLoginTo(loginHref(target));
       void refreshAccount();

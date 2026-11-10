@@ -11,6 +11,7 @@ import {
   GA_REVISION_DATE,
   KEPT_RULE_DATE,
   LOGIN_RULE_DATE,
+  META_REVISION_DATE,
   OPENING_ACCOUNT_DATE,
   OPENING_RETENTION_DATE,
   PRIVACY_REVISION_DATE,
@@ -20,12 +21,14 @@ import {
   keptRuleNoticeShown,
   koreanDate,
   loginRuleNoticeShown,
+  metaNoticeShown,
   premiumChangeNoticeShown,
   premiumLegalInForce,
   privacyEffectiveDate,
   privacyRevisionInForce,
   syncRevisionInForce,
 } from "@/lib/legal";
+import { META_PIXEL_ID, metaPixelOn } from "@/lib/metaPixel";
 import { sajuPrivacyItem, sajuPrivacySent } from "@/lib/sajuTopicCopy";
 import { pageMetadata } from "@/lib/seo";
 
@@ -188,7 +191,9 @@ export default function PrivacyPage() {
   const revised = privacyRevisionInForce(now);
   const ga = gaRevisionInForce(now);
   const synced = syncRevisionInForce(now);
-  const effective = privacyEffectiveDate(now);
+  // The Meta pixel (sales 2026-11-10 item 7): only where an id is built in; in the text from META_REVISION_DATE.
+  const meta = metaPixelOn(META_PIXEL_ID, now);
+  const effective = meta ? META_REVISION_DATE : privacyEffectiveDate(now);
 
   return (
     <LegalPage
@@ -205,6 +210,14 @@ export default function PrivacyPage() {
           <h2 id="opening-privacy-title" className={s.noteTitle}>{`${koreanDate(OPENING_ACCOUNT_DATE)} 바뀐 내용`}</h2>
           <p>오픈 기념 무료를 계정마다 한 번 드리기 위해 받은 여부와 시각을 보관해요.</p>
           <p>{`${koreanDate(OPENING_RETENTION_DATE)}부터: 탈퇴한 뒤 같은 계정으로 다시 받지 않도록, 받은 기록(계정 식별값을 되돌릴 수 없게 바꾼 값과 시각)은 탈퇴해도 오픈 기념 무료가 끝날 때까지 남겼다가 ${OPENING_LAST_DATE}이 지나면 지워요.`}</p>
+        </aside>
+      ) : null}
+      {/* The Meta pixel, on consent (owner 2026-11-10): announced before its date, then said on top for 30 days (lib/legal.ts META_REVISION_DATE). */}
+      {META_PIXEL_ID && metaNoticeShown(now) ? (
+        <aside className={s.note} aria-labelledby="meta-privacy-title">
+          <h2 id="meta-privacy-title" className={s.noteTitle}>{`${koreanDate(META_REVISION_DATE)}${meta ? " 바뀐 내용" : "부터 바뀌는 내용"}`}</h2>
+          <p>광고 성과를 재려고, 방문 통계와 광고 측정을 허용한 분에 한해 Meta 픽셀로 번호나 결제 정보가 없는 페이지 방문과 결제 금액, 기기·브라우저 정보, IP 주소, 쿠키 식별값을 Meta Platforms, Inc.(미국)로 보내요.</p>
+          <p>전에 방문 통계만 허용하셨다면 한 번 더 여쭤봐요. 거부해도 이용에 제한은 없어요.</p>
         </aside>
       ) : null}
       {/* What a device keeps shows only with a session (owner 2026-11-05): said on top for 30 days (lib/legal.ts KEPT_RULE_DATE). */}
@@ -474,7 +487,7 @@ export default function PrivacyPage() {
         <ul className={s.list}>
           {ga ? (
             <li>
-              {`운영자는 서비스 제공에 필요한 범위에서 아래 쿠키를 쓰고, 방문 통계를 허용한 경우에만 아래 방문 통계 쿠키를 씁니다. ${ads ? "가이드 글 페이지에서는 아래 광고 쿠키가 쓰일 수 있습니다. 타로·사주 풀이 화면에는 광고를 싣지 않습니다." : "광고 쿠키는 쓰지 않습니다."}`}
+              {`운영자는 서비스 제공에 필요한 범위에서 아래 쿠키를 쓰고, 방문 통계를 허용한 경우에만 아래 방문 통계 쿠키${meta ? "와 광고 측정 쿠키" : ""}를 씁니다. ${ads ? "가이드 글 페이지에서는 아래 광고 쿠키가 쓰일 수 있습니다. 타로·사주 풀이 화면에는 광고를 싣지 않습니다." : meta ? "광고 측정 쿠키 외의 광고용 쿠키는 쓰지 않습니다." : "광고 쿠키는 쓰지 않습니다."}`}
             </li>
           ) : ads ? (
             <li>운영자는 서비스 제공에 필요한 범위에서 아래 쿠키를 쓰고, 가이드 글 페이지에서는 아래 광고 쿠키가 쓰일 수 있습니다. 타로·사주 풀이 화면에는 광고를 싣지 않습니다.</li>
@@ -524,6 +537,20 @@ export default function PrivacyPage() {
               <li>브라우저 설정에서 쿠키를 지우거나 막을 수도 있지만, 그것만으로는 방문 통계가 멈추지 않을 수 있으니 거부는 아래 설정으로 해 주세요.</li>
             </ul>
             <AnalyticsSetting />
+          </div>
+        ) : null}
+        {meta ? (
+          <div id="meta-pixel">
+            <h3 className={s.sub}>광고 측정 쿠키(Meta 픽셀, 허용한 경우에만)</h3>
+            <ul className={s.list}>
+              <li>광고가 방문과 결제로 이어졌는지 재려고, 방문 통계와 광고 측정을 허용한 경우에만 Meta 픽셀을 불러옵니다.</li>
+              <li>이전받는 자와 국가: Meta Platforms, Inc.(미국).</li>
+              <li>이전 항목: 방문한 페이지의 주소(공유·초대·기록 번호나 결제 정보가 들어 있는 페이지와 그 밖의 꼬리표가 붙은 주소는 보내지 않음), 결제를 마쳤을 때의 결제 금액과 통화, 기기·브라우저 정보, IP 주소, 쿠키 식별값, 방문 시각.</li>
+              <li>이전 시기와 방법: 페이지를 볼 때와 결제를 마쳤을 때 브라우저에서 Meta로 바로 보냅니다. 질문, 메모, 출생 정보, 풀이 내용, 이름이나 연락처는 보내지 않습니다.</li>
+              <li>보유 기간: Meta의 데이터 정책에서 정한 기간 동안 Meta가 보관합니다. 운영자는 Meta 광고 관리자의 집계만 봅니다.</li>
+              <li>Meta 픽셀은 이 브라우저를 구별하는 쿠키(_fbp)를 만들고, 이 쿠키는 마지막 방문부터 90일 뒤 만료됩니다.</li>
+              <li>위 방문 통계 설정에서 거부하면 Meta 픽셀도 더 보내지 않고 _fbp 쿠키를 지웁니다. 거부해도 서비스 이용에 제한이 없습니다.</li>
+            </ul>
           </div>
         ) : null}
         {ads ? (

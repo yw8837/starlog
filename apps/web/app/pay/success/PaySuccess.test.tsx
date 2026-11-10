@@ -4,6 +4,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { resetAccountForTests } from "@/lib/account/client";
 import { PaySuccess, pollSchedule } from "./PaySuccess";
 
+const meta = vi.hoisted(() => ({ purchases: [] as Array<[string, number]> }));
+vi.mock("@/components/seo/MetaPixel", () => ({ trackMetaPurchase: (orderId: string, value: number) => meta.purchases.push([orderId, value]) }));
+
 const ORDER = "Ab3_dEf-Gh5iJk7Lm9No1Pq2";
 
 afterEach(() => {
@@ -34,6 +37,15 @@ describe("PaySuccess", () => {
     render(<PaySuccess paymentKey="tgen_1" orderId={ORDER} amount="2900" navigate={navigate} />);
     await waitFor(() => expect(navigate).toHaveBeenCalledWith("/tarot/result?unlock=paid"));
     expect(bodies["/api/pay/confirm"]).toEqual([{ paymentKey: "tgen_1", orderId: ORDER, amount: 2900 }]);
+  });
+
+  it("tells the Meta pixel of the purchase with its value once the server confirmed it (sales 2026-11-10 item 7; the pixel itself checks consent)", async () => {
+    meta.purchases = [];
+    stub({ "/api/pay/confirm": [paid] });
+    const navigate = vi.fn();
+    render(<PaySuccess paymentKey="tgen_1" orderId={ORDER} amount="14900" navigate={navigate} />);
+    await waitFor(() => expect(navigate).toHaveBeenCalled());
+    expect(meta.purchases).toEqual([[ORDER, 14900]]);
   });
 
   it("once the buyer has left the page, an answer that lands later neither opens the reading nor asks for a login (review M1)", async () => {

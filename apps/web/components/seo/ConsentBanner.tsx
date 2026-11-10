@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/Button";
 import { GA_MEASUREMENT_ID } from "@/lib/analytics";
-import { chooseAnalytics, readChoice, subscribeChoice } from "@/lib/analyticsConsent";
+import { chooseAnalytics, needsChoice, subscribeChoice } from "@/lib/analyticsConsent";
 import { gaRevisionInForce } from "@/lib/legal";
+import { metaPixelOn } from "@/lib/metaPixel";
 import s from "./ConsentBanner.module.css";
 
 /**
@@ -17,16 +18,19 @@ import s from "./ConsentBanner.module.css";
  * Nothing on the server, so no flash and no hydration mismatch on pages cached for a year.
  */
 export function ConsentBanner() {
-  const ask = useSyncExternalStore(subscribeChoice, () => GA_MEASUREMENT_ID !== "" && gaRevisionInForce() && readChoice() === null, () => false);
+  const ask = useSyncExternalStore(subscribeChoice, () => GA_MEASUREMENT_ID !== "" && gaRevisionInForce() && needsChoice(), () => false);
   if (!ask) return null;
+  // Sales 2026-11-10 item 7: with a Meta pixel built in and its revision in force, the one question covers it too, by name.
+  const meta = metaPixelOn();
   return (
     <section className={s.banner} aria-labelledby="consent-title">
       <h2 id="consent-title" className={s.title}>
-        방문 통계를 켜도 될까요?
+        {meta ? "방문 통계와 광고 측정을 켜도 될까요?" : "방문 통계를 켜도 될까요?"}
       </h2>
       <p className={s.body}>
-        어떤 화면을 많이 보는지 알아보려고, 허용하면 방문한 페이지(공유·초대 번호는 가림)·기기 정보·IP 주소·쿠키 식별값을 Google 애널리틱스로
-        Google LLC(미국)에 보내요. 마지막 방문부터 최대 14개월 보관하고, 거부해도 이용에 제한은 없어요.{" "}
+        {meta
+          ? "어떤 화면을 많이 보는지와 광고 성과를 알아보려고, 허용하면 방문한 페이지(공유·초대 번호는 가림)·기기 정보·IP 주소·쿠키 식별값을 Google 애널리틱스로 Google LLC(미국)에 보내고, 번호나 결제 정보가 없는 페이지 방문과 결제 금액·기기 정보·IP 주소·쿠키 식별값을 Meta 픽셀로 Meta Platforms, Inc.(미국)에 보내요. Google은 마지막 방문부터 최대 14개월 보관하고 Meta는 Meta의 정책에 따라 보관해요. 거부해도 이용에 제한은 없어요."
+          : "어떤 화면을 많이 보는지 알아보려고, 허용하면 방문한 페이지(공유·초대 번호는 가림)·기기 정보·IP 주소·쿠키 식별값을 Google 애널리틱스로 Google LLC(미국)에 보내요. 마지막 방문부터 최대 14개월 보관하고, 거부해도 이용에 제한은 없어요."}{" "}
         <Link href="/privacy#analytics" className={s.more}>
           자세히
         </Link>

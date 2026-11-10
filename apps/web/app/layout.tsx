@@ -6,6 +6,7 @@ import { VersionCheck } from "@/components/layout/VersionCheck";
 import { ConsentBanner } from "@/components/seo/ConsentBanner";
 import { CareBanner } from "@/components/ui/CareBanner";
 import { GoogleAnalytics } from "@/components/seo/GoogleAnalytics";
+import { MetaPixel } from "@/components/seo/MetaPixel";
 import { SiteJsonLd } from "@/components/seo/JsonLd";
 import { adsConfig } from "@/lib/ads";
 import { SITE } from "@/lib/config";
@@ -75,6 +76,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             asks once, the loader runs only after 허용. Both render nothing on the server. */}
         <ConsentBanner />
         <GoogleAnalytics />
+        <MetaPixel />
       </body>
     </html>
   );

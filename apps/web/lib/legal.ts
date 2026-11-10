@@ -103,6 +103,19 @@ const KEPT_RULE_NOTICE_UNTIL_AT = Date.parse(`${KEPT_RULE_DATE}T00:00:00+09:00`)
 
 export const keptRuleNoticeShown = (now: number = Date.now()): boolean => now < KEPT_RULE_NOTICE_UNTIL_AT;
 
+/**
+ * The 개인정보처리방침 revision that adds the Meta pixel (owner 2026-11-10 "동의한 방문자만"): the consent banner names Meta
+ * and the pixel loads for a visitor who allowed it from this KST midnight, 7 days after the notice the policy promises
+ * (as GA_REVISION_DATE). Before it the policy shows it as 바뀌는 내용; from it, as 바뀐 내용 for 30 days. Only where a pixel
+ * id is built in (lib/metaPixel.ts): without one nothing here shows. A later deploy moves this date.
+ */
+export const META_REVISION_DATE = "2026-11-17";
+const META_REVISION_AT = Date.parse(`${META_REVISION_DATE}T00:00:00+09:00`);
+const META_NOTICE_UNTIL_AT = META_REVISION_AT + 30 * 24 * 60 * 60 * 1000;
+
+export const metaRevisionInForce = (now: number = Date.now()): boolean => now >= META_REVISION_AT;
+export const metaNoticeShown = (now: number = Date.now()): boolean => now < META_NOTICE_UNTIL_AT;
+
 /** The 시행일 the privacy policy shows at `now` (the terms and the refund policy keep legalEffectiveDate). */
 export const privacyEffectiveDate = (now: number = Date.now()): string =>
   syncRevisionInForce(now)

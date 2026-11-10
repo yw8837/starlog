@@ -103,3 +103,53 @@ describe("analytics consent store: one choice per browser, in localStorage", () 
     expect(flags[DISABLE]).toBeUndefined();
   });
 });
+
+describe("the Meta pixel's consent (sales 2026-11-10 item 7)", () => {
+  const IN_FORCE = Date.parse("2026-11-17T00:00:00+09:00");
+  async function withPixel() {
+    vi.resetModules();
+    vi.stubEnv("NEXT_PUBLIC_META_PIXEL_ID", "123456789012345");
+    consent = await import("./analyticsConsent");
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(IN_FORCE);
+  }
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllEnvs();
+    delete (window as { fbq?: unknown }).fbq;
+  });
+
+  it("with no pixel id it asks only once, as before, and never covers Meta", () => {
+    expect(consent.needsChoice()).toBe(true);
+    consent.chooseAnalytics("granted");
+    expect(consent.needsChoice()).toBe(false);
+    expect(consent.readMetaGranted()).toBe(false);
+  });
+
+  it("an 허용 given where the banner names Meta covers Meta too", async () => {
+    await withPixel();
+    consent.chooseAnalytics("granted");
+    expect(JSON.parse(window.localStorage.getItem(KEY) ?? "null")).toMatchObject({ choice: "granted", meta: true });
+    expect(consent.readMetaGranted()).toBe(true);
+    expect(consent.needsChoice()).toBe(false);
+  });
+
+  it("an older 허용 (GA only) keeps GA but not Meta, and the visitor is asked again", async () => {
+    await withPixel();
+    window.localStorage.setItem(KEY, JSON.stringify({ choice: "granted", at: "2026-11-01T00:00:00.000Z" }));
+    expect(consent.readChoice()).toBe("granted");
+    expect(consent.readMetaGranted()).toBe(false);
+    expect(consent.needsChoice()).toBe(true);
+  });
+
+  it("거부 stops the pixel already loaded and deletes its _fbp cookie", async () => {
+    await withPixel();
+    const fbq = vi.fn();
+    (window as { fbq?: unknown }).fbq = fbq;
+    document.cookie = "_fbp=fb.1.1.1; path=/";
+    consent.chooseAnalytics("denied");
+    expect(fbq).toHaveBeenCalledWith("consent", "revoke");
+    expect(document.cookie).not.toContain("_fbp=");
+    expect(consent.readMetaGranted()).toBe(false);
+  });
+});

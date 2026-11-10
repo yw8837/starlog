@@ -110,3 +110,34 @@ describe("ConsentBanner: asks once, from the GA revision, until this browser has
     expect(renderToString(createElement(ConsentBanner))).toBe("");
   });
 });
+
+describe("ConsentBanner with a Meta pixel built in (sales 2026-11-10 item 7)", () => {
+  const META_AT = Date.parse("2026-11-17T00:00:00+09:00");
+  beforeEach(async () => {
+    vi.resetModules();
+    vi.stubEnv("NEXT_PUBLIC_META_PIXEL_ID", "123456789012345");
+    ({ ConsentBanner } = await import("./ConsentBanner"));
+  });
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("names Meta Platforms, Inc.(미국) and the ad measurement from the revision's date, and its 허용 covers the pixel", async () => {
+    at(META_AT);
+    await mount();
+    const text = screen.getByRole("region", { name: "방문 통계와 광고 측정을 켜도 될까요?" }).textContent!;
+    expect(text).toContain("Meta Platforms, Inc.(미국)");
+    expect(text).toContain("Google LLC(미국)");
+    fireEvent.click(screen.getByRole("button", { name: "허용" }));
+    expect(JSON.parse(window.localStorage.getItem(KEY) ?? "null")).toMatchObject({ choice: "granted", meta: true });
+  });
+
+  it("asks again a visitor whose 허용 covered GA only; says nothing of Meta before the revision's date", async () => {
+    at(META_AT - 1);
+    stored("granted");
+    const { container } = await mount();
+    expect(container.innerHTML).toBe("");
+    cleanup();
+    at(META_AT);
+    await mount();
+    expect(screen.getByRole("region", { name: "방문 통계와 광고 측정을 켜도 될까요?" })).toBeTruthy();
+  });
+});
