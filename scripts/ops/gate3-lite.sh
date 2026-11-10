@@ -27,12 +27,15 @@ if [ -f ../../scripts/check-worker-env.mjs ]; then (cd ../.. && node scripts/che
 if grep -q '"check:worker"' package.json ../../package.json 2>/dev/null; then (cd ../.. && node scripts/check-worker-size.mjs > "$LOG/worker.log" 2>&1); step "worker size exit=$? $(tail -2 "$LOG/worker.log" | tr '\n' ' ')"; fi
 npx opennextjs-cloudflare preview --port 8787 > "$LOG/preview.log" 2>&1 &
 PREV=$!
-for i in $(seq 1 90); do c=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8787/); [ "$c" = "200" ] && break; sleep 2; done
-step "preview http=$c"
+# A 200 is not enough: another app on 8787 answered one, and the e2e ran against that app (11/06: 209 false failures in an hour).
+WANT="\"build\":\"$NEXT_PUBLIC_BUILD_ID\""
+for i in $(seq 1 90); do v=$(curl -s --max-time 5 http://localhost:8787/api/version); echo "$v" | grep -qF "$WANT" && break; sleep 2; done
+echo "$v" | grep -qF "$WANT" || { step "STOP: :8787 is not this build (want $NEXT_PUBLIC_BUILD_ID, /api/version answered: $(echo "$v" | head -c 200 | tr -d '\r\n')). If another app holds the port, free it and run the gate again."; kill $PREV 2>/dev/null; taskkill //F //T //PID $PREV > /dev/null 2>&1; exit 7; }
+step "preview build=$NEXT_PUBLIC_BUILD_ID"
 SPECS=$(ls e2e/*.spec.ts | grep -v pay-flow | grep -v saju-topics | tr '\n' ' ')
 # Saju has no free full reading (owner 10/14): the specs open it with the preview's owner pass (.dev.vars, never printed).
 # Tests tagged @login log in with the mock Kakao, which the preview refuses (production settings): the dev run below has them.
-E2E_OWNER_CODE="$(grep -E '^STARLOG_OWNER_CODE=' .dev.vars | cut -d= -f2- | tr -d '\r\"')" E2E_BASE_URL=http://localhost:8787 E2E_ALLOW_LIVE=1 npx playwright test $SPECS --workers=2 --grep-invert "saju-chart-topic|@login" --reporter=line > "$LOG/e2e-preview.log" 2>&1; step "e2e preview exit=$? $(grep -E '[0-9]+ (passed|failed|skipped|flaky)' "$LOG/e2e-preview.log" | tr '\n' ' ')"
+E2E_OWNER_CODE="$(grep -E '^STARLOG_OWNER_CODE=' .dev.vars | cut -d= -f2- | tr -d '\r\"')" E2E_BASE_URL=http://localhost:8787 E2E_ALLOW_LIVE=1 npx playwright test $SPECS --workers=2 --grep-invert "saju-chart-topic|@login" --output=test-results/preview --reporter=line > "$LOG/e2e-preview.log" 2>&1; step "e2e preview exit=$? $(grep -E '[0-9]+ (passed|failed|skipped|flaky)' "$LOG/e2e-preview.log" | tr '\n' ' ')"
 kill $PREV 2>/dev/null; taskkill //F //T //PID $PREV > /dev/null 2>&1
 # -like, not -match: the old regex 'scratchpad\deploy\' (trailing backslash) failed to parse, so the preview's workerd/node
 # processes outlived the gate and a later preview on 8787 answered from a dead one (2026-10-16).
@@ -41,10 +44,14 @@ kill $PREV 2>/dev/null; taskkill //F //T //PID $PREV > /dev/null 2>&1
 powershell -NoProfile -Command "for (\$i = 0; \$i -lt 6; \$i++) { \$ps = Get-CimInstance Win32_Process -Filter \"Name='workerd.exe' or Name='node.exe' or Name='esbuild.exe'\" | Where-Object { \$_.CommandLine -and (\$_.CommandLine -like '*starlog-ops\deploy*' -or \$_.CommandLine -like '*starlog-ops/deploy*') }; if (-not \$ps) { break }; \$ps | ForEach-Object { Stop-Process -Id \$_.ProcessId -Force -ErrorAction SilentlyContinue }; Start-Sleep -Seconds 1 }"
 for port in 8787 3100; do for p in $(netstat -ano | grep -E "[:.]$port[[:space:]].*LISTENING" | awk '{print $NF}' | sort -u); do [ "$p" != "0" ] && taskkill //F //T //PID $p > /dev/null 2>&1; done; done
 sleep 3
+# Each e2e run has its own results folder: Playwright empties its folder when a run starts, and the dev run used to take the
+# preview run's traces with it (the [narrow] @screens "Target page ... closed" failure, twice with no trace).
 # The dev server (mock Kakao, owner mode): all of pay-flow, and every test tagged @login (오픈 기념 무료 logged in, owner 2026-10-27).
 LOGIN_SPECS="e2e/pay-flow.spec.ts $(grep -l '@login' e2e/*.spec.ts | grep -v pay-flow | tr '\n' ' ')"
 # Both servers share this clone's local D1, and D1 pins the first account secret it sees (lib/account/secretCheck.ts): on a
 # fresh D1 the preview pinned the .dev.vars one, next dev fell back to its dev secret, and every account route answered
 # 503 PAY_UNAVAILABLE (11/04: 96 failed). next dev gets the preview's secret (never printed); Playwright passes it through.
-STARLOG_ACCOUNT_SECRET="$(grep -E '^STARLOG_ACCOUNT_SECRET=' .dev.vars | cut -d= -f2- | tr -d '\r\"')" STARLOG_AI=mock pnpm e2e $LOGIN_SPECS --grep "pay-flow|@login" --workers=1 --project=desktop --project=mobile --reporter=line > "$LOG/e2e-pay.log" 2>&1; step "e2e pay-flow + @login exit=$? $(grep -E '[0-9]+ (passed|failed|skipped|flaky)' "$LOG/e2e-pay.log" | tr '\n' ' ')"
+STARLOG_ACCOUNT_SECRET="$(grep -E '^STARLOG_ACCOUNT_SECRET=' .dev.vars | cut -d= -f2- | tr -d '\r\"')" STARLOG_AI=mock pnpm e2e $LOGIN_SPECS --grep "pay-flow|@login" --workers=1 --project=desktop --project=mobile --output=test-results/dev --reporter=line > "$LOG/e2e-pay.log" 2>&1; step "e2e pay-flow + @login exit=$? $(grep -E '[0-9]+ (passed|failed|skipped|flaky)' "$LOG/e2e-pay.log" | tr '\n' ' ')"
 step "DONE"
+# A failed step used to end the script with 0 (11/06: "e2e preview exit=1", and the shell saw success).
+if grep -qE ' exit=[1-9]' "$LOG/summary.log"; then step "FAILED: $(grep -cE ' exit=[1-9]' "$LOG/summary.log") step(s) did not pass"; exit 1; fi
