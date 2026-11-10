@@ -61,9 +61,12 @@ export function GradeView() {
   // optional call: a browser (or jsdom) without scrollIntoView just stays where it is
   const toTop = () => requestAnimationFrame(() => topRef.current?.scrollIntoView?.({ block: "start" }));
 
+  // only y changes: the address's other parameters (utm_* …) and its hash stay
   const pickYear = (y: number) => {
     setYear(y);
-    window.history.replaceState(null, "", `?y=${y}`);
+    const url = new URL(window.location.href);
+    url.searchParams.set("y", String(y));
+    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
   };
 
   const fields = (

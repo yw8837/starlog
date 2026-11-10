@@ -173,6 +173,22 @@ describe("GradeView", () => {
     expectNoBirthInRequests(OWN);
   });
 
+  it("a chip keeps the address's other parameters and its hash, changing only y (review 7)", async () => {
+    localStorage.setItem(SAJU_PROFILE_KEY, JSON.stringify(OWN));
+    window.history.replaceState(null, "", "/saju/grade?utm_source=threads&utm_campaign=grade#find");
+    render(<GradeView />);
+    await waitFor(() => expect(screen.getByRole("figure")).toBeTruthy());
+    const target = currentGradeYear() + 1;
+    const g = gradeForYear(gradeChartOf(chartOf(OWN)), target);
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(`^${target} ${g.ko} ${g.grade}$`) }));
+    expect(window.location.pathname).toBe("/saju/grade");
+    expect(window.location.search).toBe(`?utm_source=threads&utm_campaign=grade&y=${target}`);
+    expect(window.location.hash).toBe("#find");
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(`^${target + 1} `) }));
+    expect(window.location.search).toBe(`?utm_source=threads&utm_campaign=grade&y=${target + 1}`);
+    expectNoBirthInRequests(OWN);
+  });
+
   it("opens on the year in ?y= when it is one of the ten chips", async () => {
     localStorage.setItem(SAJU_PROFILE_KEY, JSON.stringify(OWN));
     const target = currentGradeYear() + 3;
