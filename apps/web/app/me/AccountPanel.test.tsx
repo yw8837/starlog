@@ -183,41 +183,81 @@ describe("AccountPanel", () => {
     expect(screen.getAllByRole("button", { name: "환불받기" })).toHaveLength(1);
     fireEvent.click(screen.getByRole("button", { name: "회원 탈퇴" }));
     expect(screen.getByText("열지 않은 결제 1건은 전액 환불돼요")).toBeTruthy();
-    expect(screen.getByText("환불할 수 없는 결제 1건은 사라져요")).toBeTruthy();
+    expect(screen.getByText("환불할 수 없는 풀이 1개는 사라져요")).toBeTruthy();
   });
 
-  it("shows a 2027 신년운세 + 프리미엄 궁합 set as two readings refunded together, once, and never as cut off once the other was opened (owner 2026-11-10)", async () => {
+  it("shows a 2027 신년운세 + 프리미엄 궁합 set as two readings refunded whole while neither is opened, once (owner 2026-11-10)", async () => {
     const SET_ORDER = "Set_dEf-Gh5iJk7Lm9No1Pq2x";
     const both = { ...account, user: { ...account.user, gift: null, unused: [
-      { orderId: SET_ORDER, productId: "newyear-2027", refundUntil: "2099-12-08T14:59:59.999Z", set: true as const },
-      { orderId: SET_ORDER, productId: "match", refundUntil: "2099-12-08T14:59:59.999Z", set: true as const },
+      { orderId: SET_ORDER, productId: "newyear-2027", refundUntil: "2099-12-08T14:59:59.999Z", refundAmount: 18900, set: true as const },
+      { orderId: SET_ORDER, productId: "match", refundUntil: "2099-12-08T14:59:59.999Z", refundAmount: 18900, set: true as const },
     ] } };
     render(<AccountPanel account={both} />);
     expect(screen.getByText("2027 신년운세 · 열지 않음")).toBeTruthy();
     expect(screen.getByText("프리미엄 궁합 · 열지 않음")).toBeTruthy();
     expect(screen.getAllByRole("link", { name: "열기" })).toHaveLength(2);
-    // One 환불받기 for the one payment, saying both readings go back together.
+    // One 환불받기 for the one payment, saying what opening one would leave.
     expect(screen.getAllByRole("button", { name: "환불받기" })).toHaveLength(1);
-    expect(screen.getAllByText("세트로 산 풀이예요. 둘 다 열기 전에만 두 풀이가 함께 환불돼요. 하나라도 열면 환불되지 않아요.")).toHaveLength(2);
+    expect(screen.getAllByText("세트로 산 풀이예요. 둘 다 열지 않았으면 전액, 하나를 열면 열지 않은 풀이 몫만 환불돼요.")).toHaveLength(2);
     expect(screen.getAllByText("12월 8일까지 환불할 수 있어요")).toHaveLength(2);
     expect(document.body.textContent).not.toContain("환불 가능 기간");
     fireEvent.click(screen.getByRole("button", { name: "환불받기" }));
     expect(await screen.findByText("두 풀이 모두 열지 않은 세트라 결제한 금액 전액을 돌려 드려요.")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "전액 환불받기" }));
     await waitFor(() => expect(requests.filter((r) => r.url === "/api/pay/refund").map((r) => r.body)).toEqual([{ orderId: SET_ORDER }]));
+    expect(await screen.findByText("환불했어요. 카드사에 따라 며칠 걸릴 수 있어요.")).toBeTruthy();
     cleanup();
     // Deleting the account counts payments, not readings.
     render(<AccountPanel account={both} />);
     fireEvent.click(screen.getByRole("button", { name: "회원 탈퇴" }));
     expect(screen.getByText("열지 않은 결제 1건은 전액 환불돼요")).toBeTruthy();
-    cleanup();
-    // The 궁합 left after the 신년 was opened: it opens, it is not refunded, and the reason is the set, not a cut-off.
-    const one = { ...account, user: { ...account.user, gift: null, unused: [{ orderId: SET_ORDER, productId: "match", refundable: false as const, set: true as const }] } };
+  });
+
+  it("once one reading of a set was opened, refunds the other's part, says how much, and keeps the opened one (owner 2026-11-10)", async () => {
+    const SET_ORDER = "Set_dEf-Gh5iJk7Lm9No1Pq2x";
+    const one = { ...account, user: { ...account.user, gift: null, unused: [{ orderId: SET_ORDER, productId: "match", refundUntil: "2099-12-08T14:59:59.999Z", refundAmount: 4000, set: true as const }] } };
     render(<AccountPanel account={one} />);
     expect(screen.getByRole("link", { name: "열기" })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "환불받기" })).toBeNull();
-    expect(screen.getByText("세트의 다른 풀이를 열어서 환불은 할 수 없어요. 열기로 받을 수 있어요.")).toBeTruthy();
+    expect(screen.getByText("세트의 다른 풀이를 열어서 이 풀이 몫 4,000원만 환불돼요.")).toBeTruthy();
     expect(document.body.textContent).not.toContain("끊겨서");
+    fireEvent.click(screen.getByRole("button", { name: "환불받기" }));
+    expect(await screen.findByText("세트에서 열지 않은 풀이 몫 4,000원을 돌려 드려요. 연 풀이는 그대로 볼 수 있어요.")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "전액 환불받기" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "4,000원 환불받기" }));
+    await waitFor(() => expect(requests.filter((r) => r.url === "/api/pay/refund").map((r) => r.body)).toEqual([{ orderId: SET_ORDER }]));
+    expect(await screen.findByText("4,000원을 환불했어요. 카드사에 따라 며칠 걸릴 수 있어요.")).toBeTruthy();
+    cleanup();
+    render(<AccountPanel account={one} />);
+    fireEvent.click(screen.getByRole("button", { name: "회원 탈퇴" }));
+    expect(screen.getByText("풀이 하나를 연 세트 결제 1건은 열지 않은 풀이 몫만 환불돼요(4,000원)")).toBeTruthy();
+    expect(screen.queryByText(/전액 환불돼요/)).toBeNull();
+    cleanup();
+    // The 신년운세 cut off while written (not refundable) and the 궁합 unopened: 환불받기 on the 궁합, for its part.
+    const cut = { ...account, user: { ...account.user, gift: null, unused: [
+      { orderId: SET_ORDER, productId: "newyear-2027", refundable: false as const, set: true as const },
+      { orderId: SET_ORDER, productId: "match", refundUntil: "2099-12-08T14:59:59.999Z", refundAmount: 4000, set: true as const },
+    ] } };
+    render(<AccountPanel account={cut} />);
+    expect(screen.getAllByRole("button", { name: "환불받기" })).toHaveLength(1);
+    expect(screen.getByText("풀이를 받던 중에 끊겨서 환불은 할 수 없어요. 열기로 다시 받을 수 있어요.")).toBeTruthy();
+    expect(screen.getByText("세트의 다른 풀이를 열어서 이 풀이 몫 4,000원만 환불돼요.")).toBeTruthy();
+  });
+
+  it("in 결제 내역, says which reading of a set was opened, and a partial refund with its amount", async () => {
+    const row = { amount: 18900, productId: "set-2027", status: "paid", createdAt: Date.parse("2026-12-01T03:00:00Z"), receiptUrl: null, method: "카드", unfinished: false };
+    vi.stubGlobal("fetch", vi.fn(async (url: string) =>
+      url === "/api/pay/orders"
+        ? Response.json({ orders: [
+            { ...row, orderId: "s1", refundable: true, opened: true, openedProducts: ["newyear-2027"], refunded: 0 },
+            { ...row, orderId: "s2", refundable: false, opened: true, openedProducts: ["newyear-2027"], refunded: 4000 },
+            { ...row, orderId: "s3", refundable: false, opened: true, openedProducts: ["match", "newyear-2027"], refunded: 0 },
+          ] })
+        : Response.json({ payments: true, login: true, owner: false, user: null }),
+    ));
+    render(<AccountPanel account={account} />);
+    expect(await screen.findByText("2027 신년운세 열어 봤어요 · 프리미엄 궁합 열지 않음")).toBeTruthy();
+    expect(screen.getByText("2027 신년운세 열어 봤어요 · 일부 환불 4,000원")).toBeTruthy();
+    expect(screen.getByText("열어 봤어요")).toBeTruthy();
   });
 
   it("says what went wrong with a refund in refund words, never payment ones", async () => {

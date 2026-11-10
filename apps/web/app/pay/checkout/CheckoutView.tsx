@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { setRefundRule } from "@/components/legal/PremiumLegal";
 import { Stepper } from "@/components/tarot/Stepper";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
@@ -69,11 +70,9 @@ const tocs = (productId: string) => (productId === "saju" && sajuTopicsMode() ==
 /** Premium clauses apply to the premium readings and to the set, whose two readings are premium. */
 const premiumTerms = (productId: string) => isPremiumId(productId) || productId === SET_PRODUCT_ID;
 
-/** When a refund is possible, as every refund line on this page says it: the set only while neither reading is opened. */
+/** When a refund is possible, as every refund line on this page says it: the set's own rule (the unopened reading's part, owner 2026-11-10). */
 const refundRule = (productId: string) =>
-  productId === SET_PRODUCT_ID
-    ? `두 풀이를 모두 열기 전에만 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있어요. 하나라도 열면 환불되지 않아요.`
-    : `열기 전에는 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있어요.`;
+  productId === SET_PRODUCT_ID ? setRefundRule() : `열기 전에는 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있어요.`;
 
 /** The details could not be loaded (a server error or a lost connection): payment words, never a reading's (F-03). */
 const LOAD_FAILED: ErrorView = { title: "결제 정보를 불러오지 못했어요", body: "청구된 금액은 없어요. 다시 시도해 주세요.", action: "retry" };

@@ -16,11 +16,28 @@ interface OrderItem {
   method: string | null;
   refundable: boolean;
   opened: boolean;
+  /** the readings of it opened or being opened (a set says which of its two) */
+  openedProducts?: string[];
+  /** refunded so far, in 원: 일부 환불 while the order stays paid (a set's unopened part) */
+  refunded?: number;
   /** used up before its reading was finished (left while written a fourth time) */
   unfinished?: boolean;
 }
 
-const paidLabel = (item: OrderItem) => (item.unfinished ? "다 받기 전에 끊겨 쓴 것으로 처리됐어요. 문제가 있으면 문의해 주세요." : item.opened ? "열어 봤어요" : "열지 않음");
+const nameOf = (id: string) => productById(id)?.name ?? "풀이";
+
+/** A set with one reading opened names it, and the other if it is still unopened; a partial refund says how much. */
+function paidLabel(item: OrderItem): string {
+  if (item.unfinished) return "다 받기 전에 끊겨 쓴 것으로 처리됐어요. 문제가 있으면 문의해 주세요.";
+  const readings = productById(item.productId)?.includes;
+  const opened = item.openedProducts ?? [];
+  const refunded = item.refunded ?? 0;
+  const parts =
+    readings && opened.length > 0 && opened.length < readings.length
+      ? [`${opened.map(nameOf).join(", ")} 열어 봤어요`, ...(refunded > 0 ? [] : [`${readings.filter((id) => !opened.includes(id)).map(nameOf).join(", ")} 열지 않음`])]
+      : [item.opened ? "열어 봤어요" : "열지 않음"];
+  return [...parts, ...(refunded > 0 ? [`일부 환불 ${won(refunded)}`] : [])].join(" · ");
+}
 const label = (item: OrderItem) =>
   item.status === "paid" ? paidLabel(item) : item.status === "refunded" ? "환불됨" : item.status === "refunding" ? "환불 중" : "확인 중";
 

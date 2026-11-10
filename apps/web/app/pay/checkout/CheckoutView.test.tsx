@@ -129,7 +129,8 @@ describe("CheckoutView", () => {
     expect(within(year).getAllByRole("listitem")[0]!.textContent).toBe("2027 정미년과 나의 명식");
     const match = screen.getByRole("region", { name: "프리미엄 궁합 목차" });
     expect(within(match).getAllByRole("listitem")[0]!.textContent).toBe("한 줄로 보면");
-    const rule = "두 풀이를 모두 열기 전에만 결제일로부터 7일 안에 전액 환불받을 수 있어요. 하나라도 열면 환불되지 않아요.";
+    const rule =
+      "결제일로부터 7일 안에 두 풀이를 모두 열지 않았으면 18,900원 전액을, 하나만 열었으면 열지 않은 풀이 몫을 환불받을 수 있어요(2027 신년운세를 열었으면 4,000원, 프리미엄 궁합을 열었으면 11,000원). 두 풀이를 모두 열면 환불되지 않아요.";
     expect(screen.getByText(`한 번 결제로 2027 신년운세와 프리미엄 궁합이 하나씩 열려요. 자동결제는 없어요. ${rule}`)).toBeTruthy();
     const actions = screen.getByRole("button", { name: "18,900원 결제하기" }).closest("div")!;
     expect(actions.textContent).toContain(rule);

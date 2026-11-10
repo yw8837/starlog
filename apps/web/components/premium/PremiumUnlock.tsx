@@ -5,7 +5,7 @@ import { CrisisContacts } from "@/components/ui/CrisisContacts";
 import s from "@/components/tarot/UnlockSheet.module.css";
 import { loginHref, type AccountState } from "@/lib/account/client";
 import { SITE, won } from "@/lib/config";
-import { REFUND_DAYS, SET_PRODUCT_ID } from "@/lib/pay/catalog";
+import { REFUND_DAYS, SET_PRODUCT_ID, refundAmount } from "@/lib/pay/catalog";
 import { checkoutHref } from "@/lib/pay/offer";
 import { opensAtText, premiumOffer } from "@/lib/premium/offer";
 import { PREMIUM, type PremiumId } from "@/lib/premium/products";
@@ -43,6 +43,8 @@ type PremiumUnlockProps = {
 
 /** The set's price against its two readings apart (owner 2026-11-10: the real saving, nothing else). */
 const SET_APART = PREMIUM["newyear-2027"].krw + PREMIUM.match.krw;
+/** The set's other reading: what stays refundable (its part) once this one is opened. */
+const setOther = (id: PremiumId): PremiumId => (id === "match" ? "newyear-2027" : "match");
 
 const CheckIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
@@ -82,13 +84,14 @@ export function PremiumUnlock({ id, account, status, returnTo, onOpen, resumable
           {resumable ? "이어서 받기" : "결제한 풀이 열기"}
         </Button>
       );
-      caption = offer.set
-        ? offer.refundable === false
-          ? "세트의 다른 풀이를 열어서 환불은 할 수 없어요"
-          : `세트는 두 풀이를 모두 열기 전에만 결제일로부터 ${REFUND_DAYS}일 안에 환불할 수 있어요. 이 풀이를 열면 세트 전체가 환불되지 않아요`
-        : offer.refundable === false
+      caption =
+        offer.refundable === false
           ? "풀이를 받던 중에 끊긴 결제라 환불은 할 수 없어요. 다시 열어 끝까지 받을 수 있어요"
-          : `결제한 풀이는 열기 전이면 결제일로부터 ${REFUND_DAYS}일 안에 환불할 수 있어요`;
+          : offer.set && offer.pair
+            ? `세트는 결제일로부터 ${REFUND_DAYS}일 안에 열지 않은 풀이 몫을 환불받을 수 있어요. 이 풀이를 열면 ${PREMIUM[setOther(id)].name} 몫 ${won(refundAmount(SITE.price.set.krw, [id]))}만 환불받을 수 있어요`
+            : offer.set
+              ? `세트의 다른 풀이를 열어서 결제일로부터 ${REFUND_DAYS}일 안에 이 풀이 몫 ${won(offer.refundAmount ?? refundAmount(SITE.price.set.krw, [setOther(id)]))}만 환불받을 수 있어요. 이 풀이를 열면 환불되지 않아요`
+              : `결제한 풀이는 열기 전이면 결제일로부터 ${REFUND_DAYS}일 안에 환불할 수 있어요`;
       break;
     case "login":
       primary = (

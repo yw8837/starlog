@@ -51,7 +51,12 @@ describe("/pricing's 2027 신년운세 + 프리미엄 궁합 set (owner 2026-11-
     const card = await screen.findByRole("region", { name: /2027 신년운세 \+ 프리미엄 궁합/ });
     expect(card.textContent).toContain("18,900원");
     expect(card.textContent).toContain("따로 사면 22,800원, 3,900원 아껴요");
-    expect(card.textContent).toContain("두 풀이를 모두 열기 전에만 결제일로부터 7일 안에 전액 환불받을 수 있어요. 하나라도 열면 환불되지 않아요.");
+    expect(card.textContent).toContain(
+      "결제일로부터 7일 안에 두 풀이를 모두 열지 않았으면 18,900원 전액을, 하나만 열었으면 열지 않은 풀이 몫을 환불받을 수 있어요(2027 신년운세를 열었으면 4,000원, 프리미엄 궁합을 열었으면 11,000원). 두 풀이를 모두 열면 환불되지 않아요.",
+    );
+    // Review LOW 4: the tier's closing line speaks of readings paid for alone and sends the set to its own rule.
+    const premium = document.getElementById("premium")!;
+    expect(premium.textContent).toContain("따로 결제한 풀이는 열기 전에는 결제일로부터 7일 안에 전액 환불받을 수 있어요. 세트의 환불 기준은 세트 안내에 있어요.");
     expect(card.textContent).not.toMatch(/지금만|마감|할인|남은/);
     expect(within(card).getByRole("link").getAttribute("href")).toMatch(/^\/pay\/checkout\?product=set-2027&/);
     cleanup();

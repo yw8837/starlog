@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { setRefundRule } from "@/components/legal/PremiumLegal";
 import s from "@/components/legal/legal.module.css";
 import { SITE, won } from "@/lib/config";
 import { REFUND_DAYS, SET_PRODUCT_ID } from "@/lib/pay/catalog";
@@ -21,7 +22,7 @@ function Check() {
 /** The set's price against its two readings apart (owner 2026-11-10: the real saving, nothing else). */
 const SET_APART = PREMIUM["newyear-2027"].krw + PREMIUM.match.krw;
 
-/** The 2027 신년운세 + 프리미엄 궁합 set, where the server sells it (from 2026-12-01 KST): one of each, refunded only whole. */
+/** The 2027 신년운세 + 프리미엄 궁합 set, where the server sells it (from 2026-12-01 KST): one of each, the unopened one's part refundable. */
 function SetCard() {
   return (
     <section className={s.card} aria-labelledby="premium-set">
@@ -46,7 +47,7 @@ function SetCard() {
           </li>
         ))}
       </ul>
-      <p>{`두 풀이를 모두 열기 전에만 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있어요. 하나라도 열면 환불되지 않아요.`}</p>
+      <p>{setRefundRule()}</p>
       <p>
         <Link href={checkoutHref(SET_PRODUCT_ID, "/premium/newyear-2027/new")}>세트로 결제하기</Link>
       </p>
@@ -103,7 +104,10 @@ export function PremiumPricing({ fallback }: { fallback: ReactNode }) {
         })}
         {status.set?.open ? <SetCard /> : null}
       </div>
-      <p>{`깊게 보는 풀이도 결제와 환불 기준은 같아요. 열기 전에는 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있어요.`}</p>
+      {/* Review LOW 4: the set has its own refund rule (its card above), so this line speaks of a reading paid for alone. */}
+      <p>{`깊게 보는 풀이도 결제와 환불 기준은 같아요. 따로 결제한 풀이는 열기 전에는 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있어요.${
+        status.set?.open ? " 세트의 환불 기준은 세트 안내에 있어요." : ""
+      }`}</p>
     </section>
   );
 }

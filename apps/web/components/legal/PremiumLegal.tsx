@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { SITE, won } from "@/lib/config";
 import { appHref } from "@/lib/hosts";
 import { PREMIUM_LEGAL_EFFECTIVE_DATE, SET_RULE_DATE, koreanDate, setRuleInForce } from "@/lib/legal";
-import { REFUND_DAYS } from "@/lib/pay/catalog";
+import { REFUND_DAYS, refundAmount } from "@/lib/pay/catalog";
 import { PREMIUM, PREMIUM_CHAPTER_TTL_MS, PREMIUM_IDS } from "@/lib/premium/products";
 import s from "./legal.module.css";
 
@@ -65,12 +65,30 @@ const SET_ON = koreanDate(SET_RULE_DATE);
 const SET_NAME = `${SITE.price.set.name} 세트`;
 const SET_READINGS = SITE.price.set.includes.map((id) => PREMIUM[id].name).join("와 ");
 
+/** What a set refunds once one of its readings was opened: the other's part, from the catalog (4,000원 or 11,000원). */
+const PART_AFTER_NEWYEAR = won(refundAmount(SITE.price.set.krw, ["newyear-2027"]));
+const PART_AFTER_MATCH = won(refundAmount(SITE.price.set.krw, ["match"]));
+
+/**
+ * The set's refund rule (owner 2026-11-10; 전자상거래법 제17조 제2항 제5호 단서: its two readings are divisible), one
+ * sentence for every place that states it (checkout, /pricing, the terms, the refund policy and their notice): within
+ * REFUND_DAYS of the payment, neither reading opened → the whole price; one opened → the unopened one's part (the amounts
+ * from the catalog); both opened → nothing. `haeyo`: 해요체, otherwise 합니다체.
+ */
+export function setRefundRule(haeyo = true): string {
+  const end = (plain: string, polite: string) => (haeyo ? polite : plain);
+  return (
+    `결제일로부터 ${REFUND_DAYS}일 안에 두 풀이를 모두 열지 않았으면 ${won(SITE.price.set.krw)} 전액을, 하나만 열었으면 열지 않은 풀이 몫을 환불받을 수 있${end("습니다", "어요")}` +
+    `(${PREMIUM["newyear-2027"].name}를 열었으면 ${PART_AFTER_NEWYEAR}, ${PREMIUM.match.name}을 열었으면 ${PART_AFTER_MATCH}). 두 풀이를 모두 열면 환불되지 않${end("습니다", "아요")}.`
+  );
+}
+
 /** The set's sale and refund rule (owner 2026-11-10), in the terms' voice or the refund page's (`haeyo`). */
 function setClause(haeyo: boolean): string {
   const end = (plain: string, polite: string) => (haeyo ? polite : plain);
   return (
     `${SET_NAME}는 ${SET_ON}부터 ${PREMIUM["newyear-2027"].name}의 판매 기간 동안 ${won(SITE.price.set.krw)}에 판매하며, 한 번 결제로 ${SET_READINGS}이 하나씩 열${end("립니다", "려요")}. ` +
-    `세트는 두 풀이를 모두 열기 전에만 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있${end("으며", "고")}, 둘 중 하나라도 열면 환불되지 않${end("습니다", "아요")}.`
+    `세트는 ${setRefundRule(haeyo)} 열지 않은 풀이 몫은 세트 가격에서 연 풀이를 따로 살 때의 가격을 뺀 금액이${end("며", "고")}, 연 풀이는 그대로 이용할 수 있${end("습니다", "어요")}.`
   );
 }
 
@@ -88,7 +106,7 @@ export function SetRuleNotice({ haeyo = false, now = Date.now() }: { haeyo?: boo
       </h2>
       <ul className={s.list}>
         <li>{`${SET_NAME}를 ${won(SITE.price.set.krw)}에 판매${end("합니다", "해요")}. 한 번 결제로 ${SET_READINGS}이 하나씩 열${end("립니다", "려요")}${haeyo ? "." : "(제7조의3)."}`}</li>
-        <li>{`세트는 두 풀이를 모두 열기 전에만 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있${end("습니다", "어요")}. 둘 중 하나라도 열면 환불되지 않${end("습니다", "아요")}.`}</li>
+        <li>{`세트는 ${setRefundRule(haeyo)}`}</li>
         <li>{`이 내용은 새로 판매하는 세트에만 적용${end("되며", "되고")}, 풀이를 따로 결제할 때의 기준은 그대로${end("입니다", "예요")}.`}</li>
       </ul>
     </aside>
