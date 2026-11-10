@@ -660,6 +660,27 @@
   line-height: 1.7;
 }
 
+.introPart {
+  display: grid;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.introSub {
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.introList {
+  display: grid;
+  gap: 6px;
+  max-width: 44em;
+  margin: 0;
+  padding-left: 1.2em;
+  font-size: var(--fs-body);
+  line-height: 1.7;
+}
+
 .introMeta {
   color: var(--ink-sub);
   font-size: var(--fs-sub);

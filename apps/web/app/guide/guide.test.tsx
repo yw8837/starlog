@@ -72,7 +72,7 @@ describe("guide tabs", () => {
       expect(screen.getByRole("button", { name: tab.host })).toBeTruthy();
       expect(GUIDE_HOST_LINES[tab.category].some((line) => screen.queryByText(line))).toBe(true);
 
-      const items = within(screen.getByRole("main").querySelector("ul") as HTMLElement).getAllByRole("link");
+      const items = within(screen.getByRole("main").querySelector('section[aria-labelledby="guide-group-title"] ul') as HTMLElement).getAllByRole("link");
       const articles = articlesIn(tab.category);
       expect(items.map((a) => a.getAttribute("href"))).toEqual(articles.map((a) => `/guide/${a.slug}`));
       for (const [i, article] of articles.entries()) expect(items[i]?.textContent).toContain(article.title);
@@ -266,7 +266,7 @@ describe("links from a guide page", () => {
     // The tabs and the article cards are the guide's own pages: paths, so they stay on the root domain.
     const tabs = within(screen.getByRole("navigation", { name: "가이드 분류" })).getAllByRole("link");
     expect(tabs.map((a) => a.getAttribute("href"))).toEqual(["/", "/guide/saju"]);
-    const items = within(screen.getByRole("main").querySelector("ul") as HTMLElement).getAllByRole("link");
+    const items = within(screen.getByRole("main").querySelector('section[aria-labelledby="guide-group-title"] ul') as HTMLElement).getAllByRole("link");
     expect(items.map((a) => a.getAttribute("href"))).toEqual(articlesIn(category).map((a) => `/guide/${a.slug}`));
   });
 
