@@ -110,7 +110,7 @@
 }
 
 .chipYear {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--ink-sub);
 }
 
@@ -404,7 +404,7 @@
   border-radius: 999px;
   background: var(--surface-light);
   color: var(--gold);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
 }
 

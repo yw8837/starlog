@@ -27,7 +27,7 @@
   border-radius: 999px;
   background: var(--surface-light);
   color: var(--gold);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   line-height: 1.6;
 }
@@ -129,7 +129,7 @@
 .host {
   margin: 8px 0 0;
   color: var(--gold);
-  font-size: 12px;
+  font-size: 13px;
   letter-spacing: 0.06em;
   opacity: 0.85;
 }

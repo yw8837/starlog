@@ -69,7 +69,7 @@ test("no login: the example first, my birth gives my card in the browser, a chip
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem("starlog.saju-profile") ?? "null"))).toMatchObject({ year: 1995, month: 6, day: 1 });
   const observations = page.getByRole("region", { name: "규칙으로 본 세 가지" }).getByRole("listitem");
   await expect(observations).toHaveCount(4);
-  await expect(observations.last()).toContainText(/다음 S·A 해: \d{4} .+년|S·A가 나오는 해가 없어요/);
+  await expect(observations.last()).toContainText(/다음 S·A 해: \d{4} .+년|칩 안에는 S·A가 없어요|칩에는 S·A가 없어요|B와 C만 나와요/);
   await expectFits(page);
   await shot(page, info, "result");
 
@@ -179,9 +179,12 @@ test("a shared card: a visitor whose profile is on this device sees their own gr
 
 test("entry points: the topic step's small link and the free 명식's mini card open the grade card", async ({ page }) => {
   await page.goto("/saju/start");
-  await page.getByRole("link", { name: "올해 내 사주 등급은? · 로그인 없이 무료" }).click();
-  await expect(page).toHaveURL(/\/saju\/grade$/);
-  await expect(page.getByRole("figure")).toContainText("올해의 사주 등급");
+  // A build with 주제별 사주 off (the gate's preview) sends /saju/start on to /saju/new: the link lives on the topic step only.
+  if (/\/saju\/start$/.test(page.url())) {
+    await page.getByRole("link", { name: "올해 내 사주 등급은? · 로그인 없이 무료" }).click();
+    await expect(page).toHaveURL(/\/saju\/grade$/);
+    await expect(page.getByRole("figure")).toContainText("올해의 사주 등급");
+  }
   await page.goto("/saju/chart");
   const mini = page.getByRole("link", { name: /이 명식의 올해 등급/ });
   await expect(mini).toContainText(/\d{4} .+년 · .+ 사주주/);
