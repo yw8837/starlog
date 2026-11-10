@@ -33,6 +33,9 @@ import { metadata as rankingMeta } from "@/app/ranking/page";
 import { metadata as refundMeta } from "@/app/refund/page";
 import { metadata as sajuChartMeta } from "@/app/saju/chart/page";
 import { metadata as sajuNewMeta } from "@/app/saju/new/page";
+import { metadata as sajuGradeMeta } from "@/app/saju/grade/page";
+import { metadata as sajuGradeHowMeta } from "@/app/saju/grade/how/page";
+import { generateMetadata as sajuGradeSharedMeta } from "@/app/saju/grade/[slug]/page";
 import { metadata as storyMeta } from "@/app/story/page";
 import { metadata as tarotDrawMeta } from "@/app/tarot/draw/page";
 import { metadata as tarotNewMeta } from "@/app/tarot/new/page";
@@ -47,6 +50,7 @@ import { ALL_GUIDE_ARTICLES, GUIDE_ARTICLES, findArticle } from "./guide";
 import { publishInstant } from "./guideMeta";
 import { GUIDE_HOST_PAGES, absoluteUrl, isGuidePath } from "./hosts";
 import { ILJU } from "./keyword2027";
+import { GRADE_SLUGS } from "./sajuGrade";
 import { HOME_TITLE, NOINDEX as NOINDEX_ROBOTS, SITEMAP_PATHS, sitemapEntriesFor } from "./seo";
 
 // The root layout loads its fonts through the Next compiler, which is not running here.
@@ -105,6 +109,9 @@ const INDEXABLE: Array<[path: string, meta: Metadata]> = [
   ["/contact", await servedOn("starlog.yeolmaeapps.kr", "/contact")],
   ...(await Promise.all(GUIDE_ARTICLES.map(async (article) => [`/guide/${article.slug}`, await guideArticleMeta(params({ slug: article.slug }))] as [string, Metadata]))),
   ["/birth-card", birthCardMeta],
+  // 올해의 사주 등급 and its rule page (spec 2026-11-11 B: the rule page is open to search)
+  ["/saju/grade", sajuGradeMeta],
+  ["/saju/grade/how", sajuGradeHowMeta],
 ];
 
 /**
@@ -115,6 +122,8 @@ const INDEXABLE: Array<[path: string, meta: Metadata]> = [
 const RESULT_PAGES: Array<[path: string, meta: Metadata]> = [
   ...(await Promise.all(ILJU.map(async (ilju) => [`/2027-keyword/${ilju.slug}`, await keywordResultMeta(params({ ilju: ilju.slug }))] as [string, Metadata]))),
   ...(await Promise.all(BIRTH_CARDS.map(async (card) => [`/birth-card/${card.slug}`, await birthCardResultMeta(params({ card: card.slug }))] as [string, Metadata]))),
+  // the 40 shared 사주 등급 cards: a year and a grade each, the same for whoever opens them
+  ...(await Promise.all(GRADE_SLUGS.map(async (slug) => [`/saju/grade/${slug}`, await sajuGradeSharedMeta(params({ slug }))] as [string, Metadata]))),
 ];
 
 /** In INDEXABLE for its own metadata, but out of the sitemaps (none since /ranking went noindex,follow). */
@@ -252,9 +261,9 @@ describe("search result previews", () => {
   });
 });
 
-describe("result pages (2027 keyword, birth card)", () => {
-  it("covers all 60 일주 and 22 cards", () => {
-    expect(RESULT_PAGES).toHaveLength(82);
+describe("result pages (2027 keyword, birth card, 사주 등급)", () => {
+  it("covers all 60 일주, 22 cards and 40 grade cards", () => {
+    expect(RESULT_PAGES).toHaveLength(122);
   });
 
   it.each(RESULT_PAGES)("%s: noindex,follow (links still followed), never in the sitemap", (path, meta) => {
@@ -266,7 +275,9 @@ describe("result pages (2027 keyword, birth card)", () => {
     expect(meta.alternates?.canonical).toBe(path);
     const og = meta.openGraph as { url?: string; images?: Array<{ url: string; width: number; height: number }>; locale?: string; type?: string };
     expect(og).toMatchObject({ url: path, locale: "ko_KR", type: "website" });
-    expect(og.images?.[0]).toMatchObject({ url: `/api/og${path}`, width: 1200, height: 630 });
+    // the grade cards' pictures are at /api/og/saju-grade/<slug> (spec 2026-11-11 C), the others under their own path
+    const image = path.startsWith("/saju/grade/") ? `/api/og/saju-grade/${path.split("/").at(-1)}` : `/api/og${path}`;
+    expect(og.images?.[0]).toMatchObject({ url: image, width: 1200, height: 630 });
     expect(String(meta.title).length).toBeGreaterThan(0);
   });
 
