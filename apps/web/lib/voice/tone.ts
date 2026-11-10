@@ -34,10 +34,33 @@ const NEAR_CRISIS = new RegExp(
     "뒤지고싶|디지고싶|뒤져버리|디져버리|뒤질래|디질래",
   ].join("|"),
 );
-/** Heavy topics: a nickname would make light of them (spec 2.5 별명 없음). */
-const HEAVY = /건강|병원|입원|수술|진단|임신|대출|빚|투자|주식|코인|파산|소송|재판|장례|사망/;
-/** A breakup, a marriage, a fight, or money: three cards read them mildly. */
-const TENDER = /이별|헤어|재회|이혼|결혼|싸움|싸웠|다퉜|다툼|돈|재물|월급|연봉/;
+/**
+ * Heavy topics: a nickname would make light of them (spec 2.5 별명 없음), read with the spaces gone. Widened after the review
+ * (2026-11-11 #2): a loss, illness and the mind, pregnancy, money trouble, violence, a lost job, big investments.
+ */
+const HEAVY = new RegExp(
+  [
+    "건강|병원|입원|수술|진단|임신|대출|빚|투자|주식|코인|파산|소송|재판|장례|사망", // spec 2.5 as written
+    "돌아가셨|돌아가시|돌아가신|사별|기일|무지개다리|하늘나라|떠나보내|떠나보낸|49재|사십구재|추모|납골|부고",
+    "(?:위|간|폐|유방|갑상선|대장|췌장|자궁|전립선|혈액|피부)암|항암|암(?:이래|이라|이야|이에요|이었|검사|진단|수술|투병|환자|재발|판정|선고|센터|병동)|종양|말기",
+    "응급|구급|119|중환자|위독|투병|발병|지병|질병|질환|병명|병이|병에|병걸|병나|병낫|병들|치료|검사결과|검진|재검",
+    "아프(?!리카)|아파(?!트)|아픈|아팠|몸이안좋|다쳤|부상|골절|교통사고|치매|간병|약을?(?:끊|먹|줄|바꾸|바꿔|늘)|처방",
+    "우울|공황|정신과|정신병|불안장애|조울|양극성|트라우마|불면|심리상담",
+    "유산(?!균)|난임|불임|시험관|임테기|인공수정|착상|낙태|중절",
+    "빛때문|빛을?갚|연체|카드값|사채|회생|신용불량|신불자|전세사기|사기를?당|사기맞|보이스피싱|압류|독촉|추심",
+    "폭력|폭행|학폭|왕따|따돌림|스토킹|스토커|성희롱|성추행|성폭|괴롭힘|괴롭혀|괴롭히|갑질|협박|가스라이팅",
+    "잘렸|짤렸|해고|권고사직|실직|구조조정",
+    "아파트|부동산|청약|분양|집값|갭투자",
+  ].join("|"),
+);
+/** A breakup, a marriage, a fight, or money: three cards read them mildly (지금의 한 장: the facts only). Hair (헤어 컬러) is no breakup. */
+const TENDER = new RegExp(
+  [
+    "이별|헤[어여](?:지|졌|진|질|짐|져)|재회|재결합|이혼|파혼|별거|결혼|싸움|싸웠|다퉜|다툼",
+    "전남친|전여친|전애인|전남자친구|전여자친구|전남편|전부인|전와이프|전처|차였|바람폈|바람펴|바람피|바람났|바람난|외도|불륜|잠수|손절",
+    "돈|재물|월급|연봉|적금|예금",
+  ].join("|"),
+);
 /** 건강·컨디션, 마음·감정 (packages/core templates): facts only. */
 const FACTS_TOPICS = new Set(["health", "mind"]);
 /** 재회, 갈등·화해, 결혼(운), 재물운: mild. */
@@ -102,8 +125,8 @@ function crisisOf(texts: readonly string[]): CrisisTier | null {
 export function tarotTone({ texts = [], topicId, customTopic = false }: { texts?: readonly string[]; topicId?: string; customTopic?: boolean }): ToneVerdict {
   const crisis = crisisOf(texts);
   if (crisis) return { tone: "crisis", crisis };
-  if (readsAny(NEAR_CRISIS, texts) || texts.some((text) => HEAVY.test(text)) || (topicId !== undefined && FACTS_TOPICS.has(topicId))) return { tone: "facts", crisis: null };
-  if (customTopic || (topicId !== undefined && MILD_TOPICS.has(topicId)) || texts.some((text) => TENDER.test(text))) return { tone: "mild", crisis: null };
+  if (readsAny(NEAR_CRISIS, texts) || readsAny(HEAVY, texts) || (topicId !== undefined && FACTS_TOPICS.has(topicId))) return { tone: "facts", crisis: null };
+  if (customTopic || (topicId !== undefined && MILD_TOPICS.has(topicId)) || readsAny(TENDER, texts)) return { tone: "mild", crisis: null };
   return { tone: "spicy", crisis: null };
 }
 
