@@ -140,4 +140,29 @@ describe("ConsentBanner with a Meta pixel built in (sales 2026-11-10 item 7)", (
     await mount();
     expect(screen.getByRole("region", { name: "방문 통계와 광고 측정을 켜도 될까요?" })).toBeTruthy();
   });
+
+  it("its 허용 covers Meta only if the banner shown named Meta, not by the clock at the click (review LOW-3)", async () => {
+    at(META_AT - 1);
+    await mount();
+    expect(screen.getByRole("region", { name: TITLE })).toBeTruthy();
+    vi.setSystemTime(META_AT);
+    fireEvent.click(screen.getByRole("button", { name: "허용" }));
+    const record = JSON.parse(window.localStorage.getItem(KEY) ?? "null");
+    expect(record.choice).toBe("granted");
+    expect(record.meta).toBeUndefined();
+  });
+
+  it("with only the Meta pixel built in (no GA id) it still asks, naming Meta and not Google (review LOW-2)", async () => {
+    vi.resetModules();
+    vi.doMock("@/lib/analytics", async (original) => ({ ...(await original<typeof import("@/lib/analytics")>()), GA_MEASUREMENT_ID: "" }));
+    ({ ConsentBanner } = await import("./ConsentBanner"));
+    at(META_AT);
+    await mount();
+    const text = screen.getByRole("region", { name: "광고 측정을 켜도 될까요?" }).textContent!;
+    expect(text).toContain("Meta Platforms, Inc.(미국)");
+    expect(text).not.toContain("Google");
+    fireEvent.click(screen.getByRole("button", { name: "허용" }));
+    expect(JSON.parse(window.localStorage.getItem(KEY) ?? "null")).toMatchObject({ choice: "granted", meta: true });
+    vi.doUnmock("@/lib/analytics");
+  });
 });

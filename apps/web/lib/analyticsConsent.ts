@@ -73,7 +73,11 @@ function stopMeta(): void {
   }
 }
 
-/** `meta`: the banner named Meta when this was chosen (a pixel id is built in and its revision is in force). */
+/**
+ * `meta`: the banner named Meta when this was chosen (a pixel id is built in and its revision is in force). The banner
+ * passes what it showed (review LOW-3): a click just past the revision's midnight on a banner that did not name Meta
+ * does not cover it.
+ */
 export function chooseAnalytics(choice: AnalyticsChoice, meta: boolean = metaPixelOn()): void {
   const covers = choice === "granted" && meta;
   remembered = choice;
