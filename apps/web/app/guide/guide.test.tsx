@@ -332,11 +332,14 @@ describe("ads on guide pages", () => {
     expect(slot).not.toBeNull();
     // Not inside the cream paper: the "광고" label is light ink and would vanish on it.
     expect(slot?.closest("section")).toBeNull();
-    const [before, after] = [slot?.previousElementSibling, slot?.nextElementSibling] as HTMLElement[];
+    const after = slot?.nextElementSibling as HTMLElement;
     const headings = (sheet: HTMLElement | undefined) => [...(sheet?.querySelectorAll("h2") ?? [])].map((h) => h.textContent);
+    // The sheets before the ad (the Waite quote may split them too, after the section on the picture).
+    const sheets: HTMLElement[] = [];
+    for (let el = slot?.previousElementSibling; el; el = el.previousElementSibling) if (el.querySelector("h2")) sheets.unshift(el as HTMLElement);
     const all = findArticle("the-hermit")?.sections.map((section) => section.heading) ?? [];
     expect(all.length).toBeGreaterThan(3);
-    expect(headings(before)).toEqual(all.slice(0, 2));
+    expect(sheets.flatMap(headings)).toEqual(all.slice(0, 2));
     expect(headings(after)).toEqual(all.slice(2));
     // Every section is still there once, in order, and the button comes after the whole body.
     expect([...container.querySelectorAll("article h2")].map((h) => h.textContent).slice(0, all.length)).toEqual(all);

@@ -114,3 +114,26 @@ describe("the byline under the title", () => {
     expect(container.querySelector(`section[aria-labelledby="trust-title"] a[href="${SITE.url}${evidence}"]`)).not.toBeNull();
   });
 });
+
+describe("the Waite quote stands by the section it belongs to (2026-11-10, AdSense audit task F: not one fixed skeleton)", () => {
+  // After the section on the card's history and Waite's book, or else the one on its picture (the deck figure's).
+  const pictureAt = (article: (typeof cardArticles)[number]) => {
+    const history = article.sections.findIndex((section) => /웨이트|옛/.test(section.heading));
+    return history >= 0 ? history : article.sections.findIndex((section) => (section.blocks ?? []).some((block) => block.kind === "figure"));
+  };
+
+  it.each(cardArticles.map((article) => [article.slug, article] as const))("%s: right after the section on its history or picture, before the next heading", async (slug, article) => {
+    const { container } = await renderSlug(slug);
+    const quote = container.querySelector("blockquote")?.closest("figure") as HTMLElement;
+    const headings = [...container.querySelectorAll("article h2")].filter((h) => article.sections.some((s) => s.heading === h.textContent));
+    const at = pictureAt(article);
+    expect(at, slug).toBeGreaterThanOrEqual(0);
+    expect(headings[at]?.compareDocumentPosition(quote)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    const next = headings[at + 1];
+    if (next) expect(quote.compareDocumentPosition(next)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+
+  it("so it falls at three or more different places across the 22", () => {
+    expect(new Set(cardArticles.map(pictureAt)).size).toBeGreaterThanOrEqual(3);
+  });
+});
