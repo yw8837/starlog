@@ -80,6 +80,12 @@ describe("Toss client", () => {
     expect(calls[0]!.headers["Idempotency-Key"]).toBe(`cancel-${ORDER}-1`);
   });
 
+  it("reads a payment without balanceAmount as an unknown balance (null), never as nothing cancelled", async () => {
+    const { balanceAmount: _, ...noBalance } = PAYMENT;
+    const { fetchImpl } = fakeFetch([{ status: 200, body: { ...noBalance, totalAmount: 18900, status: "PARTIAL_CANCELED" } }]);
+    expect(await createTossClient(SECRET, fetchImpl).getPayment(PAYMENT.paymentKey)).toMatchObject({ status: "PARTIAL_CANCELED", totalAmount: 18900, balanceAmount: null });
+  });
+
   it("turns Toss errors, no response and odd bodies into TossError", async () => {
     const declined = createTossClient(SECRET, fakeFetch([{ status: 403, body: { code: "REJECT_CARD_PAYMENT", message: "한도초과 혹은 잔액부족으로 결제에 실패했습니다." } }]).fetchImpl);
     await expect(declined.confirm({ paymentKey: "k", orderId: ORDER, amount: 2900 })).rejects.toMatchObject({ status: 403, code: "REJECT_CARD_PAYMENT", message: "한도초과 혹은 잔액부족으로 결제에 실패했습니다." });

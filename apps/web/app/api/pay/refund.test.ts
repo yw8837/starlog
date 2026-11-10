@@ -106,10 +106,11 @@ describe("refunds", () => {
     vi.setSystemTime(T0 + 61_000);
     expect(await statusOf(b, orderId)).toBe("refunding");
     expect((await me(b)).user?.unused).toEqual([]);
-    // Ten minutes on, Toss still shows the payment DONE: only now does the reading come back.
+    // Ten minutes on, Toss still shows the payment DONE: only now does the reading come back, under the same key (the
+    // first request may still be at Toss: a retry under its key is answered once).
     vi.setSystemTime(T0 + 10 * MIN + 1);
     expect(await statusOf(b, orderId)).toBe("paid");
-    expect(await orderRow(db, orderId)).toEqual({ status: "paid", cancel_attempt: 2 });
+    expect(await orderRow(db, orderId)).toEqual({ status: "paid", cancel_attempt: 1 });
     expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot", refundUntil: UNTIL, refundAmount: 2900 }]);
   });
 

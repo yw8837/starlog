@@ -139,7 +139,7 @@ export function setLedgerContract(make: Make) {
     const db = await setup(make);
     await paidSet(db);
     expect(await lockPaidLotForRefund(db, "order_set", NOW + 10)).not.toBeNull();
-    expect(await revertRefund(db, "order_set", NOW + 11)).toBe(true);
+    expect(await revertRefund(db, "order_set", NOW + 11, { nextKey: true })).toBe(true);
     expect(await orderStatus(db, "order_set")).toBe("paid");
     expect((await lotsOf(db, "order_set")).map((lot) => [lot.status, lot.units_left])).toEqual([["active", 1], ["active", 1]]);
   });
@@ -183,7 +183,7 @@ export function setLedgerContract(make: Make) {
     expect(await deliverUnlock(db, { unlockId: opening.unlockId, readingId: "r_1", now: NOW + 2 })).toBe("delivered");
     expect((await entitlements(db, "u_1", NOW + 3)).unused).toEqual([{ orderId: "order_set", productId: NY, paidAt: NOW, refundable: 11000, set: true }]);
     expect(await lockPaidLotForRefund(db, "order_set", NOW + 3)).toMatchObject({ amount: 11000, lots: [{ product_id: NY }] });
-    expect(await revertRefund(db, "order_set", NOW + 4)).toBe(true);
+    expect(await revertRefund(db, "order_set", NOW + 4, { nextKey: true })).toBe(true);
     expect(await db.prepare("SELECT status, cancel_attempt FROM orders WHERE id = 'order_set'").first()).toEqual({ status: "paid", cancel_attempt: 2 });
     expect((await lotsOf(db, "order_set")).map((lot) => [lot.product_id, lot.status, lot.units_left])).toEqual([["match", "active", 0], [NY, "active", 1]]);
   });
@@ -233,7 +233,7 @@ export function setLedgerContract(make: Make) {
     expect(await lockPaidLotForRefund(db, "order_set", NOW + 3)).toMatchObject({ amount: 4000, lots: [{ product_id: "match" }] });
   });
 
-  it("puts the lock back when fewer lots were locked than expected (logged), so no amount is cancelled for a reading still in use", async () => {
+  it("puts the lock back when fewer lots were locked than expected (logged), so no amount is cancelled for a reading still in use; nothing was sent, so the key stays", async () => {
     const db = await setup(make);
     await paidSet(db);
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
@@ -249,7 +249,7 @@ export function setLedgerContract(make: Make) {
       } as unknown as D1Binding;
       expect(await lockPaidLotForRefund(short, "order_set", NOW + 2)).toBeNull();
       expect(error).toHaveBeenCalledWith(expect.stringContaining("pay.refund_lock_mismatch"));
-      expect(await db.prepare("SELECT status, cancel_attempt FROM orders WHERE id = 'order_set'").first()).toEqual({ status: "paid", cancel_attempt: 2 });
+      expect(await db.prepare("SELECT status, cancel_attempt FROM orders WHERE id = 'order_set'").first()).toEqual({ status: "paid", cancel_attempt: 1 });
       expect((await lotsOf(db, "order_set")).map((lot) => [lot.status, lot.units_left])).toEqual([["active", 1], ["active", 1]]);
     } finally {
       error.mockRestore();

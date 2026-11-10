@@ -475,14 +475,18 @@ export function ledgerContract(make: Make) {
     await expectLotsMatchLedger(db);
   });
 
-  it("puts a refund lock back in one batch and moves the order to its next cancel attempt", async () => {
+  it("puts a refund lock back in one batch and moves the order to its next cancel attempt only when asked (a refusal)", async () => {
     const db = await setup(make);
     await paidOrder(db, "order_a");
     expect(await lockPaidLotForRefund(db, "order_a", NOW)).not.toBeNull();
-    expect(await revertRefund(db, "order_a", NOW + 1)).toBe(true);
+    expect(await revertRefund(db, "order_a", NOW + 1, { nextKey: true })).toBe(true);
     expect(await orderOf(db, "order_a")).toEqual({ status: "paid", cancel_attempt: 2 });
     expect(await lotById(db, "lot_order_a")).toMatchObject({ status: "active", units_left: 1 });
-    expect(await revertRefund(db, "order_a", NOW + 2)).toBe(false);
+    expect(await revertRefund(db, "order_a", NOW + 2, { nextKey: true })).toBe(false);
+    // An answer lost: the same key next time.
+    expect(await lockPaidLotForRefund(db, "order_a", NOW + 3)).not.toBeNull();
+    expect(await revertRefund(db, "order_a", NOW + 4, { nextKey: false })).toBe(true);
+    expect(await orderOf(db, "order_a")).toEqual({ status: "paid", cancel_attempt: 2 });
     await expectLotsMatchLedger(db);
   });
 

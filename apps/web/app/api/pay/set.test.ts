@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setTestDb } from "@/lib/db";
-import { deliverUnlock, reserveUnlock } from "@/lib/pay/ledger";
+import { deliverUnlock, releaseUnlock, reserveUnlock } from "@/lib/pay/ledger";
+import { orderById } from "@/lib/pay/orders";
+import { applyCancel, syncOrderWithToss } from "@/lib/pay/refunds";
 import { mockToss } from "@/lib/pay/tossMock";
-import { TossError } from "@/lib/pay/tossTypes";
+import { TossError, type TossPayment } from "@/lib/pay/tossTypes";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { browser, buy, loginAs, me, useTestDb, type Browser } from "@/lib/testing/p4";
 import { GET as status } from "../premium/status/route";
@@ -58,12 +60,35 @@ const paymentKeyOf = async (db: ReturnType<typeof useTestDb>, orderId: string) =
 const settled = (db: ReturnType<typeof useTestDb>, orderId: string) =>
   db.prepare("SELECT o.status, p.status AS payment, p.canceled_amount FROM orders o JOIN payments p ON p.order_id = o.id WHERE o.id = ?").bind(orderId).first();
 
-/** Opens and delivers one reading with the set's lot of it. */
-async function openAndDeliver(db: ReturnType<typeof useTestDb>, productId: string) {
+/** Starts opening one reading with the set's lot of it (reserved, not delivered). */
+async function startOpening(db: ReturnType<typeof useTestDb>, productId: string) {
   const userId = (await db.prepare("SELECT id FROM users LIMIT 1").first<{ id: string }>())!.id;
   const opened = await reserveUnlock(db, { userId, productId, currency: "paid", now: Date.now(), payMode: "mock", earmarked: true });
   if (!opened.ok) throw new Error("not reserved");
+  return opened;
+}
+
+/** Opens and delivers one reading with the set's lot of it. */
+async function openAndDeliver(db: ReturnType<typeof useTestDb>, productId: string) {
+  const opened = await startOpening(db, productId);
   expect(await deliverUnlock(db, { unlockId: opened.unlockId, readingId: `r_${opened.unlockId}`, now: Date.now() })).toBe("delivered");
+}
+
+const attemptOf = async (db: ReturnType<typeof useTestDb>, orderId: string) =>
+  (await db.prepare("SELECT cancel_attempt FROM orders WHERE id = ?").bind(orderId).first<{ cancel_attempt: number }>())!.cancel_attempt;
+
+/**
+ * A set refunded in two parts: the 궁합's 4,000원 while the 신년운세 was being opened, then (the 신년운세 failed on our side
+ * and came back unopened) the rest, 14,900원. Returns the order id.
+ */
+async function refundedInTwoParts(db: ReturnType<typeof useTestDb>, b: Browser) {
+  const orderId = await boughtSet(db, b);
+  const opening = await startOpening(db, "newyear-2027");
+  expect(await (await refundOf(b, orderId)).json()).toEqual({ ok: true, status: "refunded", amount: 4000 });
+  expect(await releaseUnlock(db, { unlockId: opening.unlockId, now: Date.now() })).toBe(true);
+  expect((await me(b)).user!.unused).toMatchObject([{ orderId, productId: "newyear-2027", refundAmount: 14900, set: true }]);
+  expect(await (await refundOf(b, orderId)).json()).toEqual({ ok: true, status: "refunded", amount: 14900 });
+  return orderId;
 }
 
 async function boughtSet(db: ReturnType<typeof useTestDb>, b: Browser): Promise<string> {
@@ -200,7 +225,7 @@ describe("2027 신년운세 + 프리미엄 궁합 set (owner 2026-11-10)", () =>
     expect(await db.prepare("SELECT COUNT(*) AS n FROM ledger WHERE order_id = ? AND kind = 'refund'").bind(orderId).first()).toEqual({ n: 1 });
   });
 
-  it("settles a lost partial cancel by looking it up 10 minutes on: applied at the target, or the 궁합 back for a new attempt when Toss never cancelled", async () => {
+  it("settles a lost partial cancel by looking it up 10 minutes on: applied at the target, or the 궁합 back under the same key when Toss never cancelled", async () => {
     const db = useTestDb();
     const b = await loggedIn();
     const landed = await boughtSet(db, b);
@@ -220,10 +245,140 @@ describe("2027 신년운세 + 프리미엄 궁합 set (owner 2026-11-10)", () =>
       { product_id: "match", status: "active", units_left: 1 },
       { product_id: "newyear-2027", status: "active", units_left: 0 },
     ]);
-    // Its next attempt goes under a new key and lands.
+    // Toss may still answer that first request: the next try goes under the same key, so Toss cancels the part once.
+    expect(await attemptOf(db, lost)).toBe(1);
     const cancel = vi.spyOn(mockToss, "cancel");
     expect(await (await refundOf(b, lost)).json()).toEqual({ ok: true, status: "refunded", amount: 4000 });
-    expect(cancel.mock.calls[0]![1]).toMatchObject({ amount: 4000, idempotencyKey: `cancel-${lost}-2` });
+    expect(cancel.mock.calls[0]![1]).toMatchObject({ amount: 4000, idempotencyKey: `cancel-${lost}-1` });
+    expect(await attemptOf(db, lost)).toBe(2);
+  });
+
+  it("refunds the rest under a new key once the reading kept came back after a partial refund: 4,000 then 14,900, 18,900 in all (MED-1)", async () => {
+    const db = useTestDb();
+    const b = await loggedIn();
+    const cancel = vi.spyOn(mockToss, "cancel");
+    const orderId = await refundedInTwoParts(db, b);
+    expect(cancel.mock.calls.map(([, input]) => [input.amount, input.idempotencyKey])).toEqual([
+      [4000, `cancel-${orderId}-1`],
+      [14900, `cancel-${orderId}-2`],
+    ]);
+    expect(await settled(db, orderId)).toEqual({ status: "refunded", payment: "CANCELED", canceled_amount: 18900 });
+    expect(await lotsOf(db, orderId)).toEqual([
+      { product_id: "match", status: "refunded", units_left: 0 },
+      { product_id: "newyear-2027", status: "refunded", units_left: 0 },
+    ]);
+    expect(await db.prepare("SELECT COUNT(*) AS n FROM ledger WHERE order_id = ? AND kind = 'refund'").bind(orderId).first()).toEqual({ n: 2 });
+    expect((await me(b)).user!.unused).toEqual([]);
+  });
+
+  it("never lets a stale answer roll the payment record back: CANCELED 18,900 stays, and the amount never goes down (MED-2)", async () => {
+    const db = useTestDb();
+    const b = await loggedIn();
+    const orderId = await refundedInTwoParts(db, b);
+    const paymentKey = await paymentKeyOf(db, orderId);
+    const now = await mockToss.getPayment(paymentKey);
+    const firstPart: TossPayment = { ...now, status: "PARTIAL_CANCELED", balanceAmount: 14900 };
+    // The first refund's own answer applied late, and a webhook that read Toss before the rest was cancelled.
+    await applyCancel(db, (await orderById(db, orderId))!, firstPart, Date.now());
+    vi.spyOn(mockToss, "getPayment").mockResolvedValueOnce(firstPart);
+    expect((await hook({ eventType: "PAYMENT_STATUS_CHANGED", data: { paymentKey, orderId, status: "PARTIAL_CANCELED" } })).status).toBe(200);
+    expect(await settled(db, orderId)).toEqual({ status: "refunded", payment: "CANCELED", canceled_amount: 18900 });
+    // A partial record never goes down either (an older snapshot of the operator's dashboard cancels).
+    const other = await boughtSet(db, b);
+    const otherKey = await paymentKeyOf(db, other);
+    const done = await mockToss.getPayment(otherKey);
+    const order = (await orderById(db, other))!;
+    await syncOrderWithToss(db, mockToss, order, { ...done, status: "PARTIAL_CANCELED", balanceAmount: 15900 }, Date.now());
+    await syncOrderWithToss(db, mockToss, order, { ...done, status: "PARTIAL_CANCELED", balanceAmount: 17900 }, Date.now());
+    expect(await settled(db, other)).toEqual({ status: "paid", payment: "PARTIAL_CANCELED", canceled_amount: 3000 });
+  });
+
+  it("never cancels a part twice when a lost cancel lands late: the try after the cron put the 궁합 back keeps the first key (lost-response-then-retry)", async () => {
+    const db = useTestDb();
+    const b = await loggedIn();
+    const orderId = await boughtSet(db, b);
+    await openAndDeliver(db, "newyear-2027");
+    const paymentKey = await paymentKeyOf(db, orderId);
+    mockToss.failNext("cancel", new TossError(0, "NETWORK", "no response from Toss"));
+    expect(await (await refundOf(b, orderId)).json()).toMatchObject({ code: "PAY_PENDING" });
+    vi.setSystemTime(Date.now() + 11 * 60_000);
+    // Toss still shows it DONE: the 궁합 comes back, the key stays.
+    expect(await statusOf(b, orderId)).toBe("paid");
+    expect(await attemptOf(db, orderId)).toBe(1);
+    // Toss then carries out that first request after all.
+    await mockToss.cancel(paymentKey, { reason: "구매자 요청: 열지 않은 풀이 환불", idempotencyKey: `cancel-${orderId}-1`, amount: 4000 });
+    const cancel = vi.spyOn(mockToss, "cancel");
+    // The buyer's next 환불받기 finds the part cancelled already: it records it and sends nothing.
+    expect(await (await refundOf(b, orderId)).json()).toEqual({ ok: true, status: "refunded", amount: 4000 });
+    expect(cancel).not.toHaveBeenCalled();
+    expect(await mockToss.getPayment(paymentKey)).toMatchObject({ status: "PARTIAL_CANCELED", balanceAmount: 14900 });
+    expect(await settled(db, orderId)).toEqual({ status: "paid", payment: "PARTIAL_CANCELED", canceled_amount: 4000 });
+    expect(await lotsOf(db, orderId)).toEqual([
+      { product_id: "match", status: "refunded", units_left: 0 },
+      { product_id: "newyear-2027", status: "active", units_left: 0 },
+    ]);
+  });
+
+  it("sends the retry under the first key when that first request never landed, so a late landing of it is answered once", async () => {
+    const db = useTestDb();
+    const b = await loggedIn();
+    const orderId = await boughtSet(db, b);
+    await openAndDeliver(db, "newyear-2027");
+    const paymentKey = await paymentKeyOf(db, orderId);
+    mockToss.failNext("cancel", new TossError(0, "NETWORK", "no response from Toss"));
+    expect(await (await refundOf(b, orderId)).json()).toMatchObject({ code: "PAY_PENDING" });
+    vi.setSystemTime(Date.now() + 11 * 60_000);
+    expect(await statusOf(b, orderId)).toBe("paid");
+    expect(await (await refundOf(b, orderId)).json()).toEqual({ ok: true, status: "refunded", amount: 4000 });
+    // The first request arriving now is the same key: Toss replays it, nothing more is cancelled.
+    await mockToss.cancel(paymentKey, { reason: "구매자 요청: 열지 않은 풀이 환불", idempotencyKey: `cancel-${orderId}-1`, amount: 4000 });
+    expect(await mockToss.getPayment(paymentKey)).toMatchObject({ status: "PARTIAL_CANCELED", balanceAmount: 14900 });
+  });
+
+  it("sends a partial cancel only when Toss holds exactly what is left to the target, else puts the 궁합 back without a new key and logs it", async () => {
+    const db = useTestDb();
+    const b = await loggedIn();
+    const orderId = await boughtSet(db, b);
+    await openAndDeliver(db, "newyear-2027");
+    const paymentKey = await paymentKeyOf(db, orderId);
+    // 1,000원 cancelled in the dashboard, never recorded here: sending 4,000원 would pass the target.
+    await mockToss.cancel(paymentKey, { reason: "관리자", idempotencyKey: "admin-1", amount: 1000 });
+    const cancel = vi.spyOn(mockToss, "cancel");
+    const res = await refundOf(b, orderId);
+    expect(res.status).toBe(402);
+    expect(await res.json()).toMatchObject({ code: "PAY_FAILED", message: "환불하지 못했어요. 문의해 주세요." });
+    expect(cancel).not.toHaveBeenCalled();
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining("pay.refund_amount_mismatch"));
+    expect(await attemptOf(db, orderId)).toBe(1);
+    expect(await lotsOf(db, orderId)).toEqual([
+      { product_id: "match", status: "active", units_left: 1 },
+      { product_id: "newyear-2027", status: "active", units_left: 0 },
+    ]);
+    // Toss cannot be asked: nothing is sent either.
+    const other = await boughtSet(db, b);
+    await openAndDeliver(db, "newyear-2027");
+    mockToss.failNext("get", new TossError(0, "NETWORK", "no response from Toss"));
+    expect(await (await refundOf(b, other)).json()).toMatchObject({ code: "PAY_FAILED" });
+    expect(cancel).not.toHaveBeenCalled();
+    expect(await attemptOf(db, other)).toBe(1);
+    expect(await settled(db, other)).toEqual({ status: "paid", payment: "DONE", canceled_amount: 0 });
+  });
+
+  it("leaves a part Toss reports without its balance for the operator, never as a refusal that puts the 궁합 back", async () => {
+    const db = useTestDb();
+    const b = await loggedIn();
+    const orderId = await boughtSet(db, b);
+    await openAndDeliver(db, "newyear-2027");
+    mockToss.failNext("cancel", new TossError(0, "NETWORK", "no response from Toss"), { applied: true });
+    expect(await (await refundOf(b, orderId)).json()).toMatchObject({ code: "PAY_PENDING" });
+    const now = await mockToss.getPayment(await paymentKeyOf(db, orderId));
+    vi.spyOn(mockToss, "getPayment").mockResolvedValue({ ...now, balanceAmount: null });
+    vi.setSystemTime(Date.now() + 11 * 60_000);
+    expect(await statusOf(b, orderId)).toBe("refunding");
+    expect(await lotsOf(db, orderId)).toEqual([
+      { product_id: "match", status: "refunding", units_left: 0 },
+      { product_id: "newyear-2027", status: "active", units_left: 0 },
+    ]);
   });
 
   it("puts the 궁합 back when Toss refuses its partial cancel", async () => {

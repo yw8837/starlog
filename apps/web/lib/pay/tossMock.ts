@@ -84,9 +84,10 @@ export function createMockToss(): MockToss {
       post("cancel", idempotencyKey, () => {
         const payment = find(paymentKey);
         if (payment.status === "CANCELED") throw new TossError(400, "ALREADY_CANCELED_PAYMENT", "이미 취소된 결제 입니다.");
-        const cancel = amount ?? payment.balanceAmount;
-        if (cancel <= 0 || cancel > payment.balanceAmount) throw new TossError(400, "NOT_CANCELABLE_AMOUNT", "취소 할 수 없는 금액 입니다.");
-        const balanceAmount = payment.balanceAmount - cancel;
+        const balance = payment.balanceAmount ?? payment.totalAmount;
+        const cancel = amount ?? balance;
+        if (cancel <= 0 || cancel > balance) throw new TossError(400, "NOT_CANCELABLE_AMOUNT", "취소 할 수 없는 금액 입니다.");
+        const balanceAmount = balance - cancel;
         const canceled = { ...payment, status: balanceAmount === 0 ? "CANCELED" : "PARTIAL_CANCELED", balanceAmount };
         payments.set(paymentKey, canceled);
         return canceled;

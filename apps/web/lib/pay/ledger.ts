@@ -511,18 +511,19 @@ export async function lockPaidLotForRefund(db: D1Binding, orderId: string, now: 
     // The order was marked but not every lot read as untouched was locked (or the reverse): never cancel an amount for a
     // reading still in use. Put the lock back; the buyer tries again.
     console.error(JSON.stringify({ evt: "pay.refund_lock_mismatch", orderId, expected: ids.length, changes }));
-    if (changes[0] === 1) await revertRefund(db, orderId, now);
+    if (changes[0] === 1) await revertRefund(db, orderId, now, { nextKey: false });
   }
   return null;
 }
 
 /**
  * Puts a `refunding` order and its lot back in use, in one batch: Toss still shows the payment DONE.
- * The order moves to its next cancel attempt, so the next refund sends a new Idempotency-Key (Toss
- * replays an old key's first answer for 15 days). An order without a lot (a deleted account's
- * payment, Task 7) is never put back. False when nothing changed.
+ * `nextKey`: the order moves to its next cancel attempt, so the next refund sends a new Idempotency-Key (Toss replays an old
+ * key's first answer for 15 days). Only after Toss refused the cancel: when its answer was lost (or nothing was sent) the key
+ * stays, so a retry that meets the first request still at Toss is answered once, never cancelled twice. An order without a
+ * lot (a deleted account's payment, Task 7) is never put back. False when nothing changed.
  */
-export async function revertRefund(db: D1Binding, orderId: string, now: number): Promise<boolean> {
+export async function revertRefund(db: D1Binding, orderId: string, now: number, { nextKey }: { nextKey: boolean }): Promise<boolean> {
   const [, order] = await db.batch([
     db
       .prepare(
@@ -532,10 +533,10 @@ export async function revertRefund(db: D1Binding, orderId: string, now: number):
       .bind(orderId, orderId),
     db
       .prepare(
-        `UPDATE orders SET status = 'paid', cancel_attempt = cancel_attempt + 1, updated_at = ?
+        `UPDATE orders SET status = 'paid', cancel_attempt = cancel_attempt + ?, updated_at = ?
          WHERE id = ? AND status = 'refunding' AND EXISTS (SELECT 1 FROM credit_lots WHERE order_id = ? AND status = 'active')`,
       )
-      .bind(now, orderId, orderId),
+      .bind(nextKey ? 1 : 0, now, orderId, orderId),
   ]);
   return order?.meta?.changes === 1;
 }

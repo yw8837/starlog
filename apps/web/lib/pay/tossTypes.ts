@@ -6,8 +6,8 @@ export interface TossPayment {
   /** READY, IN_PROGRESS, WAITING_FOR_DEPOSIT, DONE, CANCELED, PARTIAL_CANCELED, ABORTED, EXPIRED */
   status: string;
   totalAmount: number;
-  /** what is left to cancel */
-  balanceAmount: number;
+  /** what is left to cancel; null when the answer left it out (then what was cancelled cannot be told) */
+  balanceAmount: number | null;
   method: string | null;
   approvedAt: string | null;
   receiptUrl: string | null;
@@ -55,7 +55,7 @@ export function parsePayment(value: unknown): TossPayment {
     orderId: v.orderId,
     status: v.status,
     totalAmount: v.totalAmount,
-    balanceAmount: typeof v.balanceAmount === "number" ? v.balanceAmount : v.totalAmount,
+    balanceAmount: typeof v.balanceAmount === "number" ? v.balanceAmount : null,
     method: typeof v.method === "string" ? v.method : null,
     approvedAt: typeof v.approvedAt === "string" ? v.approvedAt : null,
     receiptUrl: typeof receipt?.url === "string" ? receipt.url : null,
