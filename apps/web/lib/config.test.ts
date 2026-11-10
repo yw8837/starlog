@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SITE, footerNotice } from "./config";
+import { SITE, footerNotice, sajuGradeMode } from "./config";
 
 describe("SITE", () => {
   it("holds the business details the footer must show (전자상거래법 사업자 정보)", () => {
@@ -43,5 +43,16 @@ describe("footerNotice", () => {
     expect(notice.some((line) => line.startsWith("이메일"))).toBe(false);
     expect(notice.some((line) => line.startsWith("전화"))).toBe(false);
     expect(notice).toContain("통신판매업 신고번호 2026-부산영도-0153");
+  });
+});
+
+describe("sajuGradeMode (NEXT_PUBLIC_SAJU_GRADE, spec 2026-11-11 D)", () => {
+  it("is off unless set to owner or on, in every build: the 1,900원 풀이 is not on sale yet", () => {
+    expect(sajuGradeMode(undefined)).toBe("off");
+    expect(sajuGradeMode("")).toBe("off");
+    expect(sajuGradeMode("yes")).toBe("off");
+    expect(sajuGradeMode(" Owner ")).toBe("owner");
+    expect(sajuGradeMode("on")).toBe("on");
+    expect(sajuGradeMode("off")).toBe("off");
   });
 });

@@ -6,8 +6,8 @@ import { describe, expect, it } from "vitest";
 import { maskGanzhiReadings } from "./ai/ganzhi";
 import { GLANCE_GRADE, GLANCE_REMEDY, GLANCE_SCHOOL, SAJU_BLOCKLIST, blocklistViolations, nonHaeyoSentences, sentences } from "./ai/validate";
 import {
-  GRADE_NICKNAME, balanceLine, boundaryNotice, currentGradeYear, flowLine, gradeChips, gradeForYear, gradeObservations, gradePercentile,
-  nextBrightYear, yearLine,
+  GRADE_FIXED_LINE, GRADE_NICKNAME, GRADE_NOTICE, GRADE_SLUGS, balanceLine, boundaryNotice, compareLine, currentGradeYear, flowLine, gradeChips,
+  gradeForYear, gradeLine, gradeObservations, gradePercentile, gradeSlug, nextBrightLine, nextBrightYear, parseGradeSlug, yearLine,
 } from "./sajuGrade";
 import cutsJson from "./sajuGradeCuts.generated.json";
 import ranksJson from "./sajuGradeRanks.generated.json";
@@ -180,5 +180,49 @@ describe("birth time at a boundary (A5)", () => {
     expect(boundaryNotice(at(15, 34), 2026)).toBeNull(); // HOUR_BOUNDARY, 己未 either way: B → B
     expect(boundaryNotice(at(14, 30), 2026)).toBeNull();
     expect(boundaryNotice(computeChart({ calendar: "solar", year: 1995, month: 6, day: 1, time: null, gender: "female", place: seoul }), 2026)).toBeNull();
+  });
+});
+
+describe("card copy and the share address (A1, A4, B, C, E)", () => {
+  it("has a line per grade, 그해 for a year other than this one", () => {
+    expect(gradeLine("S", true)).toBe("올해 들어오는 기운이 내 명식의 빈칸을 고르게 채워 주는 해예요.");
+    expect(gradeLine("A", true)).toBe("빈칸 대부분이 채워지는 해예요. 조금씩 다듬으면 고르게 돌아요.");
+    expect(gradeLine("B", true)).toBe("채워지는 칸과 겹치는 칸이 섞인 해예요. 하나씩 쌓아 가기 좋아요.");
+    expect(gradeLine("C", true)).toBe("올해 기운이 이미 많은 쪽과 겹치는 해예요. 빈칸을 새로 모으는 때예요.");
+    expect(gradeLine("S", false)).toBe("그해 들어오는 기운이 내 명식의 빈칸을 고르게 채워 주는 해예요.");
+    expect(gradeLine("C", false)).toBe("그해 기운이 이미 많은 쪽과 겹치는 해예요. 빈칸을 새로 모으는 때예요.");
+    expect(GRADE_FIXED_LINE).toBe(
+      "등급은 사람이나 사주의 좋고 나쁨이 아니에요. 올해 들어오는 기운이 내 명식의 다섯 기운을 얼마나 고르게 채우고 잇는지를 스타로그 규칙으로 계산한 거예요. 해마다 바뀌어요.",
+    );
+    expect(GRADE_NOTICE).toBe("재미로 보는 계산이에요. 사람이나 사주의 좋고 나쁨, 앞으로 일어날 일을 정하지 않아요. 규칙은 '등급은 어떻게 나와요?'에 다 적어 두었어요.");
+  });
+
+  it("puts only a year and a grade in the share address: 2026–2035 × S·A·B·C, nothing else", () => {
+    expect(gradeSlug(2026, "S")).toBe("2026-s");
+    expect(GRADE_SLUGS).toHaveLength(40);
+    expect(GRADE_SLUGS[0]).toBe("2026-s");
+    expect(GRADE_SLUGS.at(-1)).toBe("2035-c");
+    expect(parseGradeSlug("2028-a")).toEqual({ year: 2028, gz: "戊申", ko: "무신", grade: "A", nickname: "차오르는 달 사주주" });
+    for (const bad of ["2025-s", "2036-a", "2026-d", "2026-S", "2026s", "1990-05-15", "2026-s-1990", "", "constructor"]) expect(parseGradeSlug(bad), bad).toBeNull();
+  });
+
+  it("names the next S·A year, or says truthfully when there is none in 60 years", () => {
+    expect(nextBrightLine(B, 2026)).toBe("다음 S·A 해: 2028 무신년");
+    // a 壬申 year reads as the year it is, never masked
+    expect(nextBrightLine(chart("乙己己庚", "丑丑亥午"), 2031)).toBe("다음 S·A 해: 2052 임신년");
+    // one of the 16 charts with every glyph 토 (measured: none of them gets S or A in 60 years; B and C only)
+    const earth = chart("戊己戊己", "辰未辰未");
+    expect(nextBrightYear(earth, 2026)).toBeNull();
+    expect(nextBrightLine(earth, 2026)).toBe(
+      "60가지 해를 다 돌아도 이 명식에는 S·A가 나오는 해가 없어요. 여덟 글자가 모두 흙(토)이라 고르기 몫이 0으로 잡히는 규칙 때문이에요. 등급은 해마다 B와 C 사이에서 바뀌어요.",
+    );
+  });
+
+  it("compares a friend's grade with mine for the same year, and when mine reaches theirs", () => {
+    // B (hour unknown): 2026 C, 2027 B, 2028 A, and no S in all 60 years (measured)
+    expect(compareLine("A", B, 2026)).toBe("친구 A · 나 C — 2028년엔 나도 A예요");
+    expect(compareLine("S", B, 2026)).toBe("친구 S · 나 C"); // never S: no promise of one
+    expect(compareLine("C", B, 2026)).toBe("친구 C · 나 C — 같은 등급이에요");
+    expect(compareLine("B", B, 2028)).toBe("친구 B · 나 A");
   });
 });

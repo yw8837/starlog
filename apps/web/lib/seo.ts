@@ -178,6 +178,9 @@ export function sitemapEntries({ premium = false, now = Date.now() }: { premium?
     ...Object.values(INFO_PAGES).map((page): SitemapEntry => ({ path: page.path, lastModified: PAGE_UPDATED[page.path], changeFrequency: "monthly", priority: 0.6 })),
     // 2027년 나의 키워드: the form only; its 60 일주 result pages are noindex (NOINDEX_FOLLOW), so not listed.
     { path: KEYWORD_PATH, changeFrequency: "monthly", priority: 0.7 },
+    // 올해의 사주 등급 and its rule page; the 40 shared cards (/saju/grade/<year>-<grade>) are noindex, so not listed.
+    { path: "/saju/grade", changeFrequency: "monthly", priority: 0.7 },
+    { path: "/saju/grade/how", changeFrequency: "monthly", priority: 0.5 },
     { path: "/pricing", lastModified: PAGE_UPDATED["/pricing"], changeFrequency: "monthly", priority: 0.5 },
     ...(premium ? PREMIUM_IDS.map((id): SitemapEntry => ({ path: premiumPath(id), changeFrequency: "monthly", priority: 0.5 })) : []),
     // No lastModified: the only date the policies carry is their 시행일, which can be ahead of today and is not when the text changed.

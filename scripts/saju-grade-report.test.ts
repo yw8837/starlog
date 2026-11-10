@@ -67,10 +67,12 @@ function measure(hourKnown: boolean): Measured {
     return pct(s, perMaster[e]! * 60);
   });
   const kinds = [0, 0, 0, 0, 0];
+  let neverBright = 0;
   for (let i = 0; i < size; i++) {
     const seen = new Set<number>();
     for (let y = 0; y < 60; y++) seen.add(grades[60 * i + y]!);
     kinds[seen.size]!++;
+    if (!seen.has(0) && !seen.has(1)) neverBright++;
   }
 
   // per day master in 丙午 2026, 丁未 2027, 戊申 2028 (for the how page)
@@ -93,6 +95,7 @@ function measure(hourKnown: boolean): Measured {
     `10년 동안 A 이상이 한 번도 없는 명식: 최대 ${fixed(pct(worstNoA, size))}% · 10년 동안 S를 한 번 이상: 최소 ${fixed(pct(leastS, size))}%`,
     `60해 평균 S 비율(일간 목/화/토/금/수): ${meanS.map(fixed).join("/")}%`,
     `60해 동안 받는 등급 종류(1/2/3/4종): ${kinds.slice(1).map((n) => fixed(pct(n, size))).join(" / ")}%`,
+    `60해 동안 S·A가 한 번도 없는 명식: ${neverBright}개`,
     ...yearRows,
   ].join("\n"));
 

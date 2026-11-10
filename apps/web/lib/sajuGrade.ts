@@ -1,5 +1,5 @@
 import {
-  GRADE_POPULATION, SIXTY_GANZHI, adjacentPairs, elementCountsOf, ganzhiKo, ganzhiOfYear, gradeChartOf, gradeOf, seunAt, stemElement,
+  GRADE_LETTERS, GRADE_POPULATION, SIXTY_GANZHI, adjacentPairs, elementCountsOf, ganzhiKo, ganzhiOfYear, gradeChartOf, gradeOf, seunAt, stemElement,
   branchElement, yearScores, type GradeChart, type GradeCuts, type GradeLetter, type PillarKey, type SajuChart, type SajuElement,
 } from "@starlog/core";
 import { withParticle, particle } from "./korean";
@@ -52,6 +52,51 @@ export function gradeChips(chart: GradeChart, fromYear: number, count = 10): Gra
   return Array.from({ length: count }, (_, i) => gradesOf(chart, scores, fromYear + i));
 }
 
+/** "2026 병오년" */
+export const yearName = (g: Pick<GradeYear, "year" | "ko">) => `${g.year} ${g.ko}년`;
+
+// ---- card copy (A1, A4, E): fixed lines, never about a person's worth or what will happen ----
+
+const LINE: Readonly<Record<GradeLetter, string>> = {
+  S: "올해 들어오는 기운이 내 명식의 빈칸을 고르게 채워 주는 해예요.",
+  A: "빈칸 대부분이 채워지는 해예요. 조금씩 다듬으면 고르게 돌아요.",
+  B: "채워지는 칸과 겹치는 칸이 섞인 해예요. 하나씩 쌓아 가기 좋아요.",
+  C: "올해 기운이 이미 많은 쪽과 겹치는 해예요. 빈칸을 새로 모으는 때예요.",
+};
+
+/** The card's line under the grade (A4); a chip's other year says 그해. */
+export const gradeLine = (grade: GradeLetter, thisYear: boolean): string => (thisYear ? LINE[grade] : LINE[grade].replace(/^올해/, "그해"));
+
+/** Under the card, always (A1). */
+export const GRADE_FIXED_LINE =
+  "등급은 사람이나 사주의 좋고 나쁨이 아니에요. 올해 들어오는 기운이 내 명식의 다섯 기운을 얼마나 고르게 채우고 잇는지를 스타로그 규칙으로 계산한 거예요. 해마다 바뀌어요.";
+
+/** The entertainment notice at the end (E). */
+export const GRADE_NOTICE = "재미로 보는 계산이에요. 사람이나 사주의 좋고 나쁨, 앞으로 일어날 일을 정하지 않아요. 규칙은 '등급은 어떻게 나와요?'에 다 적어 두었어요.";
+
+// ---- the share address (C): a year and a grade, nothing about the person ----
+
+/** The years a shared card may name. */
+export const GRADE_YEARS = { first: 2026, last: 2035 } as const;
+
+export const gradeSlug = (year: number, grade: GradeLetter) => `${year}-${grade.toLowerCase()}`;
+
+/** 2026-s … 2035-c, the 40 shared cards. */
+export const GRADE_SLUGS: readonly string[] = Array.from({ length: GRADE_YEARS.last - GRADE_YEARS.first + 1 }, (_, i) => GRADE_YEARS.first + i).flatMap(
+  (year) => GRADE_LETTERS.map((grade) => gradeSlug(year, grade)),
+);
+
+/** A shared card's year and grade, or null for any other address. */
+export function parseGradeSlug(slug: string): GradeYear | null {
+  const m = /^(\d{4})-([sabc])$/.exec(slug);
+  if (!m) return null;
+  const year = Number(m[1]);
+  if (year < GRADE_YEARS.first || year > GRADE_YEARS.last) return null;
+  const grade = m[2]!.toUpperCase() as GradeLetter;
+  const gz = ganzhiOfYear(year);
+  return { year, gz, ko: ganzhiKo(gz), grade, nickname: GRADE_NICKNAME[grade] };
+}
+
 /** The first S or A year after `afterYear` within one 60-year round, or null when the chart has none. */
 export function nextBrightYear(chart: GradeChart, afterYear: number): GradeYear | null {
   const scores = yearScores(chart);
@@ -60,6 +105,40 @@ export function nextBrightYear(chart: GradeChart, afterYear: number): GradeYear 
     if (found.grade === "S" || found.grade === "A") return found;
   }
   return null;
+}
+
+const ELEMENT_COUNT_WORD = ["", "한", "두", "세", "네", "다섯", "여섯", "일곱", "여덟"] as const;
+
+/**
+ * The end of the observations: the next S or A year after `year`, or, for a chart that never gets one (16 of 561,600 with the
+ * hour known, every glyph 토; none without it), that it does not and which grades it gets instead.
+ */
+export function nextBrightLine(chart: GradeChart, year: number): string {
+  const next = nextBrightYear(chart, year);
+  if (next) return `다음 S·A 해: ${yearName(next)}`;
+  const got = new Set(gradeChips(chart, year, 60).map((g) => g.grade));
+  const kinds = GRADE_LETTERS.filter((g) => got.has(g));
+  const counts = elementCountsOf(chart);
+  const only = ELEMENTS.find((e) => counts[e] === chart.stems.length * 2);
+  const why = only ? ` ${ELEMENT_COUNT_WORD[chart.stems.length * 2]} 글자가 모두 ${label(only)}${particle(ELEMENT_WORD[only], "이/가") === "이" ? "이라" : "라"} 고르기 몫이 0으로 잡히는 규칙 때문이에요.` : "";
+  return `60가지 해를 다 돌아도 이 명식에는 S·A가 나오는 해가 없어요.${why} 등급은 해마다 ${kinds.join("와 ")} 사이에서 바뀌어요.`;
+}
+
+/**
+ * The line over a visitor's own card on a shared one (C): the friend's grade (from the address) and mine for the same year;
+ * when the friend's is higher, the next year mine is at least as high.
+ */
+export function compareLine(friend: GradeLetter, chart: GradeChart, year: number): string {
+  const mine = gradeForYear(chart, year).grade;
+  const head = `친구 ${friend} · 나 ${mine}`;
+  if (mine === friend) return `${head} — 같은 등급이에요`;
+  if (GRADE_LETTERS.indexOf(mine) < GRADE_LETTERS.indexOf(friend)) return head;
+  const scores = yearScores(chart);
+  for (let y = year + 1; y <= year + 60; y++) {
+    const then = gradesOf(chart, scores, y);
+    if (GRADE_LETTERS.indexOf(then.grade) <= GRADE_LETTERS.indexOf(friend)) return `${head} — ${y}년엔 나도 ${then.grade}예요`;
+  }
+  return head;
 }
 
 // ---- observations (B.5): the grade's own ingredients in plain words, never the grade, a score or a share ----

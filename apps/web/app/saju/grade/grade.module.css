@@ -1,0 +1,409 @@
+/* 올해의 사주 등급 (/saju/grade, its shared cards and /saju/grade/how). Phone first: 375px, one column. */
+
+.screen {
+  display: grid;
+  gap: 24px;
+  padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px));
+}
+
+.intro {
+  display: grid;
+  gap: 6px;
+  text-align: center;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--fs-title);
+  line-height: 1.35;
+}
+
+.lead {
+  margin: 0;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+}
+
+.view {
+  display: grid;
+  gap: 20px;
+}
+
+.placeholder {
+  min-height: 560px;
+}
+
+.failed {
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--glass-line);
+  border-radius: 16px;
+  background: var(--glass);
+  line-height: 1.6;
+}
+
+.exampleNote {
+  margin: -8px 0 0;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+  text-align: center;
+}
+
+.fixed {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--glass);
+  color: var(--ink-sub);
+  font-size: 14px;
+  line-height: 1.65;
+  word-break: keep-all;
+}
+
+/* 10-year chips: one row that scrolls sideways, the page itself never does */
+.chips {
+  display: flex;
+  gap: 8px;
+  margin: 0 calc(-1 * var(--gutter));
+  padding: 2px var(--gutter) 6px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: var(--gutter);
+  scrollbar-width: none;
+}
+
+.chips::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  display: grid;
+  flex: 0 0 auto;
+  justify-items: center;
+  gap: 1px;
+  min-width: 64px;
+  min-height: 64px;
+  padding: 8px 10px;
+  border: 1px solid var(--glass-line);
+  border-radius: 14px;
+  background: var(--glass);
+  color: var(--ink);
+  font: inherit;
+  scroll-snap-align: start;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.chip[aria-pressed="true"] {
+  border-color: var(--gold);
+  background: var(--surface-light);
+}
+
+.chip:focus-visible,
+.row:focus-visible,
+.howSummary:focus-visible,
+.howLink:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.chipYear {
+  font-size: 12px;
+  color: var(--ink-sub);
+}
+
+.chipKo {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.chipGrade {
+  color: var(--gold);
+  font-family: var(--font-display), "Noto Serif KR", serif;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.block {
+  display: grid;
+  gap: 10px;
+}
+
+.blockTitle {
+  margin: 0;
+  color: var(--gold);
+  font-size: 17px;
+  line-height: 1.4;
+}
+
+.prose {
+  margin: 0;
+  color: var(--ink-sub);
+  line-height: 1.7;
+  word-break: keep-all;
+}
+
+.observations {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.observations li {
+  padding: 12px 14px;
+  border: 1px solid var(--glass-line);
+  border-radius: 14px;
+  background: var(--glass);
+  font-size: var(--fs-body);
+  line-height: 1.6;
+  word-break: keep-all;
+}
+
+.observations .next {
+  border-style: dashed;
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.boundary {
+  margin: 0;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+}
+
+/* 이 등급인 이유 (locked, not on sale yet) */
+.locked {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--glass-line);
+  border-radius: 18px;
+  background: var(--glass);
+}
+
+.lockList {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lockList li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-sub);
+  font-size: var(--fs-body);
+}
+
+.lockScope {
+  margin: 0;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
+.soon {
+  justify-self: start;
+  margin: 0;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--surface-light);
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+/* 등급은 어떻게 나와요? */
+.how {
+  border: 1px solid var(--glass-line);
+  border-radius: 16px;
+  background: var(--glass);
+}
+
+.howSummary {
+  min-height: 48px;
+  padding: 14px 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.howBody {
+  display: grid;
+  gap: 10px;
+  padding: 0 16px 16px;
+  color: var(--ink-sub);
+  font-size: 14px;
+  line-height: 1.7;
+  word-break: keep-all;
+}
+
+.howBody p {
+  margin: 0;
+}
+
+.howBody p:empty {
+  display: none;
+}
+
+.howLink {
+  color: var(--gold);
+  font-weight: 700;
+}
+
+/* the fields and 친구 생일로 해 보기 */
+.find {
+  display: grid;
+  gap: 12px;
+  scroll-margin-top: 16px;
+}
+
+/* 다음 풀이: a glass row like PremiumRows' */
+.row {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  min-height: 64px;
+  padding: 14px 44px 14px 18px;
+  border: 1px solid var(--glass-line);
+  border-radius: 18px;
+  background: var(--glass);
+  color: var(--ink);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.row:hover {
+  border-color: var(--gold);
+}
+
+.rowHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 10px;
+}
+
+.price {
+  padding: 1px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.rowLine {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.5;
+}
+
+.arrow {
+  position: absolute;
+  top: 50%;
+  right: 18px;
+  transform: translateY(-50%);
+  color: var(--ink-sub);
+}
+
+.notice {
+  margin: 0;
+  color: var(--ink-sub);
+  font-size: 13px;
+  line-height: 1.65;
+  text-align: center;
+  word-break: keep-all;
+}
+
+/* shared card and how page */
+.shareRow {
+  display: grid;
+  gap: 8px;
+}
+
+.shareNote {
+  margin: 0;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  text-align: center;
+}
+
+.compare {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--surface-light);
+  color: var(--ink);
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.table caption {
+  margin-bottom: 6px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  text-align: left;
+}
+
+.table th,
+.table td {
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--glass-line);
+  text-align: center;
+}
+
+.table th:first-child,
+.table td:first-child {
+  text-align: left;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--ink-sub);
+  line-height: 1.7;
+}
+
+.sources {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--ink-sub);
+  font-size: 14px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.mark {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--surface-light);
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 700;
+}
