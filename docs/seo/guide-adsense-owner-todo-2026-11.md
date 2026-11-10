@@ -12,3 +12,17 @@
 
 - [ ] TODO: 사주 글 31편에 그림이 없다. 캐릭터·카드 그림은 오너가 그리므로 생성하지 않았다. 넣을 그림이 있으면 경로를 알려 준다(데이터 차트·SVG 도표는 만들어도 된다).
 - [ ] TODO: '가상의' 예시를 실제 사례로 바꿀지. 실제 사례(동의받은 테스터 풀이 등)가 오면 바꾼다. 해당 페이지 목록은 아래 '가상의 예시' 절에 있다.
+
+## '가상의' 예시를 쓰는 페이지 (2026-11-10 기준 32편, 바꾸지 않고 그대로 둠)
+
+실제 사례가 생기면 아래 페이지의 '가상의' 예시를 바꿀 수 있다. 지금 예시는 모두 '가상의'라고 밝혀 두었고, 사주 예시 명식은 자동 검사가 앱 엔진으로 다시 계산한다. 감사 보고서는 33페이지라고 했지만 저장소 글 데이터에서 찾은 것은 32편이다(나머지 1곳은 확인 못 함).
+
+- 타로 6편: `the-star`, `reunion-tarot`, `the-magician`, `the-chariot`, `the-tower`, `the-moon`
+- 사주 개념 16편: `heavenly-stems`, `earthly-branches`, `day-master`, `ten-gods`, `daewoon`, `saju-vs-astrology`, `manseryeok`, `saju-compatibility`, `reunion-saju`, `new-year-fortune`, `four-pillars`, `branch-relations`, `twelve-stages`, `yongsin`, `wolun-iljin`, `saju-glossary`
+- 일간 10편: `day-master-gapmok`, `day-master-eulmok`, `day-master-byeonghwa`, `day-master-jeonghwa`, `day-master-muto`, `day-master-gito`, `day-master-gyeonggeum`, `day-master-singeum`, `day-master-imsu`, `day-master-gyesu`
+
+## 원본 자료 글 공개 일정 (publishAt)
+
+- 2026-11-12 `manseryeok-engine-comparison`, 2026-11-16 `jeolip-times-2026-2027`, 2026-11-19 `korea-dst-standard-time`, 2026-11-23 `birthplace-longitude-table`
+- 글 주소와 사이트맵은 그날 00:00(한국 시각)부터 요청마다 열린다. 홈·탭 목록, llms-full, RSS는 빌드 때 정해지므로 그날 이후 배포해야 목록에 뜬다.
+- TODO: 각 공개일 이후 배포 일정 확인. 100건 교차검증 결과(`scripts/crosscheck-saju/results.json`, `docs/research/saju-calendar-crosscheck-2026-10.md`)도 같은 방식의 다섯 번째 글 후보다.
