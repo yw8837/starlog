@@ -56,7 +56,8 @@ test("home: the one hook, then 타로 · 사주 above the fold, the free tests, 
   expect(hookBox.y).toBeGreaterThanOrEqual(0);
   expect(hookBox.y + hookBox.height).toBeLessThanOrEqual(fold);
   expect(sajuBox.y + sajuBox.height).toBeLessThanOrEqual(fold);
-  expect(tarotBox.width * tarotBox.height).toBeGreaterThan(1.4 * todayBox.width * todayBox.height);
+  // The entries are a step shorter beside the hook (spec 3.1 wireframe: about 120px), still clearly bigger than a quick card.
+  expect(tarotBox.width * tarotBox.height).toBeGreaterThan(1.2 * todayBox.width * todayBox.height);
   expect(tarotBox.height).toBeGreaterThan(110);
   // The quick cards are equal halves.
   expect(Math.abs(birthBox.width - todayBox.width)).toBeLessThanOrEqual(1);
