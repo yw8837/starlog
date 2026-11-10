@@ -166,7 +166,7 @@ function GradeResult({
           {observations.map((line) => (
             <li key={line}>{line}</li>
           ))}
-          <li className={s.next}>{nextBrightLine(gc, shown.year)}</li>
+          <li className={s.next}>{nextBrightLine(gc, shown.year, chips.at(-1)!.year)}</li>
         </ul>
         {boundary ? <p className={s.boundary}>{boundary.message}</p> : null}
       </section>

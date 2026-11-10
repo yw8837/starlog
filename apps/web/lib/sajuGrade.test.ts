@@ -1,5 +1,5 @@
 import {
-  GRADE_POPULATION, SIXTY_GANZHI, computeChart, gradeCuts, gradeOf, scoreGradePopulation, yearScores, type GradeChart, type GradeCuts,
+  GRADE_POPULATION, SIXTY_GANZHI, computeChart, gradeChartOf, gradeCuts, gradeOf, scoreGradePopulation, yearScores, type GradeChart, type GradeCuts,
   type SajuElement,
 } from "@starlog/core";
 import { describe, expect, it } from "vitest";
@@ -19,6 +19,12 @@ const B = chart("丙甲丙", "午午寅");
 const C = chart("庚己戊丁", "申丑子巳");
 const ELEMENTS: readonly SajuElement[] = ["목", "화", "토", "금", "수"];
 const seoul = { name: "서울", longitude: 126.978 };
+const unknownHour = (year: number, month: number, day: number) =>
+  gradeChartOf(computeChart({ calendar: "solar", year, month, day, time: null, gender: "female", place: seoul }));
+/** 1983-01-10, hour unknown: B C B B B B C C B B from 2026, the next S·A 2040 (measured with the engine). */
+const FAR = unknownHour(1983, 1, 10);
+/** 1975-03-10, hour unknown: A in 2026, then B C C C B B C C C, the next S·A 2037. */
+const BRIGHT_THEN_FAR = unknownHour(1975, 3, 10);
 
 describe("grade and nickname (A4, 확정 사항 1)", () => {
   it("names the four grades", () => {
@@ -107,19 +113,34 @@ describe("three rule-made observations (B.5)", () => {
   /** A result promised. */
   const PROMISE = /(될|할|올|생길|이뤄질|풀릴|잘될)\s?(거|것)(예요|이에요|입니다)|이뤄져요|잘 풀려요|보장|약속/;
 
+  /** As the readings' validators do, a 간지 read as a year ("2052 임신년의") is masked first: 壬申 is not 임신·출산. */
+  const bannedHits = (sentence: string): string[] => {
+    const text = maskGanzhiReadings(sentence);
+    const out: string[] = [];
+    for (const [pattern, label] of SAJU_BLOCKLIST) if (pattern.test(text)) out.push(label);
+    for (const pattern of [GLANCE_GRADE, GLANCE_SCHOOL, GLANCE_REMEDY, WORTH, PROMISE]) if (pattern.test(text)) out.push(String(pattern).slice(0, 30));
+    blocklistViolations(text, "", out);
+    out.push(...nonHaeyoSentences(text).map((s) => `해요체 아님: ${s}`));
+    return out.map((o) => `${text} → ${o}`);
+  };
+
   it("every possible sentence (all splits of 6 and 8 glyphs × 60 세운) passes the banned-word checks", () => {
     expect(every.length).toBeGreaterThan(100);
-    // as the readings' validators do, a 간지 read as a year ("2052 임신년의") is masked first: 壬申 is not 임신·출산
-    const hits = every.flatMap((sentence) => {
-      const text = maskGanzhiReadings(sentence);
-      const out: string[] = [];
-      for (const [pattern, label] of SAJU_BLOCKLIST) if (pattern.test(text)) out.push(label);
-      for (const pattern of [GLANCE_GRADE, GLANCE_SCHOOL, GLANCE_REMEDY, WORTH, PROMISE]) if (pattern.test(text)) out.push(String(pattern).slice(0, 30));
-      blocklistViolations(text, "", out);
-      out.push(...nonHaeyoSentences(text).map((s) => `해요체 아님: ${s}`));
-      return out.map((o) => `${text} → ${o}`);
-    });
-    expect(hits).toEqual([]);
+    expect(every.flatMap(bannedHits)).toEqual([]);
+  });
+
+  it("the fixed line and every kind of next S·A line pass the banned-word checks too", () => {
+    const lines = [
+      GRADE_FIXED_LINE,
+      nextBrightLine(B, 2026),
+      nextBrightLine(FAR, 2026, 2035),
+      nextBrightLine(BRIGHT_THEN_FAR, 2026, 2035),
+      nextBrightLine(chart("戊己戊己", "辰未辰未"), 2026),
+      nextBrightLine(chart("乙己己庚", "丑丑亥午"), 2031),
+    ];
+    expect(new Set(lines).size).toBe(lines.length);
+    // they name 등급 itself by design (A1, A4); every other banned word is checked as for the observations
+    expect(lines.map((line) => line.replaceAll("등급", "□")).flatMap(bannedHits)).toEqual([]);
   });
 
   it("never names a grade, a score, a share or a person's worth", () => {
@@ -191,8 +212,9 @@ describe("card copy and the share address (A1, A4, B, C, E)", () => {
     expect(gradeLine("C", true)).toBe("올해 기운이 이미 많은 쪽과 겹치는 해예요. 빈칸을 새로 모으는 때예요.");
     expect(gradeLine("S", false)).toBe("그해 들어오는 기운이 내 명식의 빈칸을 고르게 채워 주는 해예요.");
     expect(gradeLine("C", false)).toBe("그해 기운이 이미 많은 쪽과 겹치는 해예요. 빈칸을 새로 모으는 때예요.");
+    // not 해마다 바뀌어요: about a quarter of charts keep one grade five years or more (review 3)
     expect(GRADE_FIXED_LINE).toBe(
-      "등급은 사람이나 사주의 좋고 나쁨이 아니에요. 올해 들어오는 기운이 내 명식의 다섯 기운을 얼마나 고르게 채우고 잇는지를 스타로그 규칙으로 계산한 거예요. 해마다 바뀌어요.",
+      "등급은 사람이나 사주의 좋고 나쁨이 아니에요. 올해 들어오는 기운이 내 명식의 다섯 기운을 얼마나 고르게 채우고 잇는지를 스타로그 규칙으로 계산한 거예요. 해마다 다시 계산해요.",
     );
     expect(GRADE_NOTICE).toBe("재미로 보는 계산이에요. 사람이나 사주의 좋고 나쁨, 앞으로 일어날 일을 정하지 않아요. 규칙은 '등급은 어떻게 나와요?'에 다 적어 두었어요.");
   });
@@ -225,13 +247,26 @@ describe("card copy and the share address (A1, A4, B, C, E)", () => {
   it("names the next S·A year, or says truthfully when there is none in 60 years", () => {
     expect(nextBrightLine(B, 2026)).toBe("다음 S·A 해: 2028 무신년");
     // a 壬申 year reads as the year it is, never masked
-    expect(nextBrightLine(chart("乙己己庚", "丑丑亥午"), 2031)).toBe("다음 S·A 해: 2052 임신년");
+    expect(nextBrightLine(chart("乙己己庚", "丑丑亥午"), 2031)).toBe("2032~2040년 칩에는 S·A가 없어요. 규칙으로는 다음이 2052 임신년이에요. 등급은 좋고 나쁨이 아니에요.");
+    expect(gradeForYear(chart("乙己己庚", "丑丑亥午"), 2031).grade).toMatch(/^[SA]$/);
     // one of the 16 charts with every glyph 토 (measured: none of them gets S or A in 60 years; B and C only)
     const earth = chart("戊己戊己", "辰未辰未");
     expect(nextBrightYear(earth, 2026)).toBeNull();
     expect(nextBrightLine(earth, 2026)).toBe(
-      "60가지 해를 다 돌아도 이 명식에는 S·A가 나오는 해가 없어요. 여덟 글자가 모두 흙(토)이라 고르기 몫이 0으로 잡히는 규칙 때문이에요. 등급은 해마다 B와 C 사이에서 바뀌어요.",
+      "60가지 해를 다 돌아도 이 명식에는 S·A가 나오는 해가 없어요. 여덟 글자가 모두 흙(토)이라 고르기 몫이 0으로 잡히는 규칙 때문이에요. 60가지 해 동안 등급은 B와 C만 나와요.",
     );
+  });
+
+  it("says first, kindly, when the next S·A year is past the ten chips (review 3: about 4.6% of charts)", () => {
+    expect(gradeChips(FAR, 2026).map((c) => c.grade).join("")).toBe("BCBBBBCCBB");
+    expect(nextBrightLine(FAR, 2026, 2035)).toBe("10년 칩 안에는 S·A가 없어요. 규칙으로는 다음이 2040 경신년이에요. 등급은 좋고 나쁨이 아니에요.");
+    expect(nextBrightLine(FAR, 2030, 2035)).toBe(nextBrightLine(FAR, 2026, 2035));
+    // this year is A: only the chips after it have none
+    expect(gradeChips(BRIGHT_THEN_FAR, 2026).map((c) => c.grade).join("")).toBe("ABCCCBBCCC");
+    expect(nextBrightLine(BRIGHT_THEN_FAR, 2026, 2035)).toBe("2027~2035년 칩에는 S·A가 없어요. 규칙으로는 다음이 2037 정사년이에요. 등급은 좋고 나쁨이 아니에요.");
+    // on the last chip, the next year is named as before; within the chips too
+    expect(nextBrightLine(FAR, 2035, 2035)).toBe("다음 S·A 해: 2040 경신년");
+    expect(nextBrightLine(B, 2026, 2035)).toBe("다음 S·A 해: 2028 무신년");
   });
 
   it("compares a friend's grade with mine for the same year, and when mine reaches theirs", () => {

@@ -18,7 +18,7 @@ describe("the FAQ on the 사주 등급", () => {
     const entry = entries.find((e) => e.id === "grade-c");
     expect(entry?.q).toBe("C가 나왔어요. 안 좋은 건가요?");
     const answer = entry?.a.join(" ") ?? "";
-    for (const part of ["아니에요", "좋은지 나쁜지를 매기지 않아요", "해마다 바뀌", "다음 S·A", "열 해 내내 C인 명식은 없었어요", "재미로 보는 계산"]) expect(answer, part).toContain(part);
+    for (const part of ["아니에요", "좋은지 나쁜지를 매기지 않아요", "해마다 다시 계산", "다음 S·A", "열 해 내내 C인 명식은 없었어요", "재미로 보는 계산"]) expect(answer, part).toContain(part);
     expect(answer).not.toMatch(/정확|과학적|베타|운명|반드시/);
     expect(entry?.link).toEqual({ href: "/saju/grade/how", label: "사주 등급 규칙" });
   });

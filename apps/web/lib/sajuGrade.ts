@@ -69,7 +69,7 @@ export const gradeLine = (grade: GradeLetter, thisYear: boolean): string => (thi
 
 /** Under the card, always (A1). */
 export const GRADE_FIXED_LINE =
-  "등급은 사람이나 사주의 좋고 나쁨이 아니에요. 올해 들어오는 기운이 내 명식의 다섯 기운을 얼마나 고르게 채우고 잇는지를 스타로그 규칙으로 계산한 거예요. 해마다 바뀌어요.";
+  "등급은 사람이나 사주의 좋고 나쁨이 아니에요. 올해 들어오는 기운이 내 명식의 다섯 기운을 얼마나 고르게 채우고 잇는지를 스타로그 규칙으로 계산한 거예요. 해마다 다시 계산해요.";
 
 /** The birth fields' consent on the grade screens (spec B). */
 export const GRADE_CONSENT = "출생 정보를 등급 계산에 쓰는 데 동의해요";
@@ -121,19 +121,27 @@ export function nextBrightYear(chart: GradeChart, afterYear: number): GradeYear 
 
 const ELEMENT_COUNT_WORD = ["", "한", "두", "세", "네", "다섯", "여섯", "일곱", "여덟"] as const;
 
+const bright = (g: GradeYear) => g.grade === "S" || g.grade === "A";
+
 /**
- * The end of the observations: the next S or A year after `year`, or, for a chart that never gets one (16 of 561,600 with the
- * hour known, every glyph 토; none without it), that it does not and which grades it gets instead.
+ * The end of the observations: the next S or A year after `year`, named while it is within the ten chips (to `lastChip`). Past
+ * them (about 4.6% of charts get none in ten years, review 3) it first says, kindly, that the chips hold none (or none after
+ * `year`), then the year the rule gives. For a chart that never gets one (16 of 561,600 with the hour known, every glyph 토; none
+ * without it), that it does not and which grades it gets instead.
  */
-export function nextBrightLine(chart: GradeChart, year: number): string {
+export function nextBrightLine(chart: GradeChart, year: number, lastChip = year + 9): string {
   const next = nextBrightYear(chart, year);
-  if (next) return `다음 S·A 해: ${yearName(next)}`;
+  if (next && (next.year <= lastChip || year >= lastChip)) return `다음 S·A 해: ${yearName(next)}`;
+  if (next) {
+    const none = !gradeChips(chart, lastChip - 9).some(bright);
+    return `${none ? "10년 칩 안에는" : `${year + 1}~${lastChip}년 칩에는`} S·A가 없어요. 규칙으로는 다음이 ${yearName(next)}이에요. 등급은 좋고 나쁨이 아니에요.`;
+  }
   const got = new Set(gradeChips(chart, year, 60).map((g) => g.grade));
   const kinds = GRADE_LETTERS.filter((g) => got.has(g));
   const counts = elementCountsOf(chart);
   const only = ELEMENTS.find((e) => counts[e] === chart.stems.length * 2);
   const why = only ? ` ${ELEMENT_COUNT_WORD[chart.stems.length * 2]} 글자가 모두 ${label(only)}${particle(ELEMENT_WORD[only], "이/가") === "이" ? "이라" : "라"} 고르기 몫이 0으로 잡히는 규칙 때문이에요.` : "";
-  return `60가지 해를 다 돌아도 이 명식에는 S·A가 나오는 해가 없어요.${why} 등급은 해마다 ${kinds.join("와 ")} 사이에서 바뀌어요.`;
+  return `60가지 해를 다 돌아도 이 명식에는 S·A가 나오는 해가 없어요.${why} 60가지 해 동안 등급은 ${kinds.join("와 ")}만 나와요.`;
 }
 
 /**
