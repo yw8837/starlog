@@ -120,7 +120,7 @@ describe("sharing a premium record", () => {
     expect((await sharedBody("match0002")).body).toEqual({ product: "match", relation: "friend" });
   });
 
-  it("공유하기 is the record's one prominent button, and a 9:16 story image goes out with the same body (sales 2026-11-10 item 4)", async () => {
+  it("a 9:16 story image goes out with the same body; 공유하기 stays a secondary (the screen's one gold is its own, e2e @screens) (sales 2026-11-10 item 4)", async () => {
     seed([YEAR]);
     const fetchMock = vi.fn(async (url: string, _init?: RequestInit) =>
       String(url) === "/api/share"
@@ -133,7 +133,7 @@ describe("sharing a premium record", () => {
     URL.revokeObjectURL = vi.fn();
     render(<LocalChapter id="year0001" />);
     const share = screen.getByRole("button", { name: "공유하기" });
-    expect(share.className).toContain("primary");
+    expect(share.className).not.toContain("primary");
     fireEvent.click(share);
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "공유 링크 만들기", hidden: true }));

@@ -114,7 +114,6 @@ export function PremiumChapterView({ chapter, followUp, checkin, rating, shareab
               {share ? (
                 <ShareResultButton
                   kind="premium"
-                  primary
                   text={`${SITE.nameKo} · ${PREMIUM[chapter.kind].name}`}
                   {...share}
                   // The image goes with the reading's own link, never the product page (owner 2026-10-23).
