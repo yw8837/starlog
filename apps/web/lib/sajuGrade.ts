@@ -146,7 +146,8 @@ export function nextBrightLine(chart: GradeChart, year: number, lastChip = year 
 
 /**
  * The line over a visitor's own card on a shared one (C): the friend's grade (from the address) and mine for the same year;
- * when the friend's is higher, the next year mine is at least as high.
+ * when the friend's is higher, the next year mine is at least as high: 나도 when it is the friend's very grade, 나는 when it is
+ * above it (never "나도 S" to a friend's A, review 7).
  */
 export function compareLine(friend: GradeLetter, chart: GradeChart, year: number): string {
   const mine = gradeForYear(chart, year).grade;
@@ -156,7 +157,7 @@ export function compareLine(friend: GradeLetter, chart: GradeChart, year: number
   const scores = yearScores(chart);
   for (let y = year + 1; y <= year + 60; y++) {
     const then = gradesOf(chart, scores, y);
-    if (GRADE_LETTERS.indexOf(then.grade) <= GRADE_LETTERS.indexOf(friend)) return `${head} — ${y}년엔 나도 ${then.grade}예요`;
+    if (GRADE_LETTERS.indexOf(then.grade) <= GRADE_LETTERS.indexOf(friend)) return `${head} — ${y}년엔 ${then.grade === friend ? "나도" : "나는"} ${then.grade}예요`;
   }
   return head;
 }

@@ -314,4 +314,19 @@ describe("card copy and the share address (A1, A4, B, C, E)", () => {
     expect(compareLine("C", B, 2026)).toBe("친구 C · 나 C — 같은 등급이에요");
     expect(compareLine("B", B, 2028)).toBe("친구 B · 나 A");
   });
+
+  it("says 나도 only when mine reaches the friend's very grade; when it jumps above, 나는 (review 7)", () => {
+    // a year where mine is C and the next is A or S, against a friend's B
+    const cases = [A, B, C, FAR, BRIGHT_THEN_FAR].flatMap((g) =>
+      Array.from({ length: 59 }, (_, i) => 2026 + i)
+        .filter((y) => gradeForYear(g, y).grade === "C" && ["S", "A"].includes(gradeForYear(g, y + 1).grade))
+        .map((y) => [g, y] as const),
+    );
+    expect(cases.length).toBeGreaterThan(0);
+    for (const [g, y] of cases) {
+      const then = gradeForYear(g, y + 1).grade;
+      expect(compareLine("B", g, y)).toBe(`친구 B · 나 C — ${y + 1}년엔 나는 ${then}예요`);
+      expect(compareLine("B", g, y)).not.toMatch(/나도 [SA]/);
+    }
+  });
 });
