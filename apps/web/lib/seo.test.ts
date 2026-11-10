@@ -4,7 +4,7 @@ import { dynamic as robotsDynamic, GET as robotsRoute } from "@/app/robots.txt/r
 import { dynamic as sitemapDynamic, GET as sitemapRoute } from "@/app/sitemap.xml/route";
 import { SITE } from "./config";
 import { GUIDE_ARTICLES, GUIDE_CATEGORIES } from "./guide";
-import { FEED_URL, absoluteUrl } from "./hosts";
+import { FEED_URL, GUIDE_HOST_PAGES, absoluteUrl } from "./hosts";
 import { NAMED_CRAWLERS, daumWebmasterLine, robotsTxt } from "./robots";
 import { pageMetadata, siteVerification, sitemapEntries, sitemapEntriesFor, sitemapXml } from "./seo";
 
@@ -92,11 +92,12 @@ describe("sitemap on the root domain", () => {
   const urls = entries.map((entry) => entry.url);
   const entry = (path: string) => entries.find((e) => e.url === absoluteUrl(path));
 
-  it("lists both guide tabs (the tarot tab at the root domain's /), the editorial page and every article on the root domain, and nothing else", () => {
+  it("lists both guide tabs (the tarot tab at the root domain's /), the editorial page, every article, and the policies and 문의 on the root domain, and nothing else", () => {
     expect(urls).toEqual(expect.arrayContaining([`${GUIDE}/`, `${GUIDE}/guide/saju`, `${GUIDE}/guide/about`]));
     for (const article of GUIDE_ARTICLES) expect(urls, article.slug).toContain(`${GUIDE}/guide/${article.slug}`);
-    expect(urls).toHaveLength(3 + GUIDE_ARTICLES.length);
-    expect(urls.filter((url) => url !== `${GUIDE}/`).every((url) => url.startsWith(`${GUIDE}/guide/`))).toBe(true);
+    for (const path of GUIDE_HOST_PAGES) expect(urls, path).toContain(`${GUIDE}${path}`);
+    expect(urls).toHaveLength(3 + GUIDE_ARTICLES.length + GUIDE_HOST_PAGES.length);
+    expect(urls.filter((url) => url !== `${GUIDE}/` && !GUIDE_HOST_PAGES.some((path) => url === `${GUIDE}${path}`)).every((url) => url.startsWith(`${GUIDE}/guide/`))).toBe(true);
   });
 
   it("includes every guide article with its updated date as lastmod, and each tab with its newest article's", () => {
@@ -142,9 +143,11 @@ describe("sitemap.xml route", () => {
   it("splits the entries by host and together they are every indexable page", () => {
     const app = sitemapEntriesFor("app").map((e) => e.path);
     const guide = sitemapEntriesFor("guide").map((e) => e.path);
-    expect(guide.every((path) => path.startsWith("/guide/"))).toBe(true);
+    const both = GUIDE_HOST_PAGES as readonly string[];
+    expect(guide.filter((path) => !both.includes(path)).every((path) => path.startsWith("/guide/"))).toBe(true);
     expect(app.some((path) => path.startsWith("/guide"))).toBe(false);
-    expect([...app, ...guide].sort()).toEqual(sitemapEntries().map((e) => e.path).sort());
+    // The policies and 문의 are on both, each host's own copy.
+    expect([...app, ...guide.filter((path) => !both.includes(path))].sort()).toEqual(sitemapEntries().map((e) => e.path).sort());
   });
 
   it("never lists a lastmod that is still ahead, on either host", () => {

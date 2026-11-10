@@ -27,19 +27,20 @@ const ANALYTICS_SETTING = { href: "/privacy#analytics", label: "방문 통계 �
 const LINKS: ReadonlyArray<FooterLink> = [...SERVICE_LINKS, ...LEGAL_LINKS].map((link) => ({ ...link, label: SHORT_LABEL[link.href] ?? link.label }));
 
 /**
- * On the guide host, after 가이드 글: how the guide is written and checked, and where to write (the editorial page's
- * #contact), the pages a reviewer of the root domain looks for next to the operator's page and the policies.
+ * On the guide host: the guide's own pages, 문의 and the two policies (all served on the root domain itself), and the app
+ * once, at the end (AdSense audit 2026-11-06: the root domain read as a funnel, with about a dozen app links on a page).
  */
 const GUIDE_LINKS: ReadonlyArray<FooterLink> = [
+  { href: guideIndexPath("tarot"), label: "타로 가이드" },
+  { href: guideIndexPath("saju"), label: "사주 가이드" },
   { href: GUIDE_ABOUT_PATH, label: "편집 원칙" },
-  { href: `${GUIDE_ABOUT_PATH}#contact`, label: "문의" },
+  { href: "/contact", label: "문의" },
+  { href: "/terms", label: "이용약관" },
+  { href: "/privacy", label: "개인정보처리방침", emphasis: true },
+  { href: INFO_PAGES.about.path, label: `${SITE.nameKo} 앱 소개` },
 ];
 
-const linksFor = (host: SiteHost | "either"): ReadonlyArray<FooterLink> => {
-  if (host !== "guide") return LINKS;
-  const at = LINKS.findIndex((link) => link.href === guideIndexPath("tarot")) + 1;
-  return [...LINKS.slice(0, at), ...GUIDE_LINKS, ...LINKS.slice(at)];
-};
+const linksFor = (host: SiteHost | "either"): ReadonlyArray<FooterLink> => (host === "guide" ? GUIDE_LINKS : LINKS);
 
 /**
  * One block: the wordmark and a one-line tagline, one wrapped row of links, then the business
@@ -66,7 +67,7 @@ export function Footer({ host = "app" }: { host?: SiteHost | "either" }) {
             {linksFor(host).map((link) => (
               <Fragment key={link.href}>
                 <li>
-                  {/* The root domain renders this footer on /about, /privacy and /terms too (F-05). */}
+                  {/* The root domain renders this footer on /privacy, /terms and /contact too (F-05). */}
                   <Link href={linkHref(link.href, host)} prefetch={guideHostServes(link.href) ? undefined : false} className={styles.link}>
                     {link.emphasis ? <strong className={styles.strong}>{link.label}</strong> : link.label}
                   </Link>

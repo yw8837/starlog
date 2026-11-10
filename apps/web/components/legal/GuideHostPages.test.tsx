@@ -2,18 +2,19 @@
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AboutPage from "@/app/about/page";
+import ContactPage from "@/app/contact/page";
 import PrivacyPage from "@/app/privacy/page";
 import TermsPage from "@/app/terms/page";
 import { SITE } from "@/lib/config";
 import { GUIDE_HOST_PAGES, guideHostServes } from "@/lib/hosts";
 
 /**
- * /about, /privacy and /terms are served on the root domain too (GUIDE_HOST_PAGES), from the same HTML as on the app host,
+ * /privacy, /terms and /contact are served on the root domain too (GUIDE_HOST_PAGES), from the same HTML as on the app host,
  * and every other app path is a redirect from there (lib/hostRoutes.ts). So with the hosts split, every link on them names its
  * host: absolute, a fragment, or a path the root domain serves itself (AdSense audit 2026-10-27: 11 relative app links
- * took that redirect hop).
+ * took that redirect hop). The app's /about (the root domain's /about moves to 가이드 소개 since 2026-11-10) keeps the same rule.
  */
-const PAGES = { "/about": AboutPage, "/privacy": PrivacyPage, "/terms": TermsPage } as const;
+const PAGES = { "/privacy": PrivacyPage, "/terms": TermsPage, "/contact": ContactPage } as const;
 
 const hrefs = (root: ParentNode) => [...root.querySelectorAll("a[href]")].map((a) => a.getAttribute("href") ?? "");
 
@@ -35,7 +36,7 @@ describe("the app pages the root domain serves itself", () => {
     expect(Object.keys(PAGES)).toEqual([...GUIDE_HOST_PAGES]);
   });
 
-  for (const [path, Page] of Object.entries(PAGES)) {
+  for (const [path, Page] of Object.entries({ ...PAGES, "/about": AboutPage })) {
     it(`${path}: with the hosts split, no link is a relative app path the root domain would redirect`, () => {
       vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
       const { container } = render(<Page />);

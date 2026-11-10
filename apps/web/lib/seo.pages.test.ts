@@ -27,7 +27,7 @@ import { metadata as nowMeta } from "@/app/now/page";
 import { metadata as ownerMeta } from "@/app/owner/page";
 import { metadata as homeMeta } from "@/app/page";
 import { metadata as pricingMeta } from "@/app/pricing/page";
-import { metadata as privacyMeta } from "@/app/privacy/page";
+import { generateMetadata as privacyMetadata } from "@/app/privacy/page";
 import { generateMetadata as rankingSignMeta } from "@/app/ranking/[sign]/page";
 import { metadata as rankingMeta } from "@/app/ranking/page";
 import { metadata as refundMeta } from "@/app/refund/page";
@@ -38,7 +38,8 @@ import { metadata as tarotDrawMeta } from "@/app/tarot/draw/page";
 import { metadata as tarotNewMeta } from "@/app/tarot/new/page";
 import { metadata as tarotSituationMeta } from "@/app/tarot/new/situation/page";
 import { metadata as tarotResultMeta } from "@/app/tarot/result/page";
-import { metadata as termsMeta } from "@/app/terms/page";
+import { generateMetadata as termsMetadata } from "@/app/terms/page";
+import { generateMetadata as contactMetadata } from "@/app/contact/page";
 import { metadata as todayMeta } from "@/app/today/page";
 import { BIRTH_CARDS } from "./birthCard";
 import { SITE } from "./config";
@@ -65,6 +66,19 @@ const { resolveRobots } = createRequire(import.meta.url)("next/dist/lib/metadata
 
 const params = <T extends Record<string, string>>(value: T) => ({ params: Promise.resolve(value) }) as never;
 
+/** The Host header the pages both hosts serve (GUIDE_HOST_PAGES) read for their canonical: the app host unless a test says so. */
+const request = vi.hoisted(() => ({ host: "starlog.yeolmaeapps.kr" }));
+vi.mock("next/headers", () => ({ headers: async () => new Headers({ host: request.host }) }));
+
+/** Metadata of a page both hosts serve, as one host serves it. */
+const SERVED_BOTH = { "/privacy": privacyMetadata, "/terms": termsMetadata, "/contact": contactMetadata } as const;
+async function servedOn(host: string, path: keyof typeof SERVED_BOTH): Promise<Metadata> {
+  request.host = host;
+  const meta = await SERVED_BOTH[path]();
+  request.host = "starlog.yeolmaeapps.kr";
+  return meta;
+}
+
 /** The root layout's title template, which every page title that is a plain string goes through. */
 const TITLE_TEMPLATE = (layoutMeta.title as { template: string }).template;
 
@@ -85,8 +99,9 @@ const INDEXABLE: Array<[path: string, meta: Metadata]> = [
   ["/faq", faqMeta],
   ["/pricing", pricingMeta],
   ["/refund", refundMeta],
-  ["/terms", termsMeta],
-  ["/privacy", privacyMeta],
+  ["/terms", await servedOn("starlog.yeolmaeapps.kr", "/terms")],
+  ["/privacy", await servedOn("starlog.yeolmaeapps.kr", "/privacy")],
+  ["/contact", await servedOn("starlog.yeolmaeapps.kr", "/contact")],
   ...(await Promise.all(GUIDE_ARTICLES.map(async (article) => [`/guide/${article.slug}`, await guideArticleMeta(params({ slug: article.slug }))] as [string, Metadata]))),
   ["/birth-card", birthCardMeta],
 ];
@@ -174,9 +189,13 @@ describe("indexable pages", () => {
     expect([...SITEMAP_PATHS].sort()).toEqual(INDEXABLE.map(([path]) => path).filter((path) => !UNLISTED.includes(path)).sort());
   });
 
-  it("is listed by the sitemap of the host that serves it: guide pages on the root domain, the rest on the app host", () => {
+  it("is listed by the sitemap of the host that serves it: guide pages on the root domain, the rest on the app host, the pages both serve on both", () => {
     const listed = { guide: sitemapEntriesFor("guide").map((entry) => entry.path), app: sitemapEntriesFor("app").map((entry) => entry.path) };
-    for (const [path] of INDEXABLE.filter(([path]) => !UNLISTED.includes(path))) {
+    for (const path of GUIDE_HOST_PAGES) {
+      expect(listed.guide, path).toContain(path);
+      expect(listed.app, path).toContain(path);
+    }
+    for (const [path] of INDEXABLE.filter(([path]) => !UNLISTED.includes(path) && !(GUIDE_HOST_PAGES as readonly string[]).includes(path))) {
       expect(listed[isGuidePath(path) ? "guide" : "app"], path).toContain(path);
       expect(listed[isGuidePath(path) ? "app" : "guide"], path).not.toContain(path);
     }
@@ -184,14 +203,15 @@ describe("indexable pages", () => {
 });
 
 describe("every sitemap URL", () => {
-  it("is a page whose canonical is itself, on the host that lists it", () => {
+  it("is a page whose canonical is itself, on the host that lists it", async () => {
     const base = layoutMeta.metadataBase ?? undefined;
     const byPath = new Map(INDEXABLE);
     for (const host of ["app", "guide"] as const) {
       for (const { path } of sitemapEntriesFor(host)) {
-        const meta = byPath.get(path);
+        const both = host === "guide" && path in SERVED_BOTH;
+        const meta = both ? await servedOn(new URL(SITE.guideUrl).host, path as keyof typeof SERVED_BOTH) : byPath.get(path);
         expect(meta, path).toBeDefined();
-        const listed = new URL(absoluteUrl(path));
+        const listed = new URL(both ? `${SITE.guideUrl}${path}` : absoluteUrl(path));
         expect(new URL(String(meta?.alternates?.canonical), base).toString(), `${host} ${path}`).toBe(listed.toString());
         expect(listed.origin, path).toBe(new URL(host === "guide" ? SITE.guideUrl : SITE.url).origin);
         expect(meta?.robots, path).toBeUndefined();
@@ -201,14 +221,15 @@ describe("every sitemap URL", () => {
 });
 
 describe("the pages the root domain serves besides the guide", () => {
-  it("/about, /privacy and /terms are indexed at the app host's address: their canonical and og:url resolve against the layout's metadataBase, whichever host served them", () => {
+  it("/privacy, /terms and /contact name the host that served them as canonical and og:url (AdSense audit 2026-11-06)", async () => {
     const base = layoutMeta.metadataBase;
     expect(base?.toString()).toBe(`${SITE.url}/`);
     for (const path of GUIDE_HOST_PAGES) {
-      const meta = INDEXABLE.find(([listed]) => listed === path)?.[1];
-      expect(meta, path).toBeDefined();
-      expect(new URL(String(meta?.alternates?.canonical), base ?? undefined).toString(), path).toBe(absoluteUrl(path));
-      expect(new URL(String((meta?.openGraph as { url?: string }).url), base ?? undefined).toString(), path).toBe(absoluteUrl(path));
+      const onApp = await servedOn("starlog.yeolmaeapps.kr", path);
+      expect(new URL(String(onApp.alternates?.canonical), base ?? undefined).toString(), path).toBe(`${SITE.url}${path}`);
+      const onApex = await servedOn(new URL(SITE.guideUrl).host, path);
+      expect(onApex.alternates?.canonical, path).toBe(`${SITE.guideUrl}${path}`);
+      expect((onApex.openGraph as { url?: string }).url, path).toBe(`${SITE.guideUrl}${path}`);
     }
   });
 });

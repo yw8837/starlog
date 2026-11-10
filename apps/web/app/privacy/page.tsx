@@ -28,6 +28,7 @@ import {
 } from "@/lib/legal";
 import { sajuPrivacyItem, sajuPrivacySent } from "@/lib/sajuTopicCopy";
 import { pageMetadata } from "@/lib/seo";
+import { servedOrigin } from "@/lib/servedOrigin";
 
 const { business, nameKo } = SITE;
 /** 별자리 인연 (and 이번 주 행운 번호) are disclosed while the feature is live. */
@@ -37,11 +38,15 @@ const TOPICS = SITE.features.sajuTopics;
 /** Section numbers: 별자리 인연 is section 4 while it is live, and the later sections move down one. */
 const num = (base: number) => (BONDS && base >= 4 ? base + 1 : base);
 
-export const metadata: Metadata = pageMetadata({
-  title: "개인정보처리방침",
-  description: `${nameKo}가 처리하는 개인정보 항목과 목적, 보유 기간, AI 풀이를 위한 국외 이전, 쿠키와 브라우저 저장소, 이용자의 권리와 행사 방법을 안내합니다.`,
-  path: "/privacy",
-});
+/** The canonical names the host that served the page: the root domain serves it too (lib/hosts.ts GUIDE_HOST_PAGES). */
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMetadata({
+    title: "개인정보처리방침",
+    description: `${nameKo}가 처리하는 개인정보 항목과 목적, 보유 기간, AI 풀이를 위한 국외 이전, 쿠키와 브라우저 저장소, 이용자의 권리와 행사 방법을 안내합니다.`,
+    path: "/privacy",
+    origin: await servedOrigin(),
+  });
+}
 
 /** Rendered per request: the premium clauses come in force at a KST midnight with no deploy (lib/legal.ts). */
 export const dynamic = "force-dynamic";

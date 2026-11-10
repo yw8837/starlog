@@ -15,7 +15,8 @@ import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
 import { adsConfig, adsScriptSrc } from "@/lib/ads";
 import { won } from "@/lib/config";
-import { GUIDE_ARTICLES, GUIDE_CATEGORY_LABEL, adjacentArticles, articlesIn, findArticle, guideIndexPath, guideSectionText, lastReviewed } from "@/lib/guide";
+import { GUIDE_ARTICLES, GUIDE_CATEGORY_LABEL, adjacentArticles, articlesIn, findArticle, guideIndexPath, guideSectionText, lastReviewed, type GuideArticle } from "@/lib/guide";
+import { guideLinkTarget, inlineParts } from "@/lib/guideLinks";
 import { appHref, linkHref } from "@/lib/hosts";
 import { guideArticleBreadcrumbJsonLd, guideArticleCrumbs, guideArticleJsonLd, guideFaqJsonLd } from "@/lib/jsonld";
 import { premiumForGuide } from "@/lib/premium/landing";
@@ -71,6 +72,13 @@ export async function generateMetadata({ params }: PageProps<"/guide/[slug]">): 
   });
 }
 
+/** Links to the app in the article's own text (its sections, 요약 and 한눈에 보기 hold none: plain strings). */
+const appLinksIn = (article: GuideArticle): number =>
+  article.sections
+    .flatMap((section) => [section.body, ...(section.blocks ?? []).flatMap((block) => JSON.stringify(block))])
+    .flatMap((text) => inlineParts(text))
+    .filter((part) => typeof part !== "string" && guideLinkTarget(part.url)?.kind === "app").length;
+
 const CTA = {
   tarot: { text: "카드 3장으로 지금을 봐요", label: "타로 보기", href: ENTRY_TAROT_HREF },
   saju: { text: "타고난 결로 나를 봐요", label: "사주 보기", href: ENTRY_SAJU_HREF },
@@ -85,6 +93,10 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
   // The premium product this article explains (owner: every premium has its guide), linked under the article where
   // premium is visible (a client island); the static HTML links it in one line until the status answers.
   const premium = premiumForGuide(article.slug);
+  // Two app links at most besides the sources (AdSense audit 2026-11-06): the 보기 button only while the article's own
+  // links to the app (in its text, its product) are fewer than two.
+  const ownAppLinks = appLinksIn(article) + (premium ? 1 : 0);
+  const showCta = ownAppLinks < 2;
   const tab = GUIDE_CATEGORY_LABEL[article.category];
   // The article's own picks; an article without them falls back to the first others in its tab.
   const picked = (article.related ?? []).map((other) => findArticle(other)).filter((other) => other !== undefined);
@@ -183,12 +195,14 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
           </nav>
 
           {/* Reading first (review 2026-10-23): the app and the paid product follow the related reads, not the body. */}
-          <aside className={s.cta} aria-label={cta.label}>
-            <p className={s.ctaText}>{cta.text}</p>
-            <Button href={appHref(cta.href)} block trailing="→">
-              {cta.label}
-            </Button>
-          </aside>
+          {showCta ? (
+            <aside className={s.cta} aria-label={cta.label}>
+              <p className={s.ctaText}>{cta.text}</p>
+              <Button href={appHref(cta.href)} block trailing="→">
+                {cta.label}
+              </Button>
+            </aside>
+          ) : null}
 
           {premium ? (
             <PremiumRows

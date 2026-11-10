@@ -8,9 +8,9 @@ import HelpPage, { metadata as helpMeta } from "@/app/help/page";
 import { LoginPanel } from "@/app/login/LoginPanel";
 import { MeView } from "@/app/me/MeView";
 import PricingPage, { metadata as pricingMeta } from "@/app/pricing/page";
-import PrivacyPage, { metadata as privacyMeta } from "@/app/privacy/page";
+import PrivacyPage, { generateMetadata as privacyMetadata } from "@/app/privacy/page";
 import RefundPage, { metadata as refundMeta } from "@/app/refund/page";
-import TermsPage, { metadata as termsMeta } from "@/app/terms/page";
+import TermsPage, { generateMetadata as termsMetadata } from "@/app/terms/page";
 import glossary from "@content/i18n/glossary.json";
 import { UnlockSheet } from "@/components/tarot/UnlockSheet";
 import { resetAccountForTests } from "@/lib/account/client";
@@ -27,6 +27,8 @@ import { duringOpening } from "@/lib/testing/clock";
 duringOpening();
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
+// The policies read the Host header for their canonical (lib/servedOrigin.ts).
+vi.mock("next/headers", () => ({ headers: async () => new Headers({ host: "starlog.yeolmaeapps.kr" }) }));
 
 /**
  * No points, credits, balances or top-ups anywhere a user can read (owner 2026-10-08; Toss reviews
@@ -69,11 +71,11 @@ function account(me: unknown) {
 }
 
 describe("no points, credits or balances anywhere a user can read", () => {
-  it("in the terms, refund policy, privacy policy, pricing, FAQ and help, and their titles and descriptions", () => {
+  it("in the terms, refund policy, privacy policy, pricing, FAQ and help, and their titles and descriptions", async () => {
     const pages: Array<[string, ReactElement, Metadata]> = [
-      ["terms", <TermsPage key="t" />, termsMeta],
+      ["terms", <TermsPage key="t" />, await termsMetadata()],
       ["refund", <RefundPage key="r" />, refundMeta],
-      ["privacy", <PrivacyPage key="p" />, privacyMeta],
+      ["privacy", <PrivacyPage key="p" />, await privacyMetadata()],
       ["pricing", <PricingPage key="pr" />, pricingMeta],
       ["faq", <FaqPage key="f" />, faqMeta],
       ["help", <HelpPage key="h" />, helpMeta],

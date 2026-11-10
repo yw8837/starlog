@@ -24,12 +24,13 @@ export const originOf = (host: SiteHost): string => (host === "guide" ? SITE.gui
 export const GUIDE_HOME = "/guide/tarot";
 
 /**
- * App pages the root domain serves itself as well (lib/hostRoutes.ts OWN_SEGMENTS): who runs the site and
- * the two policies, so the domain AdSense reviews has them at its own address. They are still app pages:
- * their canonical (absoluteUrl) is the app host's, and only a link from a guide page (linkHref) stays on
- * the root domain.
+ * Pages under app/ that both hosts serve (lib/hostRoutes.ts OWN_SEGMENTS): the two policies, which cover the guide too
+ * (its cookies and ads, its articles), and 문의, so the domain AdSense reviews has them at its own address. Each names the
+ * host that served it as canonical (lib/servedOrigin.ts), and a link from a guide page (linkHref) stays on the root
+ * domain. The app's /about introduces the app: on the root domain /about moves to the guide's own 가이드 소개
+ * (AdSense audit 2026-11-06).
  */
-export const GUIDE_HOST_PAGES = ["/about", "/privacy", "/terms"] as const;
+export const GUIDE_HOST_PAGES = ["/privacy", "/terms", "/contact"] as const;
 
 /**
  * The root domain serves `path` itself: the guide, and GUIDE_HOST_PAGES. Those pages render the app's

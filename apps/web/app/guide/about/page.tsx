@@ -215,6 +215,13 @@ export default function GuideAboutPage() {
                 글에서 틀린 내용이나 오래된 정보를 찾으면 알려 주세요. 글 주소와 어느 문장이 왜 틀렸는지 적어 주시면 확인이 빨라요. 확인해서 고치면 그 글의 마지막 수정
                 날짜를 바꿔요.
               </p>
+              <p className={s.prose}>
+                {"운영자 정보와 다른 문의는 "}
+                <Link href={linkHref("/contact", "guide")} className={s.paperLink}>
+                  문의 페이지
+                </Link>
+                에 모아 두었어요.
+              </p>
               <ul className={s.contactList}>
                 {email ? (
                   <li>

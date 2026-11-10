@@ -73,23 +73,18 @@ describe("Footer", () => {
     ]);
   });
 
-  it("on a guide page, every link to the app goes to the app host when the hosts are split, except the operator's page and the two policies the root domain serves itself; the guide link stays a path: the root domain's /", () => {
+  it("on a guide page: the guide's own pages, 문의 and the policies on the root domain, and the app once, on its host (AdSense audit 2026-11-06)", () => {
     vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
     render(<Footer host="guide" />);
     const links = screen.getAllByRole("link").map((link) => [link.textContent, link.getAttribute("href")]);
     expect(links).toEqual([
-      ["스타로그란?", "/about"],
-      ["풀이 과정", `${SITE.url}/how`],
-      ["근거 자료", `${SITE.url}/evidence`],
-      ["이용 가이드", `${SITE.url}/help`],
-      ["FAQ", `${SITE.url}/faq`],
-      ["가이드 글", "/"],
+      ["타로 가이드", "/"],
+      ["사주 가이드", "/guide/saju"],
       ["편집 원칙", "/guide/about"],
-      ["문의", "/guide/about#contact"],
-      ["가격 안내", `${SITE.url}/pricing`],
+      ["문의", "/contact"],
       ["이용약관", "/terms"],
       ["개인정보처리방침", "/privacy"],
-      ["환불 정책", `${SITE.url}/refund`],
+      [`${SITE.nameKo} 앱 소개`, `${SITE.url}/about`],
       ["방문 통계 설정", "/privacy#analytics"],
     ]);
   });
@@ -115,7 +110,7 @@ describe("Footer", () => {
 
   it("on a guide page with one origin, every link is a path as before", () => {
     render(<Footer host="guide" />);
-    expect(screen.getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/about", "/how", "/evidence", "/help", "/faq", "/guide/tarot", "/guide/about", "/guide/about#contact", "/pricing", "/terms", "/privacy", "/refund", "/privacy#analytics"]);
+    expect(screen.getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/guide/tarot", "/guide/saju", "/guide/about", "/contact", "/terms", "/privacy", "/about", "/privacy#analytics"]);
   });
 
   it("says on the guide host that the articles are reference content, not professional advice, and nowhere else", () => {
