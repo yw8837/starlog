@@ -691,7 +691,8 @@ test.describe("별자리 인연 · friend", { tag: "@login" }, () => {
     await expect(page).toHaveURL(/\/bonds$/, { timeout: 120_000 });
     await page.goBack({ timeout: 120_000 });
     await expect(page).toHaveURL(new RegExp(`/b/${code}\\b`), { timeout: 120_000 });
-    await expect(page.getByRole("heading", { level: 1, name: "이미 별이 되어 있어요" })).toBeVisible({ timeout: 60_000 });
+    // The star is the account's since 2026-11-11 (no device cookie): logged out, the page is the plain invite again, with nothing of the star.
+    await expect(page.getByRole("heading", { level: 1, name: "용우님의 양자리에 별이 되어 주세요" })).toBeVisible({ timeout: 60_000 });
     await expect(meter).toHaveCount(0);
     await expect(page.locator("main")).not.toContainText("인연 카드");
   });
