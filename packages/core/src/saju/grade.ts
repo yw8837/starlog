@@ -235,9 +235,13 @@ export function scoreGradePopulation(hourKnown: boolean): GradePopulation {
   const scores = new Uint8Array(size * 60);
   const dayMasters = new Uint8Array(size);
   const counts = SIXTY_GANZHI.map(() => Array<number>(101).fill(0));
+  // a chart's 60 scores depend only on its element counts and its flow, which many charts share
+  const seen = new Map<string, number[]>();
   let i = 0;
   forEachGradeChart(hourKnown, (chart) => {
-    const row = yearScores(chart);
+    const key = `${countsOf(chart).join()}|${flowOf(chart)}`;
+    let row = seen.get(key);
+    if (!row) seen.set(key, (row = yearScores(chart)));
     for (let y = 0; y < 60; y++) {
       scores[60 * i + y] = row[y]!;
       counts[y]![row[y]!]!++;

@@ -640,7 +640,7 @@ function sinsalNameHits(text: string, userText: string, allowed: readonly string
 }
 
 /** [pattern, label, negatable]: a negatable topic may be named in a sentence that declines it. */
-const SAJU_BLOCKLIST: Array<[RegExp, string, boolean]> = [
+export const SAJU_BLOCKLIST: Array<[RegExp, string, boolean]> = [
   [/반드시|무조건|확실히|틀림없|정해져 있|100\s*%|확률|퍼센트|점수/, "단정·수치 표현(반드시·무조건·확실히·확률·점수)", false],
   [/운명(?!의\s*(수레)?바퀴)/, "'운명'", false],
   [/질병|질환|진단|수술|병(에|이)\s?(걸|나)/, "건강·질병", true],
@@ -844,7 +844,7 @@ const GLANCE_ITEMS = [
 export const glanceTexts = (g: SajuGlance): string[] => GLANCE_ITEMS.map(([key]) => g[key]);
 
 /** Scores, stars, percentages and 길흉 grades: the card says which side goes well, never how good a person or a year is. */
-const GLANCE_GRADE = new RegExp([
+export const GLANCE_GRADE = new RegExp([
   // "최악의 경우부터 떠올리는" and "최고를 고집하는" are habits, not grades
   "대길|소길|대흉|소흉|길흉|최고(?!(?:를|만)\\s?(?:고집|추구|바라|노리))|최악(?!의\\s?경우)|만점|별점|등급|점수|퍼센트|[★☆]",
   "(?<![가-힣])길(?:한|하게|해요|합니다|운)",
@@ -853,13 +853,13 @@ const GLANCE_GRADE = new RegExp([
   "(?<![가-힣])(?:운|운세)(?:이|가)\\s?(?:좋|나쁘|최고|최악)",
 ].join("|"));
 /** School-dependent verdicts: never on the card, not even to decline them (the body says so where it must). */
-const GLANCE_SCHOOL = /신강|신약|용신|희신|기신|격국|종격|조후/;
+export const GLANCE_SCHOOL = /신강|신약|용신|희신|기신|격국|종격|조후/;
 /** 검정 is also a test (자격 검정, 검정고시). */
 const COLOURS = "빨간|빨강|붉은|파란|파랑|푸른|노란|노랑|초록|녹색|연두|하얀|하양|흰|검은|(?<!(?:자격|능력|기능|실력|인증)\\s?)검정(?!고시|\\s?시험)|까만|보라|분홍|주황|회색|남색|금색|은색|갈색";
 /** Filling, mending, raising or saving a 기운 or the 오행. */
 const RAISE = "채우|채워|보충|보태|더하|더해|메우|메워|북돋|살리|살려";
 /** A make-up that is not an everyday act: a colour, a direction, a thing, a number, raising a missing 오행 (owner 2026-10-07). */
-const GLANCE_REMEDY = new RegExp([
+export const GLANCE_REMEDY = new RegExp([
   `(?<![가-힣])(?:${COLOURS})`,
   "(?<![가-힣])(?:동|서|남|북|동남|동북|서남|서북)\\s?(?:쪽|방향|방위)",
   "방위|행운의|럭키",
