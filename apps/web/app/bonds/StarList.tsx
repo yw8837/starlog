@@ -1,6 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
+import { won } from "@/lib/config";
+import { PREMIUM, premiumPath } from "@/lib/premium/products";
+import { usePremiumStatus } from "@/lib/premium/status";
 import { getCard, getConstellation, type Orientation, type SignId } from "@starlog/core";
 import { BondScore } from "@/components/bonds/BondScore";
 import { ConfirmDialog } from "@/components/bonds/ConfirmDialog";
@@ -44,6 +48,8 @@ export function StarList({ sign, stars, fresh, complete, otherFilling, onChanged
   const [removing, setRemoving] = useState<StarView | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const premium = usePremiumStatus();
+  const matchOnSale = Boolean(premium?.match.visible && premium.match.open);
 
   const drawToday = async (star: StarView) => {
     setToday((prev) => ({ ...prev, [star.id]: "loading" }));
@@ -103,6 +109,12 @@ export function StarList({ sign, stars, fresh, complete, otherFilling, onChanged
                   별 지우기
                 </button>
               </div>
+              {/* Sales 2026-11-10 item 3: the friend's star → the 프리미엄 궁합 product, at its normal price (its own login rules). */}
+              {matchOnSale ? (
+                <Link href={premiumPath("match")} className={b.textButton}>
+                  {`${star.nickname}님과 자세한 궁합 보기 · ${won(PREMIUM.match.krw)}`}
+                </Link>
+              ) : null}
               {t && typeof t === "object" ? (
                 <div className={s.today} role="status">
                   <TarotCard cardId={t.card.cardId} orientation={t.card.orientation} faceUp size="sm" className={s.starCard} />
