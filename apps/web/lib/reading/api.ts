@@ -43,6 +43,8 @@ export type ApiErrorCode =
   | "PAY_PENDING"
   | "NOT_REFUNDABLE"
   | "REFUND_WINDOW_CLOSED"
+  /** 환불받기: what it refunds now differs from the amount the buyer confirmed; nothing was refunded (ask again). */
+  | "REFUND_AMOUNT_CHANGED"
   | "PAY_UNAVAILABLE"
   /** A free generation without a passing Turnstile token. */
   | "BOT_CHECK";
@@ -65,6 +67,7 @@ const CODES: readonly ApiErrorCode[] = [
   "PAY_PENDING",
   "NOT_REFUNDABLE",
   "REFUND_WINDOW_CLOSED",
+  "REFUND_AMOUNT_CHANGED",
   "PAY_UNAVAILABLE",
   "BOT_CHECK",
 ];

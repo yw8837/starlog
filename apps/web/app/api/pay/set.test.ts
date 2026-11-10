@@ -52,7 +52,12 @@ const lotsOf = async (db: ReturnType<typeof useTestDb>, orderId: string) =>
   (await db.prepare("SELECT product_id, status, units_left FROM credit_lots WHERE order_id = ? ORDER BY product_id").bind(orderId).all()).results;
 const setOpen = async () => ((await (await status(new Request("http://localhost/api/premium/status"))).json()) as { set?: { open: boolean; opensAt: number } }).set;
 
-const refundOf = (b: Browser, orderId: string) => b.send(refund, "/api/pay/refund", { body: { orderId }, origin: true });
+/** 환불받기 with the amount the buyer confirmed (none: an older screen, which only ever offered the whole payment). */
+const refundWith = (b: Browser, orderId: string, amount?: number) =>
+  b.send(refund, "/api/pay/refund", { body: { orderId, ...(amount === undefined ? {} : { amount }) }, origin: true });
+/** 환불받기 as 내 정보 sends it: with the amount it shows for the order (/api/me refundAmount). */
+const refundOf = async (b: Browser, orderId: string) =>
+  refundWith(b, orderId, (await me(b)).user?.unused.find((item) => item.orderId === orderId && item.refundAmount)?.refundAmount);
 const hook = (body: unknown) => browser("203.0.113.200").send(webhook, "/api/pay/webhook", { body });
 const statusOf = async (b: Browser, orderId: string) => ((await (await b.send(ordersGet, `/api/pay/orders?id=${orderId}`)).json()) as { status: string }).status;
 const paymentKeyOf = async (db: ReturnType<typeof useTestDb>, orderId: string) =>
@@ -184,6 +189,30 @@ describe("2027 신년운세 + 프리미엄 궁합 set (owner 2026-11-10)", () =>
     expect((await hook({ eventType: "PAYMENT_STATUS_CHANGED", data: { paymentKey: await paymentKeyOf(db, orderId), orderId, status: "PARTIAL_CANCELED" } })).status).toBe(200);
     expect(await settled(db, orderId)).toEqual({ status: "paid", payment: "PARTIAL_CANCELED", canceled_amount: 4000 });
     expect(console.warn).not.toHaveBeenCalledWith(expect.stringContaining("pay.partial_cancel"));
+  });
+
+  it("refunds only the amount the buyer confirmed: another amount now (a reading opened meanwhile) is refused with REFUND_AMOUNT_CHANGED and nothing moves (MED-3)", async () => {
+    const db = useTestDb();
+    const b = await loggedIn();
+    const orderId = await boughtSet(db, b);
+    // The sheet said 18,900원; the 신년운세 was opened in another tab before the buyer confirmed.
+    await openAndDeliver(db, "newyear-2027");
+    const cancel = vi.spyOn(mockToss, "cancel");
+    for (const amount of [18900, undefined]) {
+      const res = await refundWith(b, orderId, amount);
+      expect(res.status).toBe(409);
+      expect(await res.json()).toMatchObject({ code: "REFUND_AMOUNT_CHANGED" });
+    }
+    expect(cancel).not.toHaveBeenCalled();
+    expect(await attemptOf(db, orderId)).toBe(1);
+    expect(await settled(db, orderId)).toEqual({ status: "paid", payment: "DONE", canceled_amount: 0 });
+    expect(await lotsOf(db, orderId)).toEqual([
+      { product_id: "match", status: "active", units_left: 1 },
+      { product_id: "newyear-2027", status: "active", units_left: 0 },
+    ]);
+    // Asked again with what the screen now shows.
+    expect(await (await refundWith(b, orderId, 4000)).json()).toEqual({ ok: true, status: "refunded", amount: 4000 });
+    expect(cancel.mock.calls[0]![1]).toMatchObject({ amount: 4000, idempotencyKey: `cancel-${orderId}-1` });
   });
 
   it("refunds the 신년운세's part, 11,000원, once the 궁합 was opened; nothing once both were", async () => {

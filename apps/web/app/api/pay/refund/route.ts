@@ -5,13 +5,16 @@ import { orderForUser } from "@/lib/pay/orders";
 import { refundDeadline, refundUnusedOrder } from "@/lib/pay/refunds";
 import { tossClient } from "@/lib/pay/toss";
 
-const RefundBody = z.object({ orderId: z.string().regex(/^[A-Za-z0-9_-]{6,64}$/) });
+/** `amount`: what the buyer's screen showed and the buyer confirmed, in 원 (a screen from before it was sent: the whole payment). */
+const RefundBody = z.object({ orderId: z.string().regex(/^[A-Za-z0-9_-]{6,64}$/), amount: z.number().int().positive().max(10_000_000).optional() });
 
 /**
  * POST {orderId} → refund of what was never opened of a paid order (내 정보 > 결제한 풀이 > 환불받기): all of it, or for a
  * set with one reading opened the other's part (owner 2026-11-10; the amount from the catalog, never the request), through
  * the end of the REFUND_DAYS-th KST day after the payment; `amount` says what was refunded. After that REFUND_WINDOW_CLOSED
- * (the reading can still be opened, and the operator still refunds company-side failures by hand).
+ * (the reading can still be opened, and the operator still refunds company-side failures by hand). Only the amount the buyer
+ * confirmed is refunded (`amount`; none: the whole payment, all an older screen offered): if it is another amount now (a
+ * reading opened meanwhile), REFUND_AMOUNT_CHANGED and nothing moves; the screen reloads and asks again.
  */
 export async function POST(request: Request): Promise<Response> {
   const ctx = await openAccountRoute(request, { limiter: "PAY_LIMITER", write: true });
@@ -31,7 +34,7 @@ export async function POST(request: Request): Promise<Response> {
   const paid = await ctx.db.prepare("SELECT MIN(created_at) AS created_at FROM credit_lots WHERE order_id = ?").bind(order.id).first<{ created_at: number | null }>();
   if (paid?.created_at == null) return errorResponse("NOT_REFUNDABLE");
   if (ctx.now > refundDeadline(paid.created_at)) return errorResponse("REFUND_WINDOW_CLOSED");
-  const outcome = await refundUnusedOrder(ctx.db, toss, { order, reason: "구매자 요청: 열지 않은 풀이 환불", now: ctx.now });
+  const outcome = await refundUnusedOrder(ctx.db, toss, { order, reason: "구매자 요청: 열지 않은 풀이 환불", now: ctx.now, expected: body.data.amount ?? order.amount_krw });
   if (!outcome.ok) return errorResponse(outcome.code, outcome.message ? { message: outcome.message } : {});
   return json({ ok: true, status: "refunded", amount: outcome.amount });
 }

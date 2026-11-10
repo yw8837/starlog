@@ -23,7 +23,9 @@ import { isPendingTossError, type TossClient, type TossError, type TossPayment }
  */
 
 /** `amount`: what this refund cancelled, in 원 (a set's unopened part, or the whole payment). */
-export type RefundOutcome = { ok: true; amount: number } | { ok: false; code: "NOT_REFUNDABLE" | "PAY_FAILED" | "PAY_PENDING"; message?: string };
+export type RefundOutcome =
+  | { ok: true; amount: number }
+  | { ok: false; code: "NOT_REFUNDABLE" | "PAY_FAILED" | "PAY_PENDING" | "REFUND_AMOUNT_CHANGED"; message?: string };
 
 /** How long a `refunding` order waits before Toss is asked: far past the 30 s client timeout and Toss's own processing. */
 export const REFUND_RECONCILE_AFTER_MS = 10 * 60_000;
@@ -182,14 +184,25 @@ export async function setAsideForOperator(db: D1Binding, orderId: string, now: n
 
 /**
  * Cancels the payment of the readings of an order that were never opened (the user's 환불, account deletion): all of it, or
- * for a set with one reading opened, the other's part (lockPaidLotForRefund's amount, from the catalog).
+ * for a set with one reading opened, the other's part (lockPaidLotForRefund's amount, from the catalog). `expected`: the
+ * amount the buyer confirmed (환불받기); when the lock's amount differs, the lock is put back under the same key and nothing
+ * is sent (REFUND_AMOUNT_CHANGED): never a refund of another amount than the one shown.
  */
-export async function refundUnusedOrder(db: D1Binding, toss: TossClient, input: { order: OrderRow; reason: string; now: number }): Promise<RefundOutcome> {
-  const { order, reason, now } = input;
+export async function refundUnusedOrder(
+  db: D1Binding,
+  toss: TossClient,
+  input: { order: OrderRow; reason: string; now: number; expected?: number },
+): Promise<RefundOutcome> {
+  const { order, reason, now, expected } = input;
   if (order.status !== "paid" || !order.payment_key) return { ok: false, code: "NOT_REFUNDABLE" };
   if (await paidUnderOtherKeys(db, toss, order.id)) return { ok: false, code: "NOT_REFUNDABLE", message: OTHER_KEYS_MESSAGE };
   const lock = await lockPaidLotForRefund(db, order.id, now);
   if (!lock) return { ok: false, code: "NOT_REFUNDABLE" };
+  if (expected !== undefined && lock.amount !== expected) {
+    await revertRefund(db, order.id, now, { nextKey: false });
+    console.info(JSON.stringify({ evt: "pay.refund_amount_changed", orderId: order.id, expected, amount: lock.amount }));
+    return { ok: false, code: "REFUND_AMOUNT_CHANGED" };
+  }
   return sendCancel(db, toss, (await orderById(db, order.id)) ?? order, lock, reason, now);
 }
 

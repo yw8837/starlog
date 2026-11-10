@@ -108,7 +108,7 @@ test("owner mode: log in (no signup gift), pay for a tarot reading that takes fo
   await expect(page.getByRole("heading", { name: "결제 내역" })).toBeVisible();
   await page.getByRole("button", { name: "환불받기", exact: true }).click();
   await page.getByRole("button", { name: "전액 환불받기" }).click();
-  await expect(page.getByText("환불했어요. 카드사에 따라 며칠 걸릴 수 있어요.")).toBeVisible({ timeout: NAV });
+  await expect(page.getByText("4,900원을 환불했어요. 카드사에 따라 며칠 걸릴 수 있어요.")).toBeVisible({ timeout: NAV });
   await expect(page.getByText("환불됨")).toBeVisible({ timeout: NAV });
 });
 

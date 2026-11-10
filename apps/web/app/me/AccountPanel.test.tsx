@@ -39,7 +39,8 @@ beforeEach(() => {
     if (url === "/api/pay/orders") {
       return Response.json({ orders: [{ orderId: "Ab3_dEf-Gh5iJk7Lm9No1Pq2", productId: "tarot", amount: 2900, status: "paid", createdAt: Date.parse("2026-10-01T03:00:00Z"), receiptUrl: "https://dashboard.tosspayments.com/receipt/x", method: "카드", refundable: true, opened: false }] });
     }
-    if (url === "/api/pay/refund") return Response.json({ ok: true, status: "refunded" });
+    // The server answers what it refunded: here, what the request confirmed (a single 2,900원 purchase without one).
+    if (url === "/api/pay/refund") return Response.json({ ok: true, status: "refunded", amount: (init?.body ? JSON.parse(String(init.body)).amount : undefined) ?? 2900 });
     if (url === "/api/account/delete-intent") return Response.json({ url: "/api/auth/kakao/start?purpose=delete&intent=x" });
     return Response.json({ payments: true, login: true, owner: false, user: null });
   }));
@@ -131,12 +132,45 @@ describe("AccountPanel", () => {
     expect(scrolled.map((element) => element.id)).toEqual(["purchases"]);
   });
 
-  it("refunds an unopened purchase after a confirm", async () => {
-    render(<AccountPanel account={account} />);
+  it("refunds an unopened purchase after a confirm, sending the amount shown, and says the amount the server refunded", async () => {
+    const shown = { ...account, user: { ...account.user, unused: [{ orderId: "Ab3_dEf-Gh5iJk7Lm9No1Pq2", productId: "tarot", refundUntil: "2099-10-08T14:59:59.999Z", refundAmount: 2900 }] } };
+    render(<AccountPanel account={shown} />);
+    fireEvent.click(screen.getByRole("button", { name: "환불받기" }));
+    expect(await screen.findByText("열지 않은 풀이라 결제한 금액 2,900원 전액을 돌려 드려요.")).toBeTruthy();
+    fireEvent.click(await screen.findByRole("button", { name: "전액 환불받기" }));
+    await waitFor(() => expect(requests.filter((r) => r.url === "/api/pay/refund").map((r) => r.body)).toEqual([{ orderId: "Ab3_dEf-Gh5iJk7Lm9No1Pq2", amount: 2900 }]));
+    expect(await screen.findByText("2,900원을 환불했어요. 카드사에 따라 며칠 걸릴 수 있어요.")).toBeTruthy();
+  });
+
+  it("asks again with the new amount when the server's differs from the one shown (REFUND_AMOUNT_CHANGED), never refunding the other", async () => {
+    const SET_ORDER = "Set_dEf-Gh5iJk7Lm9No1Pq2x";
+    const item = { orderId: SET_ORDER, refundUntil: "2099-12-08T14:59:59.999Z", set: true as const };
+    const both = { ...account, user: { ...account.user, gift: null, unused: [{ ...item, productId: "newyear-2027", refundAmount: 18900 }, { ...item, productId: "match", refundAmount: 18900 }] } };
+    const base = vi.mocked(fetch).getMockImplementation()!;
+    let refunds = 0;
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/me") {
+        // Meanwhile the 신년운세 was opened in another tab: only the 궁합's part is left.
+        return Response.json({ payments: true, login: true, owner: false, user: { ...both.user, unused: [{ ...item, productId: "match", refundAmount: 4000 }] } });
+      }
+      if (url === "/api/pay/refund" && refunds++ === 0) {
+        requests.push({ url, method: "POST", body: JSON.parse(String(init!.body)) });
+        return Response.json({ code: "REFUND_AMOUNT_CHANGED", message: "환불할 금액이 바뀌었어요. 금액을 다시 확인해 주세요." }, { status: 409 });
+      }
+      return base(url, init);
+    }));
+    render(<AccountPanel account={both} />);
     fireEvent.click(screen.getByRole("button", { name: "환불받기" }));
     fireEvent.click(await screen.findByRole("button", { name: "전액 환불받기" }));
-    await waitFor(() => expect(requests.some((r) => r.url === "/api/pay/refund" && (r.body as { orderId: string }).orderId === "Ab3_dEf-Gh5iJk7Lm9No1Pq2")).toBe(true));
-    expect(await screen.findByText("환불했어요. 카드사에 따라 며칠 걸릴 수 있어요.")).toBeTruthy();
+    expect(await screen.findByText("환불할 금액이 바뀌었어요. 바뀐 금액을 확인하고 다시 눌러 주세요.")).toBeTruthy();
+    expect(screen.getByText("세트에서 열지 않은 풀이 몫 4,000원을 돌려 드려요. 연 풀이는 그대로 볼 수 있어요.")).toBeTruthy();
+    expect(screen.queryByText(/환불했어요/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "4,000원 환불받기" }));
+    expect(await screen.findByText("4,000원을 환불했어요. 카드사에 따라 며칠 걸릴 수 있어요.")).toBeTruthy();
+    expect(requests.filter((r) => r.url === "/api/pay/refund").map((r) => r.body)).toEqual([
+      { orderId: SET_ORDER, amount: 18900 },
+      { orderId: SET_ORDER, amount: 4000 },
+    ]);
   });
 
   it("sends one refund however often 전액 환불받기 is tapped while it runs", async () => {
@@ -202,10 +236,10 @@ describe("AccountPanel", () => {
     expect(screen.getAllByText("12월 8일까지 환불할 수 있어요")).toHaveLength(2);
     expect(document.body.textContent).not.toContain("환불 가능 기간");
     fireEvent.click(screen.getByRole("button", { name: "환불받기" }));
-    expect(await screen.findByText("두 풀이 모두 열지 않은 세트라 결제한 금액 전액을 돌려 드려요.")).toBeTruthy();
+    expect(await screen.findByText("두 풀이 모두 열지 않은 세트라 결제한 금액 18,900원 전액을 돌려 드려요.")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "전액 환불받기" }));
-    await waitFor(() => expect(requests.filter((r) => r.url === "/api/pay/refund").map((r) => r.body)).toEqual([{ orderId: SET_ORDER }]));
-    expect(await screen.findByText("환불했어요. 카드사에 따라 며칠 걸릴 수 있어요.")).toBeTruthy();
+    await waitFor(() => expect(requests.filter((r) => r.url === "/api/pay/refund").map((r) => r.body)).toEqual([{ orderId: SET_ORDER, amount: 18900 }]));
+    expect(await screen.findByText("18,900원을 환불했어요. 카드사에 따라 며칠 걸릴 수 있어요.")).toBeTruthy();
     cleanup();
     // Deleting the account counts payments, not readings.
     render(<AccountPanel account={both} />);
@@ -224,7 +258,7 @@ describe("AccountPanel", () => {
     expect(await screen.findByText("세트에서 열지 않은 풀이 몫 4,000원을 돌려 드려요. 연 풀이는 그대로 볼 수 있어요.")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "전액 환불받기" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "4,000원 환불받기" }));
-    await waitFor(() => expect(requests.filter((r) => r.url === "/api/pay/refund").map((r) => r.body)).toEqual([{ orderId: SET_ORDER }]));
+    await waitFor(() => expect(requests.filter((r) => r.url === "/api/pay/refund").map((r) => r.body)).toEqual([{ orderId: SET_ORDER, amount: 4000 }]));
     expect(await screen.findByText("4,000원을 환불했어요. 카드사에 따라 며칠 걸릴 수 있어요.")).toBeTruthy();
     cleanup();
     render(<AccountPanel account={one} />);

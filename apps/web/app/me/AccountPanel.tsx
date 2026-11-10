@@ -63,6 +63,19 @@ function refundNotice(error: ApiError): string {
   }
 }
 
+type Unused = AccountUser["unused"][number];
+
+/** A set's other reading is unopened too: the set is refunded whole. */
+const pairOf = (item: Unused, unused: readonly Unused[]) =>
+  Boolean(item.set) && unused.some((other) => other.orderId === item.orderId && other.productId !== item.productId && other.refundable !== false);
+
+/** What the refund sheet refunds for `item`: a single purchase, a whole set, or a set's unopened part, with the server's amount. */
+const refundKindOf = (item: Unused, unused: readonly Unused[]) => ({
+  set: item.set === true,
+  whole: !item.set || pairOf(item, unused),
+  ...(item.refundAmount ? { amount: item.refundAmount } : {}),
+});
+
 type AccountPanelProps = {
   account: AccountState & { user: AccountUser };
   /** tests: replaces the browser navigation */
@@ -81,9 +94,7 @@ type AccountPanelProps = {
  */
 export function AccountPanel({ account, navigate = (url) => window.location.assign(url), onNotice }: AccountPanelProps) {
   const { user } = account;
-  // A set's other reading is unopened too: the set is refunded whole.
-  const pair = (item: AccountUser["unused"][number]) =>
-    Boolean(item.set) && user.unused.some((other) => other.orderId === item.orderId && other.productId !== item.productId && other.refundable !== false);
+  const pair = (item: Unused) => pairOf(item, user.unused);
   // Payments, not readings: a set's two readings are one payment, refunded through its first refundable reading.
   const refunds = user.unused.filter((item, index) => item.refundable !== false && user.unused.findIndex((other) => other.orderId === item.orderId && other.refundable !== false) === index);
   const wholeCount = refunds.filter((item) => !item.set || pair(item)).length;
@@ -97,6 +108,8 @@ export function AccountPanel({ account, navigate = (url) => window.location.assi
   const [refundId, setRefundId] = useState<string | null>(null);
   /** what the sheet refunds: a single purchase, a whole set, or a set's unopened part (its amount) */
   const [refundKind, setRefundKind] = useState<{ set: boolean; whole: boolean; amount?: number }>({ set: false, whole: true });
+  /** the server refunds another amount now than the sheet showed: it shows the new one and asks again */
+  const [refundChanged, setRefundChanged] = useState(false);
   const [historyKey, setHistoryKey] = useState(0);
   // One refund at a time: a second tap would answer NOT_REFUNDABLE over "환불했어요".
   const refunding = useRef(false);
@@ -113,10 +126,25 @@ export function AccountPanel({ account, navigate = (url) => window.location.assi
     refunding.current = true;
     setRefundBusy(true);
     try {
-      const res = await postJson("/api/pay/refund", { orderId: refundId });
+      // The amount shown goes with the request: the server refunds that much or nothing (REFUND_AMOUNT_CHANGED).
+      const res = await postJson<{ amount?: number }>("/api/pay/refund", { orderId: refundId, ...(refundKind.amount ? { amount: refundKind.amount } : {}) });
+      if (!res.ok && res.error.code === "REFUND_AMOUNT_CHANGED") {
+        const next = await refreshAccount();
+        const unused = next?.user?.unused ?? [];
+        const item = unused.find((other) => other.orderId === refundId && other.refundable !== false && other.refundAmount);
+        if (item) {
+          setRefundKind(refundKindOf(item, unused));
+          setRefundChanged(true);
+          return;
+        }
+        setSheet(null);
+        setNotice("지금은 이 결제를 환불할 수 없어요. 결제한 풀이를 다시 확인해 주세요.");
+        return;
+      }
       setSheet(null);
-      const part = !refundKind.whole && refundKind.amount ? `${won(refundKind.amount)}을 ` : "";
-      setNotice(res.ok ? `${part}환불했어요. 카드사에 따라 며칠 걸릴 수 있어요.` : refundNotice(res.error));
+      // What the server says it refunded, never what this screen worked out.
+      const amount = res.ok && typeof res.data.amount === "number" && res.data.amount > 0 ? `${won(res.data.amount)}을 ` : "";
+      setNotice(res.ok ? `${amount}환불했어요. 카드사에 따라 며칠 걸릴 수 있어요.` : refundNotice(res.error));
       await refreshAccount();
       setHistoryKey((key) => key + 1);
     } finally {
@@ -181,7 +209,8 @@ export function AccountPanel({ account, navigate = (url) => window.location.assi
                       className={s.link}
                       onClick={() => {
                         setRefundId(item.orderId);
-                        setRefundKind({ set: item.set === true, whole, ...(item.refundAmount ? { amount: item.refundAmount } : {}) });
+                        setRefundKind(refundKindOf(item, user.unused));
+                        setRefundChanged(false);
                         setSheet("refund");
                       }}
                     >
@@ -237,11 +266,12 @@ export function AccountPanel({ account, navigate = (url) => window.location.assi
           <h2 id="refund-title" className={s.sectionTitle}>
             이 결제를 환불할까요?
           </h2>
+          {refundChanged ? <p role="status">환불할 금액이 바뀌었어요. 바뀐 금액을 확인하고 다시 눌러 주세요.</p> : null}
           <p>
             {!refundKind.set
-              ? "열지 않은 풀이라 결제한 금액 전액을 돌려 드려요."
+              ? `열지 않은 풀이라 결제한 금액${refundKind.amount ? ` ${won(refundKind.amount)}` : ""} 전액을 돌려 드려요.`
               : refundKind.whole
-                ? "두 풀이 모두 열지 않은 세트라 결제한 금액 전액을 돌려 드려요."
+                ? `두 풀이 모두 열지 않은 세트라 결제한 금액${refundKind.amount ? ` ${won(refundKind.amount)}` : ""} 전액을 돌려 드려요.`
                 : `세트에서 열지 않은 풀이 몫${refundKind.amount ? ` ${won(refundKind.amount)}` : ""}을 돌려 드려요. 연 풀이는 그대로 볼 수 있어요.`}
           </p>
           <Button block disabled={refundBusy} onClick={() => void refund()}>
