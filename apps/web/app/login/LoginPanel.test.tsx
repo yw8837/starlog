@@ -89,6 +89,9 @@ describe("LoginPanel", () => {
     ["/saju/grade/s-full-moon", "등급 카드는 그대로 있어요", "로그인하고 등급 풀이 열기"],
     // The unlock sheet's 로그인하고 전체 풀이 보기 (no ?resume=), the checkout, premium: the full reading, as before.
     ["/tarot/result", `이 풀이를 스타로그에 적어둘게요`, "로그인하고 전체 풀이 보기"],
+    // 사주's own lock sheet marks its login ?for=full (review 2026-11-11 #7a), so it is not taken for the 맛보기's.
+    ["/saju/chart?for=full", `이 풀이를 스타로그에 적어둘게요`, "로그인하고 전체 풀이 보기"],
+    ["/saju/chart?topic=money&for=full", `이 풀이를 스타로그에 적어둘게요`, "로그인하고 전체 풀이 보기"],
     ["/pay/checkout?product=tarot&returnTo=%2Ftarot%2Fresult", `이 풀이를 스타로그에 적어둘게요`, "로그인하고 전체 풀이 보기"],
     ["/premium/match/preview", `이 풀이를 스타로그에 적어둘게요`, "로그인하고 전체 풀이 보기"],
     ["/", `이 풀이를 스타로그에 적어둘게요`, "로그인하고 전체 풀이 보기"],

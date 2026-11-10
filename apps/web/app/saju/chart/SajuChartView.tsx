@@ -60,6 +60,8 @@ const RETURN_TO = "/saju/chart";
 const TEASER_LOGIN_TITLE = "맛보기 풀이는 로그인하고 볼 수 있어요";
 /** Where a login or a payment comes back to: the 운 on screen rides along as ?topic= (never birth data). */
 const returnFor = (topic: SajuTopic) => (topic === "overall" ? RETURN_TO : `${RETURN_TO}?topic=${topic}`);
+/** The lock sheet's login: marked so the login names the full reading, not the 맛보기 (app/login/LoginPanel.tsx purpose). */
+const fullLoginHref = (topic: SajuTopic) => loginHref(`${returnFor(topic)}${topic === "overall" ? "?" : "&"}for=full`);
 /** Errors after which the server may still have saved the reading (M4). */
 const UNSETTLED = new Set(["QUALITY", "UPSTREAM", "NETWORK", "TIMEOUT", "INVALID"]);
 
@@ -244,7 +246,7 @@ export function SajuChartView({
     if (!res) return;
     if (!res.ok) {
       const code = res.error.code;
-      if (code === "LOGIN_REQUIRED") router.push(loginHref(returnFor(topic)));
+      if (code === "LOGIN_REQUIRED") router.push(fullLoginHref(topic));
       if ((chosen === "paid" || chosen === "free") && UNSETTLED.has(code)) void settle(chosen, startedAt, held, form, topic, "cut");
       else if ((chosen === "paid" || chosen === "free") && code === "NO_CREDIT") void settle(chosen, since(startedAt), held, form, topic, "refused");
       else if (code === "NO_CREDIT" || code === "PAYMENT_REQUIRED") void refreshAccount();
@@ -391,7 +393,7 @@ export function SajuChartView({
           scopeLine={topic !== "overall" ? UNLOCK_SCOPE_LINE : undefined}
           offer={offer}
           onUnlock={(chosen) => void unlock(chosen)}
-          loginHref={loginHref(returnFor(topic))}
+          loginHref={fullLoginHref(topic)}
           payHref={checkoutHref("saju", returnFor(topic))}
           owner={account?.owner}
           signedIn={account?.user ? loginKind(account.user) : undefined}

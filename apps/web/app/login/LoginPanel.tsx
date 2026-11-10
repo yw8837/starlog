@@ -45,7 +45,8 @@ function purpose(next: string, opening: boolean): { bubble: string; title: strin
   if (under(path, "/me")) return { bubble: "내 기록을 계정에 적어둘게요", title: "로그인하고 내 기록 이어 보기" };
   if (path === "/tarot/result" && opening && query.get("unlock") === "opening") return { bubble: "계정마다 한 번, 로그인하면 바로 확인해 줄게요", title: "로그인하고 오픈 기념 무료 확인하기" };
   if (path === "/tarot/result" && query.has("resume")) return { bubble: "고른 카드와 질문은 그대로 둘게요", title: "로그인하고 맛보기 이어 보기" };
-  if (path === "/saju/chart") return { bubble: "명식과 입력한 정보는 그대로 있어요", title: "로그인하고 사주 맛보기 보기" };
+  // 사주's lock sheet marks its login ?for=full (SajuChartView): that one keeps the full reading's title.
+  if (path === "/saju/chart" && query.get("for") !== "full") return { bubble: "명식과 입력한 정보는 그대로 있어요", title: "로그인하고 사주 맛보기 보기" };
   if (path === "/today") return { bubble: "고른 카드는 그대로 기억해 둘게요", title: "로그인하고 오늘의 카드 펼치기" };
   if (path.startsWith("/b/")) return { bubble: "적은 닉네임과 카드는 그대로 있어요", title: "로그인하고 별 되기" };
   if (under(path, "/saju/grade")) return { bubble: "등급 카드는 그대로 있어요", title: "로그인하고 등급 풀이 열기" };

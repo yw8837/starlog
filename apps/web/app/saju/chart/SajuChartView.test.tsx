@@ -132,6 +132,17 @@ describe("SajuChartView after a paid opening was cut off", () => {
     expect(screen.queryByRole("link", { name: /결제하고 보기/ })).toBeNull();
   });
 
+  it("a session lost on the way to the full reading sends the login there, marked so its title says 전체 풀이, not 맛보기 (review 2026-11-11 #7a)", async () => {
+    seed();
+    stub({
+      me: [() => Response.json(meBody({ unused: [{ orderId: ORDER, productId: "saju" }] }))],
+      reading: () => Response.json({ code: "LOGIN_REQUIRED", message: "x" }, { status: 401 }),
+    });
+    render(<SajuChartView />);
+    fireEvent.click(await screen.findByRole("button", { name: "결제한 풀이 열기" }));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith("/login?next=%2Fsaju%2Fchart%3Ffor%3Dfull"));
+  });
+
   it("once the check finds the purchase kept, 환불받기 goes to 결제한 풀이 in 내 정보, where its button is", async () => {
     seed();
     stub({ me: [() => Response.json(meBody({ unused: [{ orderId: ORDER, productId: "saju" }] }))] });
