@@ -383,15 +383,18 @@ export function NowOracle({ instant = false }: NowOracleProps) {
                   한 번 더 뽑기
                 </Button>
               </div>
-              {/* 공유하기 (owner 2026-10-23): this draw's own link, card + line + why; a new draw starts a new sheet. */}
-              <div className={s.share}>
-                <ShareResultButton
-                  key={`${draw.cardId}-${draw.orientation}-${draw.pick}`}
-                  kind="now"
-                  text={nowShareText({ cardName: card.names.ko, reversed, slug: nickShown ? typeSlug : null })}
-                  create={() => createNowShareLink(draw, front, nickShown)}
-                />
-              </div>
+              {/* 공유하기 (owner 2026-10-23): this draw's own link, card + line + why; a new draw starts a new sheet. Not where the
+                  line is hidden: the link's page would show it (coordinator 2026-11-11). */}
+              {careOnly ? null : (
+                <div className={s.share}>
+                  <ShareResultButton
+                    key={`${draw.cardId}-${draw.orientation}-${draw.pick}`}
+                    kind="now"
+                    text={nowShareText({ cardName: card.names.ko, reversed, slug: nickShown ? typeSlug : null })}
+                    create={() => createNowShareLink(draw, front, nickShown)}
+                  />
+                </div>
+              )}
             </div>
           ) : null}
         </section>

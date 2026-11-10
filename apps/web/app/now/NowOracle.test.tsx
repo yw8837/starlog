@@ -180,10 +180,11 @@ describe("타로로 판정 (spec 3.2, 6.2)", () => {
     // 타로로's casual nudge (N6) belongs to the teasing step only (review 2026-11-11 #3): the plain button stays.
     expect(screen.queryByText("이 고민, 카드 3장으로 더 볼래?")).toBeNull();
     expect(screen.getByRole("link", { name: /카드 3장으로 보기/ })).toBeTruthy();
-    // A heavy topic keeps the card's line and why: only the nickname goes (coordinator 2026-11-11).
+    // A heavy topic keeps the card's line and why: only the nickname goes (coordinator 2026-11-11). So does its share.
     expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(expected.answer);
     expect(screen.getByText(expected.why)).toBeTruthy();
     expect(screen.queryByText(CRISIS_LEAD)).toBeNull();
+    expect(screen.getByRole("button", { name: "공유하기" })).toBeTruthy();
   });
 
   it("overstatement the wide near-crisis list reads loses the nickname only: the facts, the card's line and why stay (review 2026-11-11 #1)", () => {
@@ -239,6 +240,9 @@ describe("타로로 판정 (spec 3.2, 6.2)", () => {
     expect(screen.getByRole("link", { name: /109/ }).getAttribute("href")).toBe("tel:109");
     expect(screen.queryAllByRole("link", { name: /119/ })).toHaveLength(urgent ? 1 : 0);
     expect(screen.queryByText("이 고민, 카드 3장으로 더 볼래?")).toBeNull();
+    // No 공유하기 either: the link's page would show the very line hidden here (coordinator 2026-11-11).
+    expect(screen.queryByRole("button", { name: "공유하기" })).toBeNull();
+    expect(screen.getByRole("button", { name: "한 번 더 뽑기" })).toBeTruthy();
   });
 });
 
