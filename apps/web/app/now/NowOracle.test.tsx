@@ -204,6 +204,31 @@ describe("타로로 판정 (spec 3.2, 6.2)", () => {
     // No casual nudge right after the care lines: the plain way on only.
     expect(screen.queryByText("이 고민, 카드 3장으로 더 볼래?")).toBeNull();
     expect(screen.getByRole("link", { name: /카드 3장으로 보기/ })).toBeTruthy();
+    // A passive tier keeps the card's line and why, as a reading goes on written with care there (lib/api/http.ts crisisCheck).
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(expected.answer);
+    expect(screen.getByText(expected.why)).toBeTruthy();
+  });
+
+  it.each([
+    ["죽고 싶어", false],
+    ["죽고 싶어. 유서도 써놨어", true],
+  ])("active or urgent crisis words get no reading at all: the plain card name and the care lines only (review 2026-11-11 #4): %s", (question, urgent) => {
+    render(<NowOracle instant />);
+    fireEvent.change(screen.getByLabelText("고민 한 줄"), { target: { value: question } });
+    const expected = pickSlot(6, "now-seed-first");
+    const card = getCard(expected.cardId);
+    const heading = screen.getByRole("heading", { level: 2 });
+    // The card's name where its line would be, and focus there as for a line.
+    expect(heading.textContent).toBe(`${card.names.ko}${expected.orientation === "reversed" ? " 역방향" : ""}`);
+    expect(document.activeElement).toBe(heading);
+    expect(screen.queryByText(expected.answer)).toBeNull();
+    expect(screen.queryByText(expected.why)).toBeNull();
+    expect(verdict()).toBeNull();
+    expect(screen.queryByText(nowFacts(nowType(expected.cardId, expected.orientation), { polite: true }))).toBeNull();
+    expect(screen.getByText(CRISIS_LEAD)).toBeTruthy();
+    expect(screen.getByRole("link", { name: /109/ }).getAttribute("href")).toBe("tel:109");
+    expect(screen.queryAllByRole("link", { name: /119/ })).toHaveLength(urgent ? 1 : 0);
+    expect(screen.queryByText("이 고민, 카드 3장으로 더 볼래?")).toBeNull();
   });
 });
 

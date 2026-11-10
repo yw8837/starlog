@@ -203,6 +203,9 @@ export function NowOracle({ instant = false }: NowOracleProps) {
   const typeSlug = draw ? nowType(draw.cardId, draw.orientation) : null;
   const tone = nowTone(question);
   const nickShown = tone.tone === "spicy";
+  // Active or urgent crisis words: no reading, as the server gives none there (lib/api/http.ts crisisCheck), only the card's
+  // plain name and the care lines; a passive tier keeps the card's line, as a reading goes on written with care.
+  const careOnly = tone.crisis === "active" || tone.crisis === "urgent";
 
   return (
     <div className={s.screen}>
@@ -318,7 +321,14 @@ export function NowOracle({ instant = false }: NowOracleProps) {
             <Emblem />
             {turned ? (
               <h2 ref={answerRef} tabIndex={-1} className={s.answer}>
-                {draw.answer}
+                {careOnly ? (
+                  <>
+                    {card.names.ko}
+                    {reversed ? <span className="sr-only"> 역방향</span> : null}
+                  </>
+                ) : (
+                  draw.answer
+                )}
               </h2>
             ) : null}
           </div>
@@ -326,7 +336,7 @@ export function NowOracle({ instant = false }: NowOracleProps) {
           <div className={s.drawn}>
             <TarotCard cardId={draw.cardId} orientation={draw.orientation} faceUp={turned} size="md" label={turned ? cardLabel : undefined} className={s.card} />
             <div className={s.reading} data-open={turned ? "" : undefined}>
-              {turned ? (
+              {turned && !careOnly ? (
                 <>
                   <p className={s.cardName}>
                     {card.names.ko}
