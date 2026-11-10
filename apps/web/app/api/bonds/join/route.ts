@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { BirthSchema, allowed, body, bondsRoute, fail, ok } from "@/lib/bonds/api";
 import { codeGuard } from "@/lib/bonds/codeGuard";
-import { friendKey } from "@/lib/bonds/identity";
+import { accountFriendKey, existingFriendKey } from "@/lib/bonds/identity";
 import { BondsError, joinStar } from "@/lib/bonds/service";
 
 const JoinBody = z.object({
@@ -17,37 +17,43 @@ const JoinBody = z.object({
   expectedConstellationId: z.string().max(64).optional(),
 });
 
-/** POST → a friend becomes the next star of the owner's constellation. */
+/**
+ * POST → a friend becomes the next star of the owner's constellation. A friend logs in first (owner 2026-11-10): no session
+ * answers 401 LOGIN_REQUIRED before anything is read or written, and the star is the account's (accountFriendKey).
+ */
 export async function POST(request: Request): Promise<Response> {
   return bondsRoute(request, "join", async ({ secret, now, cookies, repo, who }) => {
     if (!(await allowed(request, "BOND_JOIN_LIMITER", now))) return fail("RATE_LIMIT");
+    // Neither the account's owner nor this device's joins its own link as a friend (owner 2026-11-05).
+    const { ownerId, deviceOwnerId, userId } = await who();
+    if (!userId) return fail("LOGIN_REQUIRED");
     const guard = codeGuard(request, now);
     if (!(await guard.allowed())) return fail("RATE_LIMIT");
     const input = await body(request, JoinBody);
-    const device = await friendKey(cookies, secret);
     let result: Awaited<ReturnType<typeof joinStar>>;
     try {
-      // Neither the account's owner nor this device's joins its own link as a friend, logged in or not (owner 2026-11-05).
-      const { ownerId, deviceOwnerId } = await who();
-      result = await joinStar(repo, now, { ...input, friendKey: device.key, joinerOwnerIds: [ownerId, deviceOwnerId] });
+      result = await joinStar(repo, now, {
+        ...input,
+        friendKey: await accountFriendKey(userId, secret),
+        // a star this device left before a join needed a login is this friend's too: no second one, and its removal holds
+        deviceKey: await existingFriendKey(cookies, secret),
+        joinerOwnerIds: [ownerId, deviceOwnerId],
+      });
     } catch (error) {
       if (error instanceof BondsError && error.code === "BAD_CODE") await guard.failed();
       throw error;
     }
-    return ok(
-      {
-        nickname: result.star.nickname,
-        score: result.score,
-        parts: result.parts,
-        completed: result.completed,
-        sign: result.sign,
-        slot: result.star.slot,
-        starId: result.star.id,
-        ownerNickname: result.ownerNickname,
-        card: result.card,
-        bondLine: result.bondLine,
-      },
-      [device.setCookie],
-    );
+    return ok({
+      nickname: result.star.nickname,
+      score: result.score,
+      parts: result.parts,
+      completed: result.completed,
+      sign: result.sign,
+      slot: result.star.slot,
+      starId: result.star.id,
+      ownerNickname: result.ownerNickname,
+      card: result.card,
+      bondLine: result.bondLine,
+    });
   });
 }

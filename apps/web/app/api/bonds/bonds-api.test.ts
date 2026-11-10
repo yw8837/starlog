@@ -1,7 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetDailyStore } from "@/lib/api/dailyStore";
-import { setTestDb } from "@/lib/db";
+import { friendKey } from "@/lib/bonds/identity";
+import { joinStar } from "@/lib/bonds/service";
+import { bondsRepo, setTestDb } from "@/lib/db";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
+import { signingSecret } from "@/lib/security/sign";
 import { signIn } from "@/lib/testing/bondsLogin";
 import { POST as ownerPost } from "./owner/route";
 import { POST as choosePost } from "./choose/route";
@@ -31,6 +34,13 @@ const req = (url: string, jar: Jar, body?: unknown, ip = "1.1.1.1") =>
   });
 const ME = { calendar: "solar", year: 1990, month: 1, day: 1 };
 const BIRTHS = [[1991, 5, 12], [1992, 8, 3], [1988, 11, 20], [1995, 2, 28]] as const;
+
+/** A friend's browser, logged in: a friend logs in to join (owner 2026-11-10). */
+async function loggedIn(): Promise<Jar> {
+  const jar: Jar = new Map();
+  await signIn(jar);
+  return jar;
+}
 
 async function startOwner(nickname = "용우", sign = "aries") {
   const owner: Jar = new Map();
@@ -68,7 +78,7 @@ describe("bonds API", () => {
     expect(res.status).toBe(200);
     let last: { completed: boolean } | null = null;
     for (const [i, [year, month, day]] of BIRTHS.entries()) {
-      const friend: Jar = new Map();
+      const friend = await loggedIn();
       res = await joinPost(req("/api/bonds/join", friend, { code, nickname: `친구${i}`, birth: { calendar: "solar", year, month, day }, pick: i }, `2.2.2.${i}`));
       expect(res.status).toBe(200);
       last = (await res.json()) as { completed: boolean };
@@ -102,20 +112,19 @@ describe("bonds API", () => {
     expect(body.weekTop).toMatchObject({ sign: expect.any(String), total: expect.any(Number) });
   });
 
-  it("lists under `joined` the constellations a friend device joined, members by nickname only; an owner sees theirs too (owner 2026-10-14)", async () => {
+  it("lists under `joined` the constellations a friend joined, members by nickname only; an owner sees theirs too (owner 2026-10-14)", async () => {
     const { owner, code } = await startOwner("민지", "aquarius");
-    const friend: Jar = new Map();
+    const friend = await loggedIn();
     let res = await joinPost(req("/api/bonds/join", friend, { code, nickname: "용우", birth: ME, pick: 0, message: "비밀 쪽지" }, "3.3.3.1"));
     absorb(friend, res);
     expect(res.status).toBe(200);
-    res = await joinPost(req("/api/bonds/join", new Map(), { code, nickname: "지수", birth: { calendar: "solar", year: 1991, month: 5, day: 12 }, pick: 1 }, "3.3.3.2"));
+    res = await joinPost(req("/api/bonds/join", await loggedIn(), { code, nickname: "지수", birth: { calendar: "solar", year: 1991, month: 5, day: 12 }, pick: 1 }, "3.3.3.2"));
     expect(res.status).toBe(200);
-    // Seeing it again needs a session (owner 2026-11-05): before one, only that there is something to see.
-    const hidden = (await (await meGet(req("/api/bonds/me", friend))).json()) as Record<string, unknown>;
-    expect(hidden).toMatchObject({ owner: null, signedIn: false, joinedHidden: true });
-    expect(hidden.joined).toBeUndefined();
-    expect(JSON.stringify(hidden)).not.toMatch(/민지|용우|지수|aquarius/);
-    await signIn(friend);
+    // Seeing it needs a session (owner 2026-11-05): logged out, nothing of it.
+    const loggedOut = (await (await meGet(req("/api/bonds/me", new Map([...friend].filter(([name]) => !name.includes("sl_sid")))))).json()) as Record<string, unknown>;
+    expect(loggedOut).toMatchObject({ owner: null, signedIn: false });
+    expect(loggedOut.joined).toBeUndefined();
+    expect(JSON.stringify(loggedOut)).not.toMatch(/민지|용우|지수|aquarius/);
     const body = (await (await meGet(req("/api/bonds/me", friend))).json()) as Record<string, unknown>;
     expect(body).toMatchObject({
       owner: null,
@@ -127,15 +136,46 @@ describe("bonds API", () => {
     expect(Object.keys((await (await meGet(req("/api/bonds/me?view=home", friend))).json()) as object)).not.toContain("joined");
   });
 
-  it("answers a second join from a device with no session with the refusal alone, no result in it (owner 2026-11-05)", async () => {
-    const { code } = await startOwner("민지", "aquarius");
-    const friend: Jar = new Map();
-    const first = await joinPost(req("/api/bonds/join", friend, { code, nickname: "용우", birth: ME, pick: 0 }, "3.3.4.1"));
-    absorb(friend, first);
-    expect(((await first.json()) as { score: number }).score).toEqual(expect.any(Number));
-    const again = await joinPost(req("/api/bonds/join", friend, { code, nickname: "용우", birth: ME, pick: 1 }, "3.3.4.1"));
+  it("a friend logs in to join (owner 2026-11-10): no session, 401 LOGIN_REQUIRED and nothing written; the star is the account's, on any of its browsers, once a round", async () => {
+    const { owner, code } = await startOwner("민지", "aquarius");
+    const refused = await joinPost(req("/api/bonds/join", new Map(), { code, nickname: "용우", birth: ME, pick: 0 }, "3.3.4.1"));
+    expect(refused.status).toBe(401);
+    expect(await refused.json()).toEqual({ ok: false, code: "LOGIN_REQUIRED" });
+    expect(refused.headers.getSetCookie().join()).not.toMatch(/sl_fid=/);
+    expect(await (await resolveGet(req(`/api/bonds/resolve?code=${code}`, new Map()))).json()).toMatchObject({ sign: "aquarius", filled: 0 });
+
+    const web: Jar = new Map();
+    const userId = await signIn(web);
+    const first = await joinPost(req("/api/bonds/join", web, { code, nickname: "용우", birth: ME, pick: 0 }, "3.3.4.2"));
+    expect(first.status).toBe(200);
+    // no device cookie: the account is who joined
+    expect(first.headers.getSetCookie().join()).not.toMatch(/sl_fid=/);
+    // the account's other browser: one star a round, and that star is shown there too
+    const phone: Jar = new Map();
+    await signIn(phone, userId);
+    const again = await joinPost(req("/api/bonds/join", phone, { code, nickname: "다른별", birth: { calendar: "solar", year: 1991, month: 5, day: 12 }, pick: 1 }, "3.3.4.3"));
     expect(again.status).toBe(409);
     expect(await again.json()).toEqual({ ok: false, code: "ALREADY_JOINED" });
+    expect(await (await meGet(req("/api/bonds/me", phone))).json()).toMatchObject({ joined: [{ ownerNickname: "민지", members: [{ nickname: "용우", me: true }] }] });
+    // the account id itself is stored nowhere the owner reads
+    expect(JSON.stringify(await (await meGet(req("/api/bonds/me", owner))).json())).not.toContain(userId);
+  });
+
+  it("a star a browser left before a join needed a login is still that browser's once it logs in: shown, and no second star (owner 2026-11-10)", async () => {
+    const { code } = await startOwner("민지", "aquarius");
+    const device = await friendKey({}, signingSecret()!);
+    const [pair = ""] = device.setCookie!.split(";");
+    const jar: Jar = new Map([[pair.slice(0, pair.indexOf("=")), pair.slice(pair.indexOf("=") + 1)]]);
+    await joinStar(bondsRepo(), Date.now(), { code, friendKey: device.key, nickname: "예전별", birth: { ...ME, calendar: "solar" }, pick: 0 });
+    // before the login: only that there is something to see (owner 2026-11-05)
+    const hidden = (await (await meGet(req("/api/bonds/me", jar))).json()) as Record<string, unknown>;
+    expect(hidden).toMatchObject({ owner: null, signedIn: false, joinedHidden: true });
+    expect(JSON.stringify(hidden)).not.toMatch(/민지|예전별|aquarius/);
+    await signIn(jar);
+    const again = await joinPost(req("/api/bonds/join", jar, { code, nickname: "새별", birth: { calendar: "solar", year: 1991, month: 5, day: 12 }, pick: 1 }, "3.3.4.4"));
+    expect(again.status).toBe(409);
+    expect(await again.json()).toEqual({ ok: false, code: "ALREADY_JOINED" });
+    expect(await (await meGet(req("/api/bonds/me", jar))).json()).toMatchObject({ joined: [{ ownerNickname: "민지", members: [{ nickname: "예전별", me: true }] }] });
   });
 
   it("refuses self-joins", async () => {
@@ -154,7 +194,7 @@ describe("bonds API", () => {
     expect(wrong.slice(0, 10)).toEqual(Array(10).fill(400));
     expect(wrong[10]).toBe(400); // the 11th wrong code is still answered, then the network is blocked
     expect((await resolve(code, "8.8.8.8")).status).toBe(429);
-    const join = await joinPost(req("/api/bonds/join", new Map(), { code, nickname: "하늘", birth: ME, pick: 0 }, "8.8.8.8"));
+    const join = await joinPost(req("/api/bonds/join", await loggedIn(), { code, nickname: "하늘", birth: ME, pick: 0 }, "8.8.8.8"));
     expect(join.status).toBe(429);
     expect((await resolve(code, "7.7.7.7")).status).toBe(200);
   });
@@ -195,7 +235,7 @@ describe("bonds API", () => {
   it("serves the home row a light view: the latest completion's ranks, but no TOP 5", async () => {
     const { owner, code } = await startOwner("용우", "aries");
     for (const [i, [year, month, day]] of BIRTHS.entries()) {
-      await joinPost(req("/api/bonds/join", new Map(), { code, nickname: `벗${i}`, birth: { calendar: "solar", year, month, day }, pick: i }, `3.3.3.${i + 10}`));
+      await joinPost(req("/api/bonds/join", await loggedIn(), { code, nickname: `벗${i}`, birth: { calendar: "solar", year, month, day }, pick: i }, `3.3.3.${i + 10}`));
     }
     const light = (await (await meGet(req("/api/bonds/me?view=home", owner))).json()) as { ranks: Record<string, unknown>; top5: unknown[]; completed: unknown[] };
     expect(Object.keys(light.ranks)).toEqual(["aries"]);
@@ -207,9 +247,9 @@ describe("bonds API", () => {
     expect(full.top5).toHaveLength(4);
   });
 
-  it("never echoes the friend's birth date and lets one device join a round once", async () => {
+  it("never echoes the friend's birth date and lets one account join a round once", async () => {
     const { code } = await startOwner("하늘", "gemini");
-    const friend: Jar = new Map();
+    const friend = await loggedIn();
     const res = await joinPost(req("/api/bonds/join", friend, { code, nickname: "민지", birth: { calendar: "solar", year: 1993, month: 7, day: 14 }, pick: 3, message: "늘 고마워" }, "3.3.3.3"));
     absorb(friend, res);
     const text = await res.text();
@@ -258,7 +298,7 @@ describe("bonds API", () => {
   it("removes a star, turns the ranking name off, and draws 오늘의 인연 카드", async () => {
     const { owner, code } = await startOwner("용우", "libra");
     for (const [i, [year, month, day]] of BIRTHS.entries()) {
-      await joinPost(req("/api/bonds/join", new Map(), { code, nickname: `벗${i}`, birth: { calendar: "solar", year, month, day }, pick: i }, `4.4.4.${i}`));
+      await joinPost(req("/api/bonds/join", await loggedIn(), { code, nickname: `벗${i}`, birth: { calendar: "solar", year, month, day }, pick: i }, `4.4.4.${i}`));
     }
     let me = (await (await meGet(req("/api/bonds/me", owner))).json()) as { completed: { stars: { id: string }[] }[]; filling: unknown };
     const starId = me.completed[0]!.stars[0]!.id;
@@ -318,7 +358,7 @@ describe("bonds API", () => {
       expect(store.size).toBe(1);
       const { owner, code } = await startOwner("늦별", "aries");
       for (const [i, [year, month, day]] of BIRTHS.entries()) {
-        await joinPost(req("/api/bonds/join", new Map(), { code, nickname: `늦벗${i}`, birth: { calendar: "solar", year, month, day }, pick: i }, `6.6.6.${i}`));
+        await joinPost(req("/api/bonds/join", await loggedIn(), { code, nickname: `늦벗${i}`, birth: { calendar: "solar", year, month, day }, pick: i }, `6.6.6.${i}`));
       }
       // a visitor within the minute still gets the cached lists
       expect((await get(new Map())).all).toEqual(before.all);

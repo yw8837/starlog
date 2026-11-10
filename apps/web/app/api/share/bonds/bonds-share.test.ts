@@ -45,13 +45,15 @@ async function constellationWithTwo(sign = "leo", count = 2, notice: boolean[] =
   absorb(owner, res);
   const { code } = (await res.json()) as { code: string };
   await choosePost(req("/api/bonds/choose", owner, { sign }));
-  const friends: Array<{ jar: Jar; starId: string; score: number }> = [];
+  const friends: Array<{ jar: Jar; userId: string; starId: string; score: number }> = [];
   for (const [i, [year, month, day]] of BIRTHS.slice(0, count).entries()) {
+    // a friend logs in to join (owner 2026-11-10)
     const jar: Jar = new Map();
+    const userId = await signIn(jar);
     const joined = await joinPost(req("/api/bonds/join", jar, { code, nickname: `친구${i}`, birth: { calendar: "solar", year, month, day }, pick: i, ...(notice[i] ? { scoreNotice: true } : {}) }, { ip: `2.2.2.${i}` }));
     absorb(jar, joined);
     const body = (await joined.json()) as { starId: string; score: number };
-    friends.push({ jar, starId: body.starId, score: body.score });
+    friends.push({ jar, userId, starId: body.starId, score: body.score });
   }
   const ownerId = await ownerIdOf(owner);
   const filling = await bondsRepo().fillingOf(ownerId);
@@ -202,6 +204,24 @@ describe("POST /api/share/bonds and /api/share/bond", () => {
       expect(body).toMatchObject({ code: "LOGIN_REQUIRED", reason: "share" });
       expect(JSON.stringify(body)).not.toContain("이 기기에서 만든");
     }
+  });
+
+  it("a friend's own star needs a session as well (owner 2026-11-10), and it is the account's: another browser of it shares it too", async () => {
+    useTestDb();
+    const { friends } = await constellationWithTwo();
+    const me = friends[0]!;
+    const noSession: Jar = new Map([...me.jar].filter(([name]) => !name.includes("sl_sid")));
+    const asks = [
+      await bondPost(req("/api/share/bond", noSession, { starId: me.starId })),
+      await bondDelete(req("/api/share/bond", noSession, { starId: me.starId }, { method: "DELETE" })),
+    ];
+    for (const res of asks) {
+      expect(res.status).toBe(401);
+      expect(await res.json()).toMatchObject({ code: "LOGIN_REQUIRED", reason: "share" });
+    }
+    const phone: Jar = new Map();
+    await signIn(phone, me.userId);
+    expect((await bondPost(req("/api/share/bond", phone, { starId: me.starId }))).status).toBe(200);
   });
 
   it("with a session that does not own it: the same not-yours answer as before", async () => {

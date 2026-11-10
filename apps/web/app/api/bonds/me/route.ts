@@ -1,15 +1,15 @@
 import { bestRecord, loadLeaders, type WeekTop } from "@/app/ranking/loadLeaders";
 import { bondsRoute, ok } from "@/lib/bonds/api";
-import { existingFriendKey } from "@/lib/bonds/identity";
+import { friendKeysOf } from "@/lib/bonds/identity";
 import { BondsError, joinedView, linkOffer, ownerView, type JoinedView } from "@/lib/bonds/service";
 
 /**
  * GET → this device's 별자리 인연: `{ owner: null }` before the first start, else the owner view (`?view=home`: ranks as usual, no TOP 5).
  * Both carry `weekTop` (the field keeps its name for clients that already read it), the best constellation of
  * all time for the 인연 랭킹 tile (from the leaderboard's edge-cached query, no query of its own; null before
- * any completion, left out when it cannot be read). `joined` (owner 2026-10-14): the constellations this device
- * joined as a friend, when there are any (never on the home row's light view), and only with a session (owner
- * 2026-11-05): without one, `joinedHidden` says there are some and nothing of them. `signedIn`: a starting owner logs in
+ * any completion, left out when it cannot be read). `joined` (owner 2026-10-14): the constellations this account (or this
+ * device, before a join needed a login) joined as a friend, when there are any (never on the home row's light view), and
+ * only with a session (owner 2026-11-05): without one, `joinedHidden` says this device has some and nothing of them. `signedIn`: a starting owner logs in
  * first (owner 2026-10-27); `link`: this device's owner belongs to no account and the visitor is logged in, so the page
  * offers 연결하기, or asks which of two owners stays (lib/bonds/service.ts linkOffer). `ownerHidden`: this device has an owner
  * of no account but no session (owner 2026-11-05): that it is there, nothing of it, on the home row too.
@@ -22,8 +22,9 @@ export async function GET(request: Request): Promise<Response> {
     const { ownerId } = identity;
     const signedIn = identity.userId !== null;
     const light = new URL(request.url).searchParams.get("view") === "home";
-    const friend = light ? null : await existingFriendKey(cookies, secret);
-    const joined = friend ? await joinedView(repo, friend, ownerId) : [];
+    // the account's stars (a friend logs in to join, owner 2026-11-10), and this device's from before
+    const keys = light ? [] : await friendKeysOf(identity.userId, cookies, secret);
+    const joined = keys.length ? await joinedView(repo, keys, ownerId) : [];
     if (joined.length && signedIn) top = { ...top, joined };
     else if (joined.length) top = { ...top, joinedHidden: true };
     if (!ownerId) return ok({ owner: null, signedIn, ...(identity.deviceOwnerId && !signedIn ? { ownerHidden: true } : {}), ...top });
