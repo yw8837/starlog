@@ -82,6 +82,18 @@ export async function deleteAccount(db: D1Binding, toss: TossClient | null, inpu
     }
     refunded++;
   }
+  // An unopened reading whose order refunds 0원 now (what Toss cancelled already covers it, or a reading kept that the catalog
+  // does not know): there is nothing to send, so its lot leaves use with the account (logged for the operator) instead of
+  // holding the deletion up for good below.
+  const nothingBack = new Set(unused.filter((item) => item.refundable === 0 && item.noRefund !== "left").map((item) => item.orderId));
+  if (nothingBack.size) {
+    const { results } = await db.prepare(`SELECT * FROM credit_lots c WHERE c.user_id = ? AND c.currency = 'paid' AND ${LOT_UNTOUCHED_SQL("c")}`).bind(userId).all<Lot>();
+    const stranded = results.filter((lot) => lot.order_id !== null && nothingBack.has(lot.order_id));
+    if (stranded.length) {
+      console.warn(JSON.stringify({ evt: "account.delete_unrefundable_lot", orderIds: [...new Set(stranded.map((lot) => lot.order_id))] }));
+      await db.batch(stranded.flatMap((lot) => forfeitStatements(db, lot, "revoked", now)));
+    }
+  }
 
   // One guarded statement: nothing reserved, nothing in flight, no unopened refundable paid reading left.
   const marked = await db
