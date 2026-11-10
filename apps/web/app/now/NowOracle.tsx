@@ -203,9 +203,9 @@ export function NowOracle({ instant = false }: NowOracleProps) {
   const typeSlug = draw ? nowType(draw.cardId, draw.orientation) : null;
   const tone = nowTone(question);
   const nickShown = tone.tone === "spicy";
-  // Active or urgent crisis words: no reading, as the server gives none there (lib/api/http.ts crisisCheck), only the card's
-  // plain name and the care lines; a passive tier keeps the card's line, as a reading goes on written with care.
-  const careOnly = tone.crisis === "active" || tone.crisis === "urgent";
+  // Crisis words of any tier, or a plain wish to end one's life or vanish (lib/voice/tone.ts STRONG_NEAR): no card line or
+  // why, only the card's plain name and the care lines (review 2026-11-11 #4, coordinator 2026-11-11).
+  const careOnly = tone.tone === "crisis" || tone.tone === "care";
 
   return (
     <div className={s.screen}>
@@ -349,7 +349,7 @@ export function NowOracle({ instant = false }: NowOracleProps) {
           </div>
 
           {turned && typeSlug ? (
-            tone.tone === "crisis" ? (
+            careOnly ? (
               <CrisisContacts compact urgent={tone.crisis === "urgent"} className={s.care} />
             ) : nickShown ? (
               <section className={s.verdict} aria-labelledby="now-verdict-title">

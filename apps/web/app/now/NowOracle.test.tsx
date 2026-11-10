@@ -180,14 +180,21 @@ describe("타로로 판정 (spec 3.2, 6.2)", () => {
     // 타로로's casual nudge (N6) belongs to the teasing step only (review 2026-11-11 #3): the plain button stays.
     expect(screen.queryByText("이 고민, 카드 3장으로 더 볼래?")).toBeNull();
     expect(screen.getByRole("link", { name: /카드 3장으로 보기/ })).toBeTruthy();
+    // A heavy topic keeps the card's line and why: only the nickname goes (coordinator 2026-11-11).
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(expected.answer);
+    expect(screen.getByText(expected.why)).toBeTruthy();
+    expect(screen.queryByText(CRISIS_LEAD)).toBeNull();
   });
 
-  it("near-crisis wording the server's crisis words miss gets the facts only, without the nudge (review 2026-11-11 #1)", () => {
+  it("overstatement the wide near-crisis list reads loses the nickname only: the facts, the card's line and why stay (review 2026-11-11 #1)", () => {
     render(<NowOracle instant />);
-    fireEvent.change(screen.getByLabelText("고민 한 줄"), { target: { value: "더 버틸 자신이 없어" } });
+    fireEvent.change(screen.getByLabelText("고민 한 줄"), { target: { value: "배고파 죽겠어 뭐 먹지" } });
     const expected = pickSlot(6, "now-seed-first");
     expect(verdict()).toBeNull();
     expect(screen.getByText(nowFacts(nowType(expected.cardId, expected.orientation), { polite: true }))).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(expected.answer);
+    expect(screen.getByText(expected.why)).toBeTruthy();
+    expect(screen.queryByText(CRISIS_LEAD)).toBeNull();
     expect(screen.queryByText("이 고민, 카드 3장으로 더 볼래?")).toBeNull();
   });
 
@@ -204,15 +211,18 @@ describe("타로로 판정 (spec 3.2, 6.2)", () => {
     // No casual nudge right after the care lines: the plain way on only.
     expect(screen.queryByText("이 고민, 카드 3장으로 더 볼래?")).toBeNull();
     expect(screen.getByRole("link", { name: /카드 3장으로 보기/ })).toBeTruthy();
-    // A passive tier keeps the card's line and why, as a reading goes on written with care there (lib/api/http.ts crisisCheck).
-    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(expected.answer);
-    expect(screen.getByText(expected.why)).toBeTruthy();
+    // A passive tier hides the card's line and why too (coordinator 2026-11-11).
+    expect(screen.queryByText(expected.answer)).toBeNull();
+    expect(screen.queryByText(expected.why)).toBeNull();
   });
 
   it.each([
     ["죽고 싶어", false],
     ["죽고 싶어. 유서도 써놨어", true],
-  ])("active or urgent crisis words get no reading at all: the plain card name and the care lines only (review 2026-11-11 #4): %s", (question, urgent) => {
+    ["살기 싫다 진짜", false],
+    ["더 버틸 자신이 없어", false],
+    ["그냥 사라질까", false],
+  ])("crisis words of any tier, or a plain wish to end it or vanish, get no card line or why: the plain card name and the care lines only (review 2026-11-11 #4, coordinator): %s", (question, urgent) => {
     render(<NowOracle instant />);
     fireEvent.change(screen.getByLabelText("고민 한 줄"), { target: { value: question } });
     const expected = pickSlot(6, "now-seed-first");

@@ -3,15 +3,17 @@ import { crisisTier, type CrisisTier } from "@/lib/crisis";
 /**
  * How far the characters may tease (spec 2026-11-11 entry funnel renewal, 2.5), decided from what the person wrote and the
  * topic, before anything is shown. In order, the first that applies wins:
- * 1. crisis words (lib/crisis.ts): the care lines and contacts, no nickname
- * 2. near-crisis wording or a heavy topic in any text (health, money owed, lawsuits, a death …): the card's facts only
- * 3. 건강·컨디션 or 마음·감정: facts only
- * 4. 재회, 갈등·화해, 결혼, 재물운, a topic the person wrote, or a breakup or money in the text: the mild names and lines
- * 5. everything else: the teasing names and lines
+ * 1. crisis words (lib/crisis.ts), any tier: the care lines and contacts, no nickname
+ * 2. a plain wish to end one's life or vanish that the crisis words let through (STRONG_NEAR): the care step, the same
+ * 3. wide near-crisis wording or a heavy topic in any text (health, money owed, lawsuits, a death …): the card's facts only
+ * 4. 건강·컨디션 or 마음·감정: facts only
+ * 5. 재회, 갈등·화해, 결혼, 재물운, a topic the person wrote, or a breakup or money in the text: the mild names and lines
+ * 6. everything else: the teasing names and lines
+ * 지금의 한 장 shows no card line, why or share in the care and crisis steps (app/now/NowOracle.tsx).
  * 지금의 한 장 has no mild table, so what three cards would read mildly shows its facts only there (nowTone).
  * Runs in the browser: lib/crisis.ts is its one pattern; nothing here is sent anywhere.
  */
-export type Tone = "spicy" | "mild" | "facts" | "crisis";
+export type Tone = "spicy" | "mild" | "facts" | "care" | "crisis";
 
 export interface ToneVerdict {
   tone: Tone;
@@ -20,9 +22,26 @@ export interface ToneVerdict {
 }
 
 /**
- * Near-crisis wording the server's crisis words (lib/crisis.ts, kept as they are) let through: "죽는게 나을까", "살 이유가 없어",
- * "더 버틸 자신이 없어", "자 살" (review 2026-11-11). Deliberately wide, read with the spaces gone: a false hit only hides a
- * nickname. The facts only, or the care lines where the server's crisis words also read it.
+ * A plain wish to end one's life or vanish, read in the words themselves, that the server's crisis words (lib/crisis.ts,
+ * kept as they are) let through: "죽는게 나을까", "살 이유가 없어", "더 버틸 자신이 없어", "자 살" (coordinator 2026-11-11).
+ * Read with the spaces gone and jamo joined. Narrow on purpose, since it shows the helplines in place of the card's line:
+ * no overstatement ("배고파 죽겠어", "버텨야 할까"), nothing that goes missing ("우산이 사라졌어"), no shopping ("자 살까 말까").
+ */
+const STRONG_NEAR = new RegExp(
+  [
+    "죽는게(?:나을|낫|편)|죽는편이(?:나을|낫)|죽고싶(?!(?:지|진|지는|지도)않)|죽어버리고싶|뒤지고싶|디지고싶|뒤져버리고싶|디져버리고싶",
+    "자살(?!까|예방|골)|자해",
+    "(?:살|살아갈|살아야할|사는)이유가?없|(?:살|사는)의미가?없|사는게(?:싫|지겹)|살기싫|살고싶지않",
+    "(?<!창피해서|쪽팔려서|부끄러워서|민망해서)사라지고싶|(?:그냥|차라리|조용히|영원히)사라질까|(?:내가|나|난|나는)사라졌으면",
+    "없어지면편|없어지고싶|(?:내가|나|난|나는)없어지",
+    "버틸(?:자신|힘)이?없|못버티겠|더는못버티|더이상못버티",
+    "^(?:요즘|그냥|이제|진짜|정말|차라리|나|난|너무)*다(?:포기하|끝내)고싶|(?:전부|모든걸?|모두)포기하고싶|(?:삶|인생)을?(?:포기|끝내)",
+    "태어나지(?:말|않았으면)|안태어났으면|태어난게후회|영원히(?:잠들고|자고)싶|깨어나지않았으면|눈(?:안|뜨지않)았?으면|세상을?떠나고싶",
+  ].join("|"),
+);
+/**
+ * Near-crisis wording, deliberately wide (review 2026-11-11), read with the spaces gone: a hit only hides the nickname, the
+ * card's line stays (the facts only), so overstatement ("배고파 죽겠어") costs nothing but the joke.
  */
 const NEAR_CRISIS = new RegExp(
   [
@@ -125,6 +144,7 @@ function crisisOf(texts: readonly string[]): CrisisTier | null {
 export function tarotTone({ texts = [], topicId, customTopic = false }: { texts?: readonly string[]; topicId?: string; customTopic?: boolean }): ToneVerdict {
   const crisis = crisisOf(texts);
   if (crisis) return { tone: "crisis", crisis };
+  if (readsAny(STRONG_NEAR, texts)) return { tone: "care", crisis: null };
   if (readsAny(NEAR_CRISIS, texts) || readsAny(HEAVY, texts) || (topicId !== undefined && FACTS_TOPICS.has(topicId))) return { tone: "facts", crisis: null };
   if (customTopic || (topicId !== undefined && MILD_TOPICS.has(topicId)) || readsAny(TENDER, texts)) return { tone: "mild", crisis: null };
   return { tone: "spicy", crisis: null };

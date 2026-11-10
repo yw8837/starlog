@@ -29,11 +29,52 @@ describe("지금의 한 장 tone (question only, spec 2.5)", () => {
   });
 });
 
-describe("near-crisis wording the server's crisis words let through (review 2026-11-11): never teased", () => {
-  // The reviewer's 위기 변형 samples. The server's crisis words (lib/crisis.ts) stay as they are; the browser's own check is
-  // deliberately wide, since a false hit only hides a nickname.
-  it.each(["죽는게 나을까", "살 이유가 없어", "다 포기하고 싶어", "더 버틸 자신이 없어", "그냥 사라질까", "없어지면 편할까", "자 살"])("the facts only: %s", (text) => {
-    expect(nowTone(text)).toEqual({ tone: "facts", crisis: null });
+/**
+ * Coordinator 2026-11-11: two steps of near-crisis wording the server's crisis words let through. A plain wish to end one's
+ * life or to vanish, read in the sentence itself (spaces and jamo tricks included), is the care step: no nickname, no card
+ * line, no why, no share, the care lines and contacts. The wide list (죽, 사라지, 없어지, 버티 …) only hides the nickname.
+ */
+const STRONG_NEAR = [
+  "죽는게 나을까", "죽는 게 낫겠다", "그냥 죽는 게 편할 것 같아", "살 이유가 없어", "사는 의미가 없어", "사는 게 싫어",
+  "그냥 사라질까", "차라리 사라질까", "없어지면 편할까", "없어지고 싶어", "내가 없어지면 다들 편하겠지", "더 버틸 자신이 없어",
+  "이제 못 버티겠어", "더는 못 버티겠다", "다 포기하고 싶어", "요즘 다 포기하고 싶다", "전부 포기하고 싶다", "다 끝내고 싶어",
+  "태어나지 말걸 그랬어", "영원히 잠들고 싶어", "깨어나지 않았으면 좋겠어", "세상 떠나고 싶어", "뒤지고 싶다", "자 살",
+  // the same with spaces, marks, digits, invisible characters or jamo typed apart
+  "죽 는 게 나 을 까", "사 라 지 고 싶 다", "자.살", "자1살", "버​틸 자신이 없어", "주ㄱ는게 나을까",
+];
+/** Everyday overstatement and things that go missing: the card's line stays (some lose the nickname to the wide list). */
+const EVERYDAY_OVERSTATEMENT = [
+  "배고파 죽겠어 뭐 먹지", "웃겨 죽겠다 ㅋㅋ", "졸려 죽겠는데 커피 마실까", "더워 죽겠어 에어컨 살까", "보고 싶어 죽겠어 연락할까",
+  "귀여워 죽겠어 고양이 입양할까", "시험 공부 죽을 맛이야", "이 노래 죽이는데 공연 갈까", "피곤해 죽을 것 같아 쉴까",
+  "회사 더 버텨야 할까", "조금만 버티면 승진할까", "지갑이 없어졌어 찾을 수 있을까", "우산이 사라졌어", "약속이 없어졌는데 뭐 할까",
+  "일정이 사라져서 한가해", "사라진 반지 찾을 수 있을까", "자 살까 말까", "죽 먹을까 밥 먹을까", "숙제 다 끝내고 싶어",
+  "연애 끝내고 싶어", "다이어트 포기하고 싶어", "쪽팔려서 사라지고 싶어", "죽음 카드가 나왔어요", "택배가 사라졌는데 다시 시킬까",
+];
+
+describe("near-crisis wording the server's crisis words let through (review 2026-11-11, coordinator's two steps)", () => {
+  it("holds at least 20 of each", () => {
+    expect(STRONG_NEAR.length).toBeGreaterThanOrEqual(20);
+    expect(EVERYDAY_OVERSTATEMENT.length).toBeGreaterThanOrEqual(20);
+  });
+
+  it.each(STRONG_NEAR)("a plain wish to end it or vanish hides the card's line (the care step, or the server's crisis words): %s", (text) => {
+    expect(["care", "crisis"]).toContain(nowTone(text).tone);
+  });
+
+  it.each(EVERYDAY_OVERSTATEMENT)("everyday overstatement keeps the card's line: %s", (text) => {
+    expect(["care", "crisis"]).not.toContain(nowTone(text).tone);
+  });
+
+  it("the wide list still hides the nickname of what it reads: the facts only", () => {
+    for (const text of ["배고파 죽겠어 뭐 먹지", "회사 더 버텨야 할까", "다이어트 포기하고 싶어", "ㅈㅅ", "자 살까 말까", "연애 끝내고 싶어"]) {
+      expect(nowTone(text)).toEqual({ tone: "facts", crisis: null });
+    }
+  });
+
+  it("the care step is the browser's own: no server tier", () => {
+    for (const text of ["죽는게 나을까", "살 이유가 없어", "다 포기하고 싶어", "더 버틸 자신이 없어", "그냥 사라질까", "없어지면 편할까", "자 살"]) {
+      expect(nowTone(text)).toEqual({ tone: "care", crisis: null });
+    }
   });
 
   it.each([
@@ -50,14 +91,9 @@ describe("near-crisis wording the server's crisis words let through (review 2026
     expect(nowTone("ㅈㅏㅅㅏㄹ하고 싶어")).toEqual({ tone: "crisis", crisis: "active" });
   });
 
-  it("reads past spaces, marks, digits and invisible characters, but never calls a spaced-out word crisis words", () => {
-    for (const text of ["죽 는 게 나 을 까", "자.살", "자1살", "버​틸 자신이 없어", "ㅈㅅ"]) expect(nowTone(text).tone).toBe("facts");
-    // "자 살까 말까" is shopping: spaces gone it reads 자살, so it loses the nickname, but no helplines for it.
-    expect(nowTone("자 살까 말까")).toEqual({ tone: "facts", crisis: null });
-  });
-
   it("the 3-card tone reads the same way (one function)", () => {
-    expect(tarotTone({ texts: ["더 버틸 자신이 없어"], topicId: "crush" })).toEqual({ tone: "facts", crisis: null });
+    expect(tarotTone({ texts: ["더 버틸 자신이 없어"], topicId: "crush" })).toEqual({ tone: "care", crisis: null });
+    expect(tarotTone({ texts: ["배고파 죽겠어"], topicId: "daily" })).toEqual({ tone: "facts", crisis: null });
     expect(tarotTone({ texts: ["", "주ㄱ고 싶어"], topicId: "career" }).tone).toBe("crisis");
   });
 });
