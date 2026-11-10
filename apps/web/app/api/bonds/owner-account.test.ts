@@ -95,7 +95,7 @@ describe("별자리 인연 owners belong to accounts", () => {
     expect(linked?.nickname).toBe("용우");
   });
 
-  it("another device of the account shows the same constellation, invite link and stars; a friend joins without logging in", async () => {
+  it("another device of the account shows the same constellation, invite link and stars; a friend joins logged in to their own account", async () => {
     const web: Jar = new Map();
     const userId = await signIn(web);
     const code = await accountOwner(web);
@@ -104,8 +104,9 @@ describe("별자리 인연 owners belong to accounts", () => {
     const [onWeb, onPhone] = [await me(web), await me(phone)];
     expect(onPhone.invite?.code).toBe(code);
     expect(onPhone.filling?.row.id).toBe(onWeb.filling?.row.id);
-    // a friend, no login, from the link
+    // a friend, logged in to their own account (owner 2026-11-10), from the link
     const friend: Jar = new Map();
+    await signIn(friend);
     const joined = await joinPost(req("/api/bonds/join", friend, { code, nickname: "하늘", birth: { calendar: "solar", year: 1992, month: 8, day: 3 }, pick: 1 }));
     expect(joined.status).toBe(200);
     for (const device of [web, phone]) expect((await me(device)).filling?.stars.map((s) => s.nickname)).toEqual(["하늘"]);
@@ -117,6 +118,7 @@ describe("별자리 인연 owners belong to accounts", () => {
   it("hides an owner made on a device before accounts from a device with no session: nothing of it anywhere, every action answers the login, and it stays (owner 2026-11-05)", async () => {
     const { jar, id } = await deviceOwner("예전주인");
     const friend: Jar = new Map();
+    await signIn(friend);
     const { code } = await inviteOf(bondsRepo(), Date.now(), id);
     const joined = await joinPost(req("/api/bonds/join", friend, { code, nickname: "하늘친구", birth: { calendar: "solar", year: 1992, month: 8, day: 3 }, pick: 1, scoreNotice: true }));
     expect(joined.status).toBe(200);
@@ -142,19 +144,19 @@ describe("별자리 인연 owners belong to accounts", () => {
       ["invite", () => invitePost(req("/api/bonds/invite", jar, {}))],
       ["settings", () => settingsPost(req("/api/bonds/settings", jar, { rankingPublic: false }))],
       ["star/remove", () => removePost(req("/api/bonds/star/remove", jar, { starId }))],
+      // and joining, its own link or any (owner 2026-11-10: a friend logs in to join); logged in, its own is refused below
+      ["join", () => joinPost(req("/api/bonds/join", jar, { code, nickname: "다른이름", birth: { calendar: "solar", year: 1995, month: 1, day: 1 }, pick: 2 }))],
     ];
     for (const [name, ask] of asks) {
       const res = await ask();
       expect(res.status, name).toBe(401);
       expect(await res.json(), name).toEqual({ ok: false, code: "LOGIN_REQUIRED" });
     }
-    // Its own invite link: no joining its own constellation as a friend.
+    // A login: the very same owner and star, and 연결하기 as before; its own invite link joins nothing as a friend.
+    await signIn(jar);
     const self = await joinPost(req("/api/bonds/join", jar, { code, nickname: "다른이름", birth: { calendar: "solar", year: 1995, month: 1, day: 1 }, pick: 2 }));
     expect(self.status).toBe(403);
     expect(await self.json()).toMatchObject({ code: "SELF_JOIN" });
-
-    // A login: the very same owner and star, and 연결하기 as before.
-    await signIn(jar);
     const back = await me(jar);
     expect(back).toMatchObject({ owner: { nickname: "예전주인" }, signedIn: true, link: { kind: "offer" } });
     expect(back.filling?.row.sign).toBe("leo");
@@ -208,7 +210,9 @@ describe("별자리 인연 owners belong to accounts", () => {
     const web: Jar = new Map();
     const userId = await signIn(web);
     const code = await accountOwner(web, "계정주인", "aries");
-    await joinPost(req("/api/bonds/join", new Map(), { code, nickname: "하늘", birth: { calendar: "solar", year: 1992, month: 8, day: 3 }, pick: 1 }));
+    const friend: Jar = new Map();
+    await signIn(friend);
+    await joinPost(req("/api/bonds/join", friend, { code, nickname: "하늘", birth: { calendar: "solar", year: 1992, month: 8, day: 3 }, pick: 1 }));
     const { jar: device, id: deviceId } = await deviceOwner("기기주인", "leo");
     await signIn(device, userId);
     const offer = (await me(device)).link;

@@ -339,14 +339,15 @@ export interface JoinedView {
 export const JOINED_LIMIT = 12;
 
 /**
- * The constellations this friend device has a star in, newest join first: whose, which sign, how far
- * filled and who else is in it. Its own owner's constellations are left out (a self-join is refused,
- * so only an owner made later on this device could match).
+ * The constellations this friend has a star in, under any of `friendKeys` (the account's, and this device's from before a
+ * join needed a login, owner 2026-11-10), newest join first: whose, which sign, how far filled and who else is in it. Its
+ * own owner's constellations are left out (a self-join is refused, so only an owner made later on this device could match).
  */
-export async function joinedView(repo: BondsRepo, friendKey: string, ownerId: string | null): Promise<JoinedView[]> {
+export async function joinedView(repo: BondsRepo, friendKeys: ReadonlyArray<string>, ownerId: string | null): Promise<JoinedView[]> {
   const views: JoinedView[] = [];
   const seen = new Set<string>();
-  for (const star of await repo.starsByFriend(friendKey, JOINED_LIMIT * 2)) {
+  const stars = (await Promise.all(friendKeys.map((key) => repo.starsByFriend(key, JOINED_LIMIT * 2)))).flat().sort((a, b) => b.createdAt - a.createdAt);
+  for (const star of stars) {
     if (seen.has(star.constellationId) || views.length >= JOINED_LIMIT) continue;
     seen.add(star.constellationId);
     const row = await repo.getConstellation(star.constellationId);
@@ -370,8 +371,13 @@ export async function joinedView(repo: BondsRepo, friendKey: string, ownerId: st
 
 export interface JoinInput {
   code: string;
-  /** hash of the friend's device cookie: one star per device per constellation round */
+  /** the logged-in friend's key (identity.ts accountFriendKey): one star per account per constellation round */
   friendKey: string;
+  /**
+   * this device's key, when it joined before a join needed a login (owner 2026-11-10): a star or a removal under it counts
+   * as this friend's too. Nothing is written under it.
+   */
+  deviceKey?: string | null;
   /** set when the friend is an owner on this device (their own link is refused) */
   joinerOwnerIds?: ReadonlyArray<string | null>;
   nickname: string;
@@ -426,6 +432,9 @@ export async function joinStar(repo: BondsRepo, now: number, input: JoinInput): 
   const friend = basisOf(input.birth, now);
   const { score, parts } = bondScore(owner.basis, friend);
   const card = drawCard(input.pick);
+  // This friend's stars and removals: under the account's key, or under this device's from before (owner 2026-11-10).
+  const keys = [input.friendKey, ...(input.deviceKey ? [input.deviceKey] : [])];
+  const blocked = async (constellationId: string) => (await Promise.all(keys.map((key) => repo.isBlocked(constellationId, key)))).some(Boolean);
 
   // Each failed attempt means another friend took a slot (or completed the sign and the next one
   // started), so a bounded number of attempts always settles it.
@@ -437,7 +446,7 @@ export async function joinStar(repo: BondsRepo, now: number, input: JoinInput): 
     }
     const slots = getConstellation(filling.sign).slots;
     const stars = await repo.starsOf(filling.id);
-    if (stars.some((s) => s.friendKey === input.friendKey)) throw new BondsError("ALREADY_JOINED");
+    if (stars.some((s) => keys.includes(s.friendKey))) throw new BondsError("ALREADY_JOINED");
     const used = new Set(stars.map((s) => s.slot));
     const slot = Array.from({ length: slots }, (_, i) => i).find((i) => !used.has(i));
     if (slot !== undefined && input.expectedConstellationId && input.expectedConstellationId !== filling.id) {
@@ -450,7 +459,7 @@ export async function joinStar(repo: BondsRepo, now: number, input: JoinInput): 
         slots,
       });
     }
-    if (slot !== undefined && (await repo.isBlocked(filling.id, input.friendKey))) throw new BondsError("REMOVED");
+    if (slot !== undefined && (await blocked(filling.id))) throw new BondsError("REMOVED");
     const basisHash = slot === undefined ? undefined : await sha256(`basis:${filling.id}:${canonicalJson(friend)}`);
     if (basisHash && stars.some((s) => s.basisHash === basisHash && s.nickname === nickname.value)) throw new BondsError("DUPLICATE_STAR");
     if (basisHash && (await repo.isBlocked(filling.id, `basis:${basisHash}`))) throw new BondsError("REMOVED");
@@ -712,11 +721,16 @@ export type InvitePage =
 /**
  * /b/<code> for this visitor (Q-05, Q-11): their own link, the result of a join this device already
  * made (so a reload never shows the empty form again), or the form, with an earlier star noted.
- * A star shows again only with a session (owner 2026-11-05): without one the join's own answer was the one time, and this
- * says only that the star exists. The friend cookie still says which star is this device's: no account is linked to it.
+ * A star shows again only with a session (owner 2026-11-05): without one this says only that the star exists. A friend logs
+ * in to join (owner 2026-11-10), so a star is the account's (`friendKey`, accountFriendKey) on any of its devices; one made
+ * before then is this device's (`deviceKey`, its friend cookie), found the same way. The newer of the two shows.
  * Unknown and revoked codes fail with BAD_CODE like every lookup.
  */
-export async function invitePage(repo: BondsRepo, code: string, viewer: { ownerId: string | null; deviceOwnerId?: string | null; friendKey: string | null; signedIn: boolean }): Promise<InvitePage> {
+export async function invitePage(
+  repo: BondsRepo,
+  code: string,
+  viewer: { ownerId: string | null; deviceOwnerId?: string | null; friendKey: string | null; deviceKey?: string | null; signedIn: boolean },
+): Promise<InvitePage> {
   const owner = await ownerOfCode(repo, code);
   const filling = await repo.fillingOf(owner.id);
   const stars = filling ? await repo.starsOf(filling.id) : [];
@@ -724,7 +738,10 @@ export async function invitePage(repo: BondsRepo, code: string, viewer: { ownerI
   if (viewer.ownerId === owner.id || viewer.deviceOwnerId === owner.id) {
     return { kind: "self", ownerNickname: owner.nickname, sign: filling?.sign ?? null, filled: stars.length, slots: filling ? getConstellation(filling.sign).slots : 0 };
   }
-  const found = viewer.friendKey ? await repo.latestStarOf(owner.id, viewer.friendKey) : null;
+  const keys = [viewer.friendKey, viewer.deviceKey].filter((key): key is string => Boolean(key));
+  const found = (await Promise.all(keys.map((key) => repo.latestStarOf(owner.id, key))))
+    .filter((hit): hit is NonNullable<typeof hit> => hit !== null)
+    .sort((a, b) => b.star.createdAt - a.star.createdAt)[0] ?? null;
   const result: FriendResultView | null = found && viewer.signedIn
     ? {
         nickname: found.star.nickname,
@@ -748,7 +765,7 @@ export async function invitePage(repo: BondsRepo, code: string, viewer: { ownerI
   const myNickname =
     result?.nickname ??
     (viewer.ownerId ? (await repo.getOwner(viewer.ownerId))?.nickname : undefined) ??
-    (viewer.friendKey && viewer.signedIn ? (await repo.starsByFriend(viewer.friendKey, 1))[0]?.nickname : undefined) ??
+    (viewer.signedIn && keys.length ? (await Promise.all(keys.map((key) => repo.starsByFriend(key, 1)))).flat().sort((a, b) => b.createdAt - a.createdAt)[0]?.nickname : undefined) ??
     null;
   return {
     kind: "open", ownerNickname: owner.nickname, sign: filling.sign, filled: stars.length, slots: getConstellation(filling.sign).slots, earlier: result, earlierHidden, myNickname,

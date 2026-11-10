@@ -150,9 +150,10 @@ async function bondsOwner(page: Page, stars: number, sign = "aries"): Promise<st
   const { code } = (await owner.json()) as { code: string };
   await page.request.post("/api/bonds/choose", { data: { sign } });
   for (const [i, friend] of BOND_FRIENDS.slice(0, stars).entries()) {
-    const n = Math.floor(Math.random() * 250);
-    const device = await playwrightRequest.newContext({ baseURL: test.info().project.use.baseURL, extraHTTPHeaders: { "x-forwarded-for": `10.6.${n}.${i + 1}` } });
-    await device.post("/api/bonds/join", { data: { ...friend, code, pick: i * 3 } });
+    // a friend logs in to join (owner 2026-11-10): a mock account and address of its own
+    const device = await logInRequest(test.info().project.use.baseURL!, newUser());
+    const joined = await device.post("/api/bonds/join", { data: { ...friend, code, pick: i * 3 } });
+    expect(joined.status(), await joined.text()).toBe(200);
     await device.dispose();
   }
   return code;

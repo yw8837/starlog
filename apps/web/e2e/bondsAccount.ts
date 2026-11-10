@@ -23,9 +23,10 @@ export const newUser = () => `bonds-${Date.now().toString(36)}-${randomBytes(3).
 
 /**
  * Logs this browser into the mock Kakao account `user` as /login does (the owner pass first: e2e runs payments in owner
- * mode, where only owner-pass devices log in), landing on `returnTo`.
+ * mode, where only owner-pass devices log in), landing on `returnTo` (or where `landing` says: a page that tidies its
+ * address on arrival, such as the invite dropping its ?resume= mark).
  */
-export async function logInPage(page: Page, user: string, returnTo = "/bonds"): Promise<void> {
+export async function logInPage(page: Page, user: string, returnTo = "/bonds", landing?: RegExp): Promise<void> {
   const origin = new URL(test.info().project.use.baseURL!).origin;
   await page.context().setExtraHTTPHeaders({ "cf-connecting-ip": ownIp() });
   expect((await page.request.post("/api/owner", { data: { code: OWNER_CODE }, headers: { origin } })).ok()).toBe(true);
@@ -33,7 +34,7 @@ export async function logInPage(page: Page, user: string, returnTo = "/bonds"): 
   expect(res.ok(), await res.text()).toBe(true);
   const { url } = (await res.json()) as { url: string };
   await page.goto(`${url}&mockUser=${encodeURIComponent(user)}`, { timeout: 120_000 });
-  await expect(page).toHaveURL(new RegExp(`${returnTo.replace(/[/?]/g, "\\$&")}([?#].*)?$`), { timeout: 120_000 });
+  await expect(page).toHaveURL(landing ?? new RegExp(`${returnTo.replace(/[/?]/g, "\\$&")}([?#].*)?$`), { timeout: 120_000 });
 }
 
 /** A request context of its own address, logged into the mock Kakao account `user`. */

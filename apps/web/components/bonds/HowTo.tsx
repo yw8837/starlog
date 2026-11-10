@@ -17,7 +17,7 @@ import s from "./HowTo.module.css";
  */
 const STEPS: ReadonlyArray<{ id: "pick" | "send" | "done"; title: string; text: string }> = [
   { id: "pick", title: "별자리 고르기", text: "로그인하고 닉네임과 생년월일을 넣은 뒤 채울 별자리를 골라요 (내 별자리는 로그인해서 만들어요)" },
-  { id: "send", title: "친구에게 보내기", text: "카톡으로 초대 링크를 보내면 친구가 닉네임과 생년월일을 넣고 카드를 한 장 골라 내 별이 돼요 (참여는 로그인 없이, 결과를 다시 보려면 로그인해요. 생년월일은 저장 안 해요)" },
+  { id: "send", title: "친구에게 보내기", text: "카톡으로 초대 링크를 보내면 친구가 닉네임과 생년월일을 넣고 카드를 한 장 골라 내 별이 돼요 (친구도 로그인하고 참여해요. 생년월일은 저장 안 해요)" },
   { id: "done", title: "다 채우면 완성", text: "도감 카드가 생기고, 인연 점수 합계로 랭킹에 올라요" },
 ];
 

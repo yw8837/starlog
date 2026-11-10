@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import PrivacyPage from "@/app/privacy/page";
 import RefundPage from "@/app/refund/page";
 import TermsPage from "@/app/terms/page";
-import { KEPT_RULE_DATE, LOGIN_RULE_DATE, koreanDate } from "@/lib/legal";
+import { BOND_LOGIN_DATE, KEPT_RULE_DATE, LOGIN_RULE_DATE, koreanDate } from "@/lib/legal";
 
 /**
  * Every AI reading result needs a login (owner 2026-11-04, final): the terms (제6조 1호) and the privacy policy change only
@@ -113,14 +113,15 @@ describe("what a device keeps needs a login, in the policies", () => {
     vi.useRealTimers();
   });
 
-  it("terms: 제6조 and the 별자리 인연 clause say it; a dated notice says it is hidden, not deleted, and the friend still joins without a login", () => {
+  it("terms: 제6조 and the 별자리 인연 clause say it; a dated notice says it is hidden, not deleted, a friend's result too", () => {
     let container = render(<TermsPage />).container;
     expect(container.querySelector("#members")?.textContent).toContain("저장된 풀이 기록과 맛보기는 회원으로 로그인해야 화면에 보여 드립니다.");
-    expect(container.textContent).toContain("친구는 로그인 없이 참여할 수 있고, 한 기기로 같은 별자리 한 회차에 한 번 참여할 수 있습니다. 참여 결과는 참여한 화면에서 보여 드리며, 다시 보려면 참여한 기기에서 회원으로 로그인해야 합니다.");
     const notice = [...container.querySelectorAll("aside")].find((aside) => aside.textContent?.includes(`${KEPT_NOTICE} · 저장된 기록 보기`));
     expect(notice).toBeTruthy();
     expect(notice!.textContent).toContain("저장된 기록을 지우는 것은 아니며, 로그인하면 다시 보입니다(제6조).");
-    expect(notice!.textContent).toContain("초대받은 친구는 지금처럼 로그인 없이 별자리 인연에 참여하고 참여한 화면에서 결과를 볼 수 있습니다.");
+    // a friend joins logged in since 2026-11-10: this notice no longer says a friend joins without one
+    expect(notice!.textContent).toContain("초대받은 친구가 별자리 인연에 참여한 결과도 다시 보려면 로그인해야 합니다.");
+    expect(container.textContent).not.toContain("로그인 없이 별자리 인연에 참여");
     // An owner's own constellation too, one made on a device before accounts included (owner 2026-11-05).
     expect(notice!.textContent).toContain("계정에 연결하지 않고 이 기기에서 만든 내 별자리도 로그인해야 보여 드립니다. 지우는 것은 아니며, 로그인하면 다시 보이고 계정에 연결할 수 있습니다.");
     expect(container.textContent).toContain("내 별자리와 친구들의 점수는 회원으로 로그인해야 보여 드립니다.");
@@ -131,16 +132,17 @@ describe("what a device keeps needs a login, in the policies", () => {
     expect(container.querySelector("#members")?.textContent).toContain("회원으로 로그인해야 화면에 보여 드립니다");
   });
 
-  it("privacy: hidden from a device with no session, kept, erasable without a login; the friend's star is not linked to the account; a dated notice", () => {
+  it("privacy: hidden from a device with no session, kept, erasable without a login; a dated notice", () => {
     let container = render(<PrivacyPage />).container;
     const retention = container.querySelector("#retention")?.textContent ?? "";
     expect(retention).toContain("로그인하지 않은 기기에서는 내 기록과 맛보기, 오늘의 한 장을 화면에 보여 드리지 않습니다. 지우는 것은 아니어서 로그인하면 다시 보이고, 내 정보에서 로그인 없이도 지울 수 있습니다.");
     expect(retention).not.toContain("이 기록들을");
-    expect(container.textContent).toContain("친구의 결과는 참여한 화면에서 보여 드리고, 다시 볼 때는 로그인을 요청합니다. 로그인해도 별을 계정에 연결하지는 않고, 같은 기기의 기기 식별값으로 찾아 보여 드립니다.");
     expect(container.textContent).toContain("이용 중인 기기에 풀이 기록을 보관해 로그인한 뒤 다시 볼 수 있게 하기");
     const notice = [...container.querySelectorAll("aside")].find((aside) => aside.querySelector("h2")?.textContent === KEPT_NOTICE);
     expect(notice).toBeTruthy();
     expect(notice!.textContent).toContain("이 기기에 저장된 풀이 기록과 맛보기, 오늘의 한 장은 로그인하지 않으면 화면에 보여 드리지 않아요.");
+    expect(notice!.textContent).toContain("초대받은 친구의 결과도 다시 볼 때는 로그인을 요청해요.");
+    expect(notice!.textContent).not.toContain("별을 계정에 연결하지는 않아요");
     expect(notice!.textContent).toContain("계정에 연결하지 않고 이 기기에서 만든 내 별자리도 로그인하지 않으면 보여 드리지 않아요. 로그인하면 다시 보이고 계정에 연결할 수 있어요.");
     expect(container.textContent).toContain("계정에 연결하지 않은 별자리는 로그인하지 않으면 화면에 보여 드리지 않습니다.");
     cleanup();
@@ -148,5 +150,53 @@ describe("what a device keeps needs a login, in the policies", () => {
     container = render(<PrivacyPage />).container;
     expect([...container.querySelectorAll("aside")].some((aside) => aside.querySelector("h2")?.textContent === KEPT_NOTICE)).toBe(false);
     expect(container.querySelector("#retention")?.textContent).toContain("로그인하지 않은 기기에서는 내 기록과 맛보기, 오늘의 한 장을 화면에 보여 드리지 않습니다.");
+  });
+});
+
+/**
+ * A friend logs in to join 별자리 인연 (owner 2026-11-10): the terms (제8조의2 1호) and the privacy policy change what became
+ * untrue, and say what changed, dated by lib/legal.ts BOND_LOGIN_DATE, on top for 30 days, as with LOGIN_RULE_DATE.
+ */
+describe("a friend logs in to join 별자리 인연, in the policies", () => {
+  const BOND_NOTICE = `${koreanDate(BOND_LOGIN_DATE)} 바뀐 내용`;
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.parse("2026-11-11T12:00:00+09:00"));
+  });
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+  });
+
+  it("terms: 제8조의2 1호 says a friend joins logged in, once per account a round, the star shown wherever it logs in; a dated notice says what changed", () => {
+    let container = render(<TermsPage />).container;
+    const clause = container.querySelector("#bonds ol > li:first-child")?.textContent ?? "";
+    expect(clause).toContain("친구는 회원으로 로그인해야 참여할 수 있고, 한 계정으로 같은 별자리 한 회차에 한 번 참여할 수 있습니다.");
+    expect(clause).toContain("참여한 별은 그 계정에 연결되어, 같은 계정으로 로그인하면 어느 기기에서든 결과를 다시 보여 드립니다.");
+    expect(container.textContent).not.toMatch(/친구는 로그인 없이|로그인 없이 별자리 인연에 참여/);
+    const notice = [...container.querySelectorAll("aside")].find((aside) => aside.textContent?.includes(`${BOND_NOTICE} · 별자리 인연 참여`));
+    expect(notice).toBeTruthy();
+    expect(notice!.textContent).toContain("초대받은 친구도 이제 카카오나 Google로 로그인해야 별자리 인연에 참여할 수 있습니다.");
+    expect(notice!.textContent).toContain("초대 링크를 열어 누가 어떤 별자리에 초대했는지 보는 것은 지금처럼 로그인 없이 할 수 있습니다(제8조의2 1호).");
+    cleanup();
+    vi.setSystemTime(Date.parse("2026-12-11T00:00:00+09:00"));
+    container = render(<TermsPage />).container;
+    expect(container.textContent).not.toContain(`${BOND_NOTICE} · 별자리 인연 참여`);
+    expect(container.querySelector("#bonds")?.textContent).toContain("친구는 회원으로 로그인해야 참여할 수 있고");
+  });
+
+  it("privacy: the friend's star is kept under a value made from the account, not the device; a dated notice says what changed", () => {
+    let container = render(<PrivacyPage />).container;
+    expect(container.textContent).toContain("친구는 회원으로 로그인해 참여하고, 참여한 별은 그 계정에 연결해 같은 계정으로 로그인하면 어느 기기에서든 보여 드립니다.");
+    expect(container.textContent).toContain("같은 사람의 중복 참여를 막는 계정 식별값을 되돌릴 수 없게 바꾼 값");
+    expect(container.textContent).not.toContain("로그인해도 별을 계정에 연결하지는 않고");
+    const notice = [...container.querySelectorAll("aside")].find((aside) => aside.querySelector("h2")?.textContent === BOND_NOTICE);
+    expect(notice).toBeTruthy();
+    expect(notice!.textContent).toContain("초대받은 친구도 카카오나 Google로 로그인해야 별자리 인연에 참여할 수 있어요.");
+    expect(notice!.textContent).toContain("기기 식별값의 해시 대신 계정 식별값을 되돌릴 수 없게 바꾼 값");
+    cleanup();
+    vi.setSystemTime(Date.parse("2026-12-11T00:00:00+09:00"));
+    container = render(<PrivacyPage />).container;
+    expect([...container.querySelectorAll("aside")].some((aside) => aside.querySelector("h2")?.textContent === BOND_NOTICE)).toBe(false);
   });
 });

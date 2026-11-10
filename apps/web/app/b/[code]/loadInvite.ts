@@ -1,7 +1,7 @@
 import "server-only";
 import { cookies, headers } from "next/headers";
 import { codeGuard } from "@/lib/bonds/codeGuard";
-import { existingFriendKey } from "@/lib/bonds/identity";
+import { accountFriendKey, existingFriendKey } from "@/lib/bonds/identity";
 import { whoOwns } from "@/lib/bonds/owner";
 import { BondsError, invitePage, type InvitePage } from "@/lib/bonds/service";
 import { normalizeCode } from "@/lib/bonds/text";
@@ -33,7 +33,7 @@ export function codeFromSegment(raw: string): string | null {
 
 /**
  * What an invite code opens for this visitor. A lookup like GET /api/bonds/resolve (codeGuard): real
- * codes open generously, unknown and revoked ones count strictly and answer alike (`bad`). The device
+ * codes open generously, unknown and revoked ones count strictly and answer alike (`bad`). The session and the device
  * cookies say whether this is the owner, or a friend who already joined (never minted here). A friend's star shows again
  * only with a session (owner 2026-11-05): this state is all the page's HTML and RSC payload hold, so a visitor's has none of it.
  */
@@ -46,8 +46,10 @@ export async function loadInvite(raw: string): Promise<InviteState> {
     const secret = signingSecret();
     const jar = Object.fromEntries((await cookies()).getAll().map((c) => [c.name, c.value]));
     const identity = secret ? await whoOwns(bondsRepo(), jar, secret, Date.now()) : null;
-    const friendKey = secret ? await existingFriendKey(jar, secret) : null;
-    const page = await invitePage(bondsRepo(), code, { ownerId: identity?.ownerId ?? null, deviceOwnerId: identity?.deviceOwnerId ?? null, friendKey, signedIn: Boolean(identity?.userId) });
+    // the account's star (a friend logs in to join, owner 2026-11-10), or one this device left before
+    const friendKey = secret && identity?.userId ? await accountFriendKey(identity.userId, secret) : null;
+    const deviceKey = secret ? await existingFriendKey(jar, secret) : null;
+    const page = await invitePage(bondsRepo(), code, { ownerId: identity?.ownerId ?? null, deviceOwnerId: identity?.deviceOwnerId ?? null, friendKey, deviceKey, signedIn: Boolean(identity?.userId) });
     return { ...page, status: page.kind, code } as InviteState;
   } catch (error) {
     if (error instanceof BondsError && error.code === "BAD_CODE") {

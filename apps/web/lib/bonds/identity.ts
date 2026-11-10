@@ -1,12 +1,12 @@
 import "server-only";
 import { setCookie } from "@/lib/api/http";
-import { randomId, sha256, signToken, verifyToken, type SignedPayload } from "@/lib/security/sign";
+import { keyedHash, randomId, sha256, signToken, verifyToken, type SignedPayload } from "@/lib/security/sign";
 
 /**
  * Who is calling, without an account: signed device cookies (httpOnly, SameSite=Lax, 365 days).
  * - `sl_uid`: the constellation owner on this device (owners.id).
- * - `sl_fid`: a friend's device; only its hash reaches storage (stars.friend_key), so one device
- *   joins one constellation round once.
+ * - `sl_fid`: a friend's device; only its hash reaches storage (stars.friend_key). Joins needed no login until 2026-11-10:
+ *   a star made then is under it, and still found by it. A join now is under the account (accountFriendKey).
  */
 
 export const OWNER_ID_COOKIE = "sl_uid";
@@ -47,6 +47,21 @@ export function ownerCookie(id: string, secret: string): Promise<string> {
 export async function existingFriendKey(cookies: Record<string, string>, secret: string): Promise<string | null> {
   const id = await readId(cookies, FRIEND_ID_COOKIE, "fid", secret);
   return id ? sha256(`fid:${id}`) : null;
+}
+
+/**
+ * A logged-in friend's key (owner 2026-11-10: a friend logs in to join): every star joined since is under it, so one account
+ * is one star per constellation round on any of its devices (UNIQUE(constellation_id, friend_key)). A keyed hash of the
+ * account id, never the id.
+ */
+export function accountFriendKey(userId: string, secret: string): Promise<string> {
+  return keyedHash(userId, secret, "starlog/bond-friend/v1");
+}
+
+/** The keys this visitor's stars are under: the account's with a session, then this device's (a join before 2026-11-10). */
+export async function friendKeysOf(userId: string | null, cookies: Record<string, string>, secret: string): Promise<string[]> {
+  const keys = [userId ? await accountFriendKey(userId, secret) : null, await existingFriendKey(cookies, secret)];
+  return keys.filter((key): key is string => key !== null);
 }
 
 /** The friend key of this device (a hash of its device id), minting the device id when there is none. */

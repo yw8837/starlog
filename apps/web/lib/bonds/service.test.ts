@@ -311,6 +311,21 @@ describe("bonds service", () => {
     expect((await joinStar(repo, t0, { code, friendKey: "private-window", nickname: "친구1", birth: friends[1]!, pick: 3, message: null })).sign).toBe("pisces");
   });
 
+  it("counts a star or a removal under this device's key from before a join needed a login as the logged-in friend's (owner 2026-11-10)", async () => {
+    const { repo, t0, code } = await setup();
+    await chooseSign(repo, t0, "o1", "pisces");
+    // a star this device left without a login, under its device key
+    const old = await joinStar(repo, t0, { code, friendKey: "device", nickname: "예전별", birth: friends[0]!, pick: 0, message: null });
+    // logged in now, joining under the account's key: the device's star is already this friend's
+    const again = { code, friendKey: "account", deviceKey: "device", nickname: "새별", birth: friends[1]!, pick: 1, message: null };
+    await expect(joinStar(repo, t0, again)).rejects.toMatchObject({ code: "ALREADY_JOINED" });
+    // removed, it keeps the account out of this round as it kept the device out
+    await removeStar(repo, t0, "o1", old.star.id);
+    await expect(joinStar(repo, t0, again)).rejects.toMatchObject({ code: "REMOVED" });
+    // another device's key: the account joins, and its star is under the account's key
+    expect((await joinStar(repo, t0, { ...again, deviceKey: "other-device" })).star.friendKey).toBe("account");
+  });
+
   it("refuses one person twice in a constellation under the same nickname, comparing a hash of the 궁합 basis, not the birth date (QA M5)", async () => {
     const { repo, t0, code } = await setup();
     await chooseSign(repo, t0, "o1", "pisces");
@@ -508,6 +523,23 @@ describe("bonds service", () => {
     expect((await repo.starsByFriend("f0", 5)).map((star) => star.id)).toEqual([joined.star.id]);
   });
 
+  it("finds a logged-in friend's star under the account's key on any device, else one this device left before a join needed a login (owner 2026-11-10)", async () => {
+    const { repo, t0, code } = await setup();
+    await chooseSign(repo, t0, "o1", "aries");
+    await joinStar(repo, t0, { code, friendKey: "device", nickname: "예전별", birth: friends[0]!, pick: 0, message: null });
+    const member = { ownerId: null, friendKey: "account", deviceKey: "device", signedIn: true };
+    expect(await invitePage(repo, code, member)).toMatchObject({ kind: "joined", result: { nickname: "예전별", sign: "aries" } });
+    // without a session: only that this device's star is there
+    expect(await invitePage(repo, code, { ownerId: null, friendKey: null, deviceKey: "device", signedIn: false })).toMatchObject({ kind: "hidden" });
+    // the account's own star in the next sign is the newer one, on this device and on another of the account
+    for (let i = 1; i < 4; i++) await join(repo, t0, code, i);
+    await joinStar(repo, t0 + 1, { code, friendKey: "account", deviceKey: "device", nickname: "새별", birth: friends[1]!, pick: 0, message: null });
+    expect(await invitePage(repo, code, member)).toMatchObject({ kind: "joined", result: { nickname: "새별", sign: "taurus" } });
+    expect(await invitePage(repo, code, { ...member, deviceKey: null })).toMatchObject({ kind: "joined", result: { nickname: "새별", sign: "taurus" } });
+    // 내가 들어간 별자리 lists both, newest first, once each
+    expect((await joinedView(repo, ["account", "device"], null)).map((view) => view.sign)).toEqual(["taurus", "aries"]);
+  });
+
   it("marks a star whose friend saw the score notice (owner 2026-10-23): only those scores may show on the owner's public link", async () => {
     const { repo, t0, code } = await setup();
     await chooseSign(repo, t0, "o1", "aries");
@@ -580,23 +612,23 @@ describe("bonds service", () => {
     await joinStar(repo, t0 + 3, { code: other, friendKey: "f1", nickname: "친구1", birth: friends[1]!, pick: 1, message: "비밀 메시지" });
     await joinStar(repo, t0 + 4, { code: other, friendKey: "f2", nickname: "친구2", birth: friends[2]!, pick: 2, message: null });
 
-    const joined = await joinedView(repo, "f1", null);
+    const joined = await joinedView(repo, ["f1"], null);
     expect(joined.map((j) => [j.ownerNickname, j.sign])).toEqual([["민지", "aquarius"], ["용우", "aries"]]);
     expect(joined[0]).toMatchObject({ status: "filling", filled: 2 });
     expect(joined[0]!.members).toEqual([{ nickname: "친구1", me: true }, { nickname: "친구2", me: false }]);
     expect(joined[1]!.members).toEqual([{ nickname: "친구0", me: false }, { nickname: "친구1", me: true }]);
     expect(JSON.stringify(joined)).not.toContain("비밀 메시지");
-    expect(await joinedView(repo, "nobody", null)).toEqual([]);
+    expect(await joinedView(repo, ["nobody"], null)).toEqual([]);
   });
 
   it("leaves out a constellation this device's owner owns, and one whose star was removed", async () => {
     const { repo, t0, code } = await setup();
     await chooseSign(repo, t0, "o1", "aries");
     const { star } = await join(repo, t0 + 1, code, 0);
-    expect(await joinedView(repo, "f0", "o1")).toEqual([]);
-    expect(await joinedView(repo, "f0", null)).toHaveLength(1);
+    expect(await joinedView(repo, ["f0"], "o1")).toEqual([]);
+    expect(await joinedView(repo, ["f0"], null)).toHaveLength(1);
     await removeStar(repo, t0 + 2, "o1", star.id);
-    expect(await joinedView(repo, "f0", null)).toEqual([]);
+    expect(await joinedView(repo, ["f0"], null)).toEqual([]);
   });
 });
 

@@ -311,7 +311,9 @@ describe("BondsView: the owner belongs to the account (owner 2026-10-27)", () =>
     render(<BondsView initialSign={null} />);
     expect(await screen.findByRole("heading", { name: "내 별자리는 로그인해서 만들어요" })).toBeTruthy();
     expect(screen.getByRole("link", { name: /로그인하고 시작하기/ }).getAttribute("href")).toBe("/login?next=%2Fbonds");
-    expect(screen.getByText(/친구는 로그인 없이 참여하고, 결과를 다시 볼 때 로그인해요/)).toBeTruthy();
+    // owner 2026-11-10: a friend logs in to join too
+    expect(screen.getByText(/초대받은 친구도 로그인하고 별이 돼요/)).toBeTruthy();
+    expect(document.body.textContent).not.toContain("로그인 없이");
     expect(screen.queryByRole("textbox", { name: "닉네임" })).toBeNull();
   });
 

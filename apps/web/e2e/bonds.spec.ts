@@ -39,10 +39,13 @@ async function shot(page: Page, name: string) {
   await page.setViewportSize({ width: 375, height: 812 });
 }
 
-/** A friend on their own device (fresh cookies) and network. */
-/** A friend joining through the API as today's form does (it shows the score notice); `notice: false`, as an earlier form did. */
+/**
+ * A friend on their own device (fresh cookies) and network, logged in to a mock account of their own (owner 2026-11-10: a
+ * friend logs in to join), joining through the API as today's form does (it shows the score notice); `notice: false`, as an
+ * earlier form did.
+ */
 async function friendJoin(baseURL: string, code: string, friend: (typeof FRIENDS)[number], pick: number, notice = true): Promise<APIRequestContext> {
-  const ctx = await playwrightRequest.newContext({ baseURL, extraHTTPHeaders: { "cf-connecting-ip": nextIp() } });
+  const ctx = await logInRequest(baseURL, newUser());
   const res = await ctx.post("/api/bonds/join", { data: { code, nickname: friend.nickname, birth: friend.birth, pick, ...(notice ? { scoreNotice: true } : {}) } });
   expect(res.status(), await res.text()).toBe(200);
   return ctx;
@@ -113,7 +116,8 @@ async function apiOwner(baseURL: string, nickname: string, sign: string | null):
 test.describe("별자리 인연 · owner", { tag: "@login" }, () => {
   /**
    * owner 2026-10-23 (the 2026-10-02 decision): invites in one go. Made → 카카오톡으로 초대하기 first (the SDK mocked: the
-   * feed's 별 되러 가기 opens /b/<code>) → a friend opens that link, joins with no code typed → the star is on the owner's page.
+   * feed's 별 되러 가기 opens /b/<code>) → a friend opens that link, joins with no code typed (logging in at 별 되기, owner
+   * 2026-11-10) → the star is on the owner's page.
    */
   test("make → 카카오톡으로 초대하기 → a friend joins from the /b link → the owner sees the star", async ({ page, baseURL }, info) => {
     const shots = info.project.name === "mobile";
@@ -178,7 +182,15 @@ test.describe("별자리 인연 · owner", { tag: "@login" }, () => {
     await expect(notice).toBeVisible();
     if (shots) await friend.screenshot({ path: "test-results/share-shots/bonds-join-notice.png", fullPage: true });
     await friend.getByRole("button", { name: "별 되기" }).click();
-    await expect(friend.getByRole("heading", { level: 1, name: "양자리에 별이 됐어요" })).toBeVisible();
+    // owner 2026-11-10: a friend logs in to join. The login shows in place of 별 되기, what was typed and picked stays, and
+    // the login comes back to this invite with a one-time mark, where the join goes on by itself.
+    const login = friend.getByRole("link", { name: "로그인하고 별 되기" });
+    await expect(login).toBeVisible();
+    if (shots) await friend.screenshot({ path: "test-results/share-shots/bonds-join-login.png", fullPage: true });
+    const next = new URL((await login.getAttribute("href"))!, baseURL).searchParams.get("next")!;
+    expect(next).toMatch(new RegExp(`^/b/${code}\\?resume=[0-9a-f]{24}$`));
+    await logInPage(friend, newUser(), next, new RegExp(`/b/${code}(#message)?$`));
+    await expect(friend.getByRole("heading", { level: 1, name: "양자리에 별이 됐어요" })).toBeVisible({ timeout: 120_000 });
     const score = await friend.getByRole("meter", { name: "인연 점수" }).getAttribute("aria-valuenow");
     await expect(friend.getByRole("link", { name: "나도 내 별자리 만들기" })).toHaveAttribute("href", "/bonds");
     await friendContext.close();
@@ -330,7 +342,7 @@ test.describe("별자리 인연 · owner", { tag: "@login" }, () => {
 });
 
 test.describe("별자리 인연 · account (owner 2026-10-27: 계정 위주)", { tag: "@login" }, () => {
-  test("made on one browser, the same constellation and invite link on another of the account; a friend joins without logging in and both see the star", async ({ page, baseURL }) => {
+  test("made on one browser, the same constellation and invite link on another of the account; a friend joins and both see the star", async ({ page, baseURL }) => {
     const user = await startOwner(page, "용우");
     await page.getByRole("list", { name: "별자리 고르기" }).getByRole("button", { name: /양자리/ }).click();
     await page.getByRole("button", { name: "양자리로 시작하기" }).click();
@@ -341,7 +353,7 @@ test.describe("별자리 인연 · account (owner 2026-10-27: 계정 위주)", {
     await logInPage(phone, user, "/bonds");
     await expect(phone.getByRole("heading", { level: 1, name: "용우님의 별자리" })).toBeVisible({ timeout: 120_000 });
     expect(await inviteCode(phone)).toBe(code);
-    // a friend with no login joins from the link
+    // a friend, logged in to their own account (owner 2026-11-10), joins from the link
     const friend = await friendJoin(baseURL!, code, FRIENDS[1]!, 1);
     for (const device of [page, phone]) {
       await device.reload({ timeout: 120_000 });
@@ -379,8 +391,9 @@ test.describe("별자리 인연 · account (owner 2026-10-27: 계정 위주)", {
     await page.goto(`/b/${code}`, { timeout: 120_000 });
     await expect(page.getByRole("heading", { level: 1, name: "내 초대 링크예요" })).toBeVisible({ timeout: 120_000 });
     await expect(page.getByRole("textbox", { name: "닉네임" })).toHaveCount(0);
+    // and joining asks for the login first (owner 2026-11-10); logged in, its own link answers SELF_JOIN (owner-account.test.ts)
     const self = await page.request.post("/api/bonds/join", { data: { code, nickname: "다른이름", birth: FRIENDS[3]!.birth, pick: 1 } });
-    expect(self.status()).toBe(403);
+    expect(self.status()).toBe(401);
     await page.goto("/bonds", { timeout: 120_000 });
     await expect(panel).toBeVisible({ timeout: 120_000 });
     const offer = page.getByRole("region", { name: "이 기기에서 만든 별자리를 내 계정에 연결할까요?" });
@@ -550,7 +563,7 @@ test.describe("별자리 인연 · friend", { tag: "@login" }, () => {
     for (const ctx of [a, b, c]) await ctx.dispose();
   });
 
-  test("the /b link → join → score, reasons, 인연 카드 → 나도 내 별자리 만들기; /b alone goes to 별자리 인연 (no code to type)", async ({ page, baseURL }) => {
+  test("the /b link → join (the login first, owner 2026-11-10) → score, reasons, 인연 카드 → 나도 내 별자리 만들기; /b alone goes to 별자리 인연 (no code to type)", async ({ page, baseURL }) => {
     const { code } = await apiOwner(baseURL!, "용우", "aries");
     await friendJoin(baseURL!, code, FRIENDS[0]!, 0);
 
@@ -593,7 +606,16 @@ test.describe("별자리 인연 · friend", { tag: "@login" }, () => {
     await page.getByRole("textbox", { name: "한 줄 남기기 (선택)" }).fill("늘 고마워");
     await page.getByRole("button", { name: "별 되기" }).click();
 
-    await expect(page.getByRole("heading", { level: 1, name: "양자리에 별이 됐어요" })).toBeVisible();
+    // A visitor (owner 2026-11-10): the login in place of 별 되기, nothing sent, what was typed still there.
+    const login = page.getByRole("link", { name: "로그인하고 별 되기" });
+    await expect(login).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "한 줄 남기기 (선택)" })).toHaveValue("늘 고마워");
+    expect(await (await page.request.get(`/api/bonds/resolve?code=${code}`)).json()).toMatchObject({ filled: 1 });
+    await shot(page, "friend-login");
+    // Back from the login (this tab, its one-time mark): the join goes on by itself with what was kept.
+    const user = newUser();
+    await logInPage(page, user, new URL((await login.getAttribute("href"))!, page.url()).searchParams.get("next")!, new RegExp(`/b/${code}(#message)?$`));
+    await expect(page.getByRole("heading", { level: 1, name: "양자리에 별이 됐어요" })).toBeVisible({ timeout: 120_000 });
     // 인연 점수 한눈에 (owner 2026-10-23): the number on its 55–99 gauge and the table of what made it.
     const meter = page.getByRole("meter", { name: "인연 점수" });
     await expect(meter).toBeVisible();
@@ -622,33 +644,24 @@ test.describe("별자리 인연 · friend", { tag: "@login" }, () => {
     await expect(visitor.locator("main")).not.toContainText("1992");
     await visitor.close();
     await (await openShared(page, sharePath, "bond-friend-shared")).close();
-    // The first screen says a later look needs the login (owner 2026-11-05).
-    await expect(page.getByText(/나중에 이 결과를 다시 보려면/)).toBeVisible();
     const line = (await page.getByText(/요즘 두 사람 사이/).textContent()) ?? "";
-    // Q-05: a reload never shows the empty form again; without a session (owner 2026-11-05) it says the star is there, nothing of it
+    // Q-05: a reload never shows the empty form again: the very same result.
     await page.reload();
-    await expect(page.getByRole("heading", { level: 1, name: "이미 별이 되어 있어요" })).toBeVisible();
-    await expect(page.getByRole("region", { name: "결과는 로그인하고 다시 볼 수 있어요" })).toBeVisible();
-    await expect(page.getByRole("textbox", { name: "닉네임" })).toHaveCount(0);
-    await expect(page.getByRole("meter", { name: "인연 점수" })).toHaveCount(0);
-    await expect(page.locator("main")).not.toContainText("인연 카드");
-    // Nor in what the server sent: the HTML and its RSC payload hold none of it.
-    const raw = await (await page.request.get(`/b/${code}`)).text();
-    for (const hidden of ["하늘", line, '"score"', '\\"score\\"', "bondLine"]) expect(raw).not.toContain(hidden);
-    // /api/bonds/me only says there is something.
-    const me = await (await page.request.get("/api/bonds/me")).json();
-    expect(me).toMatchObject({ owner: null, signedIn: false, joinedHidden: true });
-    expect(JSON.stringify(me)).not.toContain("하늘");
-    await page.getByRole("link", { name: "나도 내 별자리 만들기" }).click();
-    await expect(page).toHaveURL(/\/bonds$/, { timeout: 120_000 });
-    await expect(page.getByRole("region", { name: "내가 들어간 별자리는 로그인하고 볼 수 있어요" })).toBeVisible({ timeout: 120_000 });
-    await expect(page.getByRole("region", { name: "내가 들어간 별자리", exact: true })).toHaveCount(0);
-    // A login on this device: the very same result, from the friend cookie (no account is linked to the star).
-    await logInPage(page, newUser(), `/b/${code}`);
     await expect(page.getByRole("heading", { level: 1, name: "이미 양자리에 별이 되어 있어요" })).toBeVisible({ timeout: 120_000 });
     await expect(page.getByRole("meter", { name: "인연 점수" })).toHaveAttribute("aria-valuenow", String(score));
     await expect(page.getByText(line)).toBeVisible();
-    await expect(page.getByText(/나중에 이 결과를 다시 보려면/)).toHaveCount(0);
+    // The star is the account's (owner 2026-11-10): another browser logged into it shows the same result, and joins no second star.
+    const phone = await otherBrowser(page);
+    await logInPage(phone, user, `/b/${code}`);
+    await expect(phone.getByRole("heading", { level: 1, name: "이미 양자리에 별이 되어 있어요" })).toBeVisible({ timeout: 120_000 });
+    await expect(phone.getByRole("meter", { name: "인연 점수" })).toHaveAttribute("aria-valuenow", String(score));
+    expect((await phone.request.post("/api/bonds/join", { data: { code, nickname: "다른별", birth: FRIENDS[2]!.birth, pick: 1, scoreNotice: true } })).status()).toBe(409);
+    await phone.context().close();
+    // A browser with no session gets the form and nothing of the star: neither the HTML nor its RSC payload holds any of it.
+    const outsider = await playwrightRequest.newContext({ baseURL, extraHTTPHeaders: { "cf-connecting-ip": nextIp() } });
+    const raw = await (await outsider.get(`/b/${code}`)).text();
+    for (const hidden of ["하늘", line, '"score"', '\\"score\\"', "bondLine"]) expect(raw).not.toContain(hidden);
+    await outsider.dispose();
     await page.getByRole("link", { name: "나도 내 별자리 만들기" }).click();
     await expect(page).toHaveURL(/\/bonds$/, { timeout: 120_000 });
     // 내가 들어간 별자리 (owner 2026-10-14): the joined constellation with 나 among its members
@@ -660,9 +673,10 @@ test.describe("별자리 인연 · friend", { tag: "@login" }, () => {
 
   test("a logged-in friend's result does not come back after logging out and going back in the same tab (owner 2026-11-05)", async ({ page, baseURL }) => {
     const { code } = await apiOwner(baseURL!, "용우", "aries");
-    await page.setExtraHTTPHeaders({ "cf-connecting-ip": nextIp() });
-    expect((await page.request.post("/api/bonds/join", { data: { code, nickname: FRIENDS[1]!.nickname, birth: FRIENDS[1]!.birth, pick: 0, scoreNotice: true } })).status()).toBe(200);
     await logInPage(page, newUser(), `/b/${code}`);
+    // a friend logs in to join (owner 2026-11-10)
+    expect((await page.request.post("/api/bonds/join", { data: { code, nickname: FRIENDS[1]!.nickname, birth: FRIENDS[1]!.birth, pick: 0, scoreNotice: true } })).status()).toBe(200);
+    await page.reload({ timeout: 120_000 });
     const meter = page.getByRole("meter", { name: "인연 점수" });
     await expect(meter).toBeVisible({ timeout: 120_000 });
     // In this tab, with no document load: /b/<code> → /bonds → /me, the 로그아웃 there, and back twice.

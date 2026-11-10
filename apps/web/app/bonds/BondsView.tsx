@@ -164,7 +164,7 @@ function LoginToStart() {
       <h2 id="bonds-login-title" className={b.sectionTitle}>
         내 별자리는 로그인해서 만들어요
       </h2>
-      <p className={b.helper}>로그인하면 휴대폰과 PC 어디서든 같은 별자리와 초대 링크, 점수가 보여요. 친구는 로그인 없이 참여하고, 결과를 다시 볼 때 로그인해요.</p>
+      <p className={b.helper}>로그인하면 휴대폰과 PC 어디서든 같은 별자리와 초대 링크, 점수가 보여요. 초대받은 친구도 로그인하고 별이 돼요.</p>
       <Button href={loginHref("/bonds")} block size="lg" trailing="→">
         로그인하고 시작하기
       </Button>

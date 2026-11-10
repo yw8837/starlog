@@ -69,7 +69,10 @@ async function completedAries() {
   await choosePost(req("/api/bonds/choose", owner, { sign: "aries" }));
   const { invite } = (await (await meGet(req("/api/bonds/me", owner))).json()) as { invite: { code: string } };
   for (const [i, [year, month, day]] of FRIEND_BIRTHS.entries()) {
-    const res = await joinPost(req("/api/bonds/join", new Map(), { code: invite.code, nickname: `친구${i}`, birth: { calendar: "solar", year, month, day }, pick: i }, `7.7.7.${i}`));
+    // a friend logs in to join (owner 2026-11-10)
+    const friend: Jar = new Map();
+    await signIn(friend);
+    const res = await joinPost(req("/api/bonds/join", friend, { code: invite.code, nickname: `친구${i}`, birth: { calendar: "solar", year, month, day }, pick: i }, `7.7.7.${i}`));
     expect(res.status).toBe(200);
   }
   const me = (await (await meGet(req("/api/bonds/me", owner))).json()) as { completed: { id: string; total: number; stars: { nickname: string; score: number }[] }[] };
