@@ -102,11 +102,15 @@ describe("LoginPanel", () => {
 
   it("names the 오픈 기념 무료 only while it runs (the server's clock, app/login/page.tsx), the full reading after it", () => {
     render(<LoginPanel next="/tarot/result?unlock=opening" status={null} opening navigate={() => {}} />);
-    expect(screen.getByRole("heading", { level: 1, name: "로그인하고 오픈 기념 무료 받기" })).toBeTruthy();
-    expect(screen.getByText("오픈 기념 무료 풀이를 계정에 적어 둘게요")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "로그인하고 오픈 기념 무료 확인하기" })).toBeTruthy();
+    // True for an account or a device that already had it too (review 2026-11-11 #6): no promise of opening it.
+    expect(screen.getByText("계정마다 한 번, 로그인하면 바로 확인해 줄게요")).toBeTruthy();
+    expect(screen.queryByText(/열어 둘게요|적어 둘게요/)).toBeNull();
+    assertVoice("계정마다 한 번, 로그인하면 바로 확인해 줄게요");
+    assertVoice("로그인하고 오픈 기념 무료 확인하기");
     cleanup();
     render(<LoginPanel next="/tarot/result?unlock=opening&instant=1" status={null} opening navigate={() => {}} />);
-    expect(screen.getByRole("heading", { level: 1, name: "로그인하고 오픈 기념 무료 받기" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "로그인하고 오픈 기념 무료 확인하기" })).toBeTruthy();
     cleanup();
     render(<LoginPanel next="/tarot/result?unlock=opening" status={null} opening={false} navigate={() => {}} />);
     expect(screen.getByRole("heading", { level: 1, name: "로그인하고 전체 풀이 보기" })).toBeTruthy();

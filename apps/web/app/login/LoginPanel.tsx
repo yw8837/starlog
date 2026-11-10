@@ -43,7 +43,7 @@ function purpose(next: string, opening: boolean): { bubble: string; title: strin
   const query = new URLSearchParams(search);
   if (under(path, "/bonds")) return { bubble: "내 별자리를 계정에 적어둘게요", title: "로그인하고 내 별자리 만들기" };
   if (under(path, "/me")) return { bubble: "내 기록을 계정에 적어둘게요", title: "로그인하고 내 기록 이어 보기" };
-  if (path === "/tarot/result" && opening && query.get("unlock") === "opening") return { bubble: "오픈 기념 무료 풀이를 계정에 적어 둘게요", title: "로그인하고 오픈 기념 무료 받기" };
+  if (path === "/tarot/result" && opening && query.get("unlock") === "opening") return { bubble: "계정마다 한 번, 로그인하면 바로 확인해 줄게요", title: "로그인하고 오픈 기념 무료 확인하기" };
   if (path === "/tarot/result" && query.has("resume")) return { bubble: "고른 카드와 질문은 그대로 둘게요", title: "로그인하고 맛보기 이어 보기" };
   if (path === "/saju/chart") return { bubble: "명식과 입력한 정보는 그대로 있어요", title: "로그인하고 사주 맛보기 보기" };
   if (path === "/today") return { bubble: "고른 카드는 그대로 기억해 둘게요", title: "로그인하고 오늘의 카드 펼치기" };
