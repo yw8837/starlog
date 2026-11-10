@@ -12,7 +12,7 @@ import { UNSURE_OPTIONS, cardLabel, letsGo, mentionsWord, tarotHeadings, type Ta
 import type {
   DailyDraft, FollowUpAnswer, SajuEnrichment, SajuGlance, SajuReading, SajuReadingPartA, SajuReadingPartB, SajuTeaserDraft, TarotReading, TarotTeaserDraft,
 } from "./schemas";
-import { MODEL_NAMES, SOFT_PREFIX, aiTellViolations, allowBold } from "./style";
+import { MODEL_NAMES, RELATION_EVENT_PREFIX, SOFT_PREFIX, aiTellViolations, allowBold } from "./style";
 import { sajuVoiceViolations, tarotVoiceViolations } from "./voice";
 
 /**
@@ -660,26 +660,6 @@ export const SAJU_BLOCKLIST: Array<[RegExp, string, boolean]> = [
   [/(좋은|나쁜|최고의|최악의)\s?(해|달|날|시기|운)|(조심|주의)해야 할 (해|달|시기)/, "시기 등급", false],
 ];
 
-/**
- * 합·충·형·파·해 read as an event (spec 2026-11-11, 정통 사주에 충·합 … 안, 검증기 추가): a relation named as the cause or the sign of
- * an event ("충이 있어서 이별수가 있어요", "합이 들어오면 결혼할 수 있어요"). Until now only the prompt forbade it (prompts/saju.ts).
- * A sentence fails with a relation's name, an event, and a cause or a prediction tying them, unless it declines the reading.
- * 형·파·해 count with their hanja or as a compound only (해 is also a year, 파 and 형 everyday words); 충분·합격 are not 충·합.
- */
-const RELATION_NAME = /(?<![가-힣])(?:육합|삼합|방합|반합|천간합|천간충|삼형|자형|상형|육해|육파|합|충|[형파해]\((?:刑|破|害)\))(?:\([^)]{0,12}\))?(?=[\s,·)]|이|가|은|는|을|를|으로|로|의|과|와|도|만|이라|라|이니|탓|때문|$)/;
-const RELATION_EVENT_WORD = /이별|헤어지|헤어질|헤어져|결별|이혼|파혼|이사|이직|퇴사|사고|다툼|다투|싸움|싸우|부상|다치|수술|입원|손재|송사|소송|구설|관재|이동수|변동수|파탄|파산|불화|갈라서|결혼(?:하|할|이|을|운)|재회|사별|재앙|액운|흉(?:사|운|한)/;
-const RELATION_CAUSE = /(?:있|들어오|들어와|이루|맺|만나|부딪치|부딪히|겹치|생기|오)(?:어서|아서|으니|니|으면|면|기\s?때문)|때문|탓|(?:으로|로)\s?인해|이라서|(?<![가-힣])라서|충이라|합이라/;
-const RELATION_PREDICT = /수가?\s?있|생길|생겨요|생깁|일어나|일어날|하게\s?(?:돼|될)|할\s?(?:거|것)|겪|닥치|조심하세요|주의하세요|올\s?수/;
-/** A sentence that declines the event reading ("사건으로 읽지 않아요", "이별을 뜻하지는 않아요", "예고하지 않아요"). */
-const RELATION_DECLINED = /(?:읽|뜻하|가리키|예고하|정하|말하|단정하)지(?:는|도)?\s?않|(?:뜻|예고|신호|사건)(?:은|는|이|가)?\s?아니|단정할\s?수(?:는)?\s?없/;
-
-/** The sentences of `text` that read a relation as an event. */
-export function relationEventSentences(text: string): string[] {
-  return sentences(text).filter(
-    (s) => RELATION_NAME.test(s) && RELATION_EVENT_WORD.test(s) && (RELATION_CAUSE.test(s) || RELATION_PREDICT.test(s)) && !RELATION_DECLINED.test(s),
-  );
-}
-
 /** School-dependent labels: allowed only in a sentence that says they were not applied. */
 const SCHOOL_LABELS = /신강|신약|용신|희신|기신|격국|종격/;
 /** A sentence that declines or says something was not applied ("말하기 어려워요", "쓰지 않았어요"). */
@@ -690,6 +670,72 @@ const NEGATED = /않|없|아니|달라|붙이지|쓰지|어려|어렵|말하지|
  * "부담 없이") excuses nothing.
  */
 const DECLINED = /(?<![가-힣])(?:쓰지|붙지|붙이지|보지|따지지|다루지|말하지)\s?않|(?:뜻|예고|말|이름|라벨)(?:은|는)?\s?아니|단정할\s?수(?:는)?\s?없|말하기\s?어려|상관\s?없/;
+
+/**
+ * 합·충·형·파·해 read as an event (spec 2026-11-11, 정통 사주에 충·합 … 안, 검증기 추가; review of 30babdf): a relation and, in the
+ * same sentence, an event word carrying its own predicate ("충이 있어서 이별수가 있어요", "합이 들어오면 결혼할 수 있어요").
+ * Soft (style.ts RELATION_EVENT_PREFIX): logged and measured, never a failure or a regeneration of its own.
+ * - A relation is its name as a word (합·충 only before a particle, so 합의·합가·충만·충분·합격·합을 맞추·합이 잘 맞는 are not
+ *   relations), 형·파·해 with their hanja or as a compound (삼형·육해), a joined name (자오충, 인신충(寅申沖), 갑경충, 子丑合), or the
+ *   plain words the prompts teach ("정면으로 맞서는 배치", "묶이려는 짝").
+ * - An event is the word with its predicate attached ("이별수가 있", "이사하게 돼", "사고가 나", "수술을 조심"): a "수 있" elsewhere in
+ *   the sentence reads nothing, so 사고방식·사고력·사고의 폭·이사회·이사장 never count. 다툼 is the scene 4절 asks for, not an event.
+ * - The user's own words (재회운, 이직·퇴사를 고민 중이에요) are not counted (matchesBeyondUser), and a sentence that declines the
+ *   reading passes (RELATION_DECLINED, DECLINED's expressions included).
+ */
+const TERM = "(?:\\([^)]{0,12}\\))?";
+/** After a name: a particle, a space or the end (so 충분·충격·합격·합쳐 are not 충·합). */
+const RELATION_AFTER = "(?=[\\s,·)]|이|가|은|는|을|를|으로|로|의|과|와|도|만(?![가-힣])|이라|라|이니|탓|때문|$)";
+const CHUNG_AFTER = "(?=[\\s,·)]|이|은|을|으로|의|과|도|만(?![가-힣])|탓|때문|$)";
+const BRANCH_KO = "[자축인묘진사오미신유술해]";
+const RELATION_NAME = new RegExp([
+  `(?<![가-힣])(?:육합|삼합|방합|반합|천간합|천간충|삼형|자형|상형|육해|육파)${TERM}${RELATION_AFTER}`,
+  "[형파해]\\((?:刑|破|害)\\)",
+  // a bare 합: never 합의(agreement)·합가, 합을 맞추, 합이 (잘) 맞는
+  `(?<![가-힣])합${TERM}(?=[\\s,·)]|이(?!\\s?(?:잘\\s?)?맞)|은|을(?!\\s?맞추)|으로|과|도|만(?![가-힣])|탓|때문|$)`,
+  `(?<![가-힣])충${TERM}${CHUNG_AFTER}`,
+  // joined names: 자오충, 인신충(寅申沖), 갑경충, 해묘미삼합, 子丑合
+  `(?<![가-힣])(?:${BRANCH_KO}{2}|[갑을병정무기경신임계]{2})(?:충|합)${TERM}${CHUNG_AFTER}`,
+  `(?<![가-힣])${BRANCH_KO}{2,3}(?:삼합|반합|방합|육합|삼형)${TERM}${RELATION_AFTER}`,
+  "(?<=[甲乙丙丁戊己庚辛壬癸子丑寅卯辰巳午未申酉戌亥六三半方干])(?:沖|冲|合|刑|破|害)",
+  // the plain words (prompts/saju.ts, sajuRelationChips.ts)
+  "정면으로\\s?(?:맞서|마주\\s?보)|맞서는\\s?(?:짝|배치|관계|짜임)|마주\\s?보는\\s?짝|묶이려는\\s?(?:짝|배치|관계|성질)|끌어당기는\\s?짝|엇갈리는\\s?(?:짝|배치|관계)",
+].join("|"));
+/** The predicates an event word carries: done (이사하게 돼), coming (이별이 찾아와), met (사고를 조심), a lot (이별수가 있). */
+const P_DO = "(?:을|를)?\\s?(?:하게\\s?(?:돼|될|됩|되)|할\\s?(?:수(?:도)?\\s?있|거|것|가능성)|하기\\s?쉬|해요|합니다|하겠)";
+const P_COMES = "(?:이|가)\\s?(?:생기|생길|생겨|생깁|찾아오|찾아와|찾아올|닥치|닥칠|닥쳐|일어나|일어날|일어납|들어오|들어와|들어올|올\\s?(?:수|거|것)|와요|옵니다|있(?:어요|습니다|겠|을\\s?(?:수|거|것))|늦어|빨라|깨지|깨질|깨져)";
+const P_MEETS = "(?:을|를)\\s?(?:겪(?:게|을\\s?(?:수|거|것)|어요|습니다|기\\s?쉬)|맞(?:게|을\\s?(?:수|거|것))|당하|당할|당해|조심|주의|피하|피해야|피할)";
+const P_LOT = "(?:수|운)(?:가|이|는|은|도)?\\s?(?:있|들|생기|생길|보여|보이|보입|따르|따라|강|좋|트|열리|붙)";
+/** An event word whose own predicate follows (lookahead), so a match is the word alone, as the user may have written it. */
+const RELATION_EVENT = new RegExp([
+  `(?:이별|결별|이혼|파혼|이사|이직|퇴사|결혼|재회|사별|입원|수술|파산|소송|송사)(?=${P_DO}|${P_COMES}|${P_MEETS}|${P_LOT})`,
+  `(?:부상|구설|관재|손재|재앙|액운|흉사|파탄)(?=${P_COMES}|${P_MEETS}|${P_LOT}|(?:수)?에\\s?(?:오르|오를|휘말))`,
+  `(?:이동|변동)(?=${P_LOT})`,
+  // 사고 as an accident only: 사고방식·사고력·사고의 폭 are thinking
+  `사고(?=가?\\s?(?:나요|나기|날\\s?(?:수|거|것)|납니|났|생기|생길|생겨)|를\\s?(?:당하|당할|당해|조심|주의|피하)|${P_LOT})`,
+  "(?:헤어지|갈라서|다치)(?=게\\s?(?:돼|될|됩|되)|기\\s?쉬)",
+  "(?:헤어질|갈라설|다칠)(?=\\s?(?:수(?:도)?\\s?있|거|것|가능성))",
+  "(?:헤어져|헤어집|갈라서|다쳐|다칩)(?=요|니다)",
+].join("|"));
+/**
+ * A sentence that declines the event reading: DECLINED's expressions ("말은 아니에요", "말하기 어려워요", "쓰지 않았어요",
+ * "상관없어요") and "사건으로 읽지 않아요", "뜻하지는 않아요", "볼 수는 없어요", "생각하지 않으셔도 돼요", "그런 말은 이 풀이에서
+ * 하지 않아요", "생기는 건 아니에요".
+ */
+const RELATION_DECLINED = new RegExp([
+  DECLINED.source,
+  "(?:읽|뜻하|가리키|예고하|정하|말하|단정하|생각하)지(?:는|도)?\\s?않",
+  "(?<![가-힣])(?:쓰|붙|붙이|보|따지|다루)지(?:는|도)\\s?않",
+  "정해\\s?주지(?:는|도)?\\s?않",
+  "(?:뜻|예고|신호|사건|사실|이야기|얘기|표시|건|게|것)(?:은|는|이|가)?\\s?아니",
+  "(?:볼|말할)\\s?수(?:는|도)?\\s?없",
+  "(?:말|이야기|얘기|해석)(?:은|는)\\s?[^.?!]{0,15}하지\\s?않",
+].join("|"));
+
+/** The sentences of `text` that read a relation as an event, the user's own words (`userText`) aside. */
+export function relationEventSentences(text: string, userText = ""): string[] {
+  return sentences(text).filter((s) => RELATION_NAME.test(s) && matchesBeyondUser(RELATION_EVENT, s, userText).length > 0 && !RELATION_DECLINED.test(s));
+}
 
 const STEM_OR_BRANCH = /[甲乙丙丁戊己庚辛壬癸子丑寅卯辰巳午未申酉戌亥]/g;
 /** Ten-god names at a word start (so 결정인지 never reads as 정인, 상관없이 never as 상관). */
@@ -741,9 +787,10 @@ export function allowedFactViolations(
         : `쓰지 않는 표현이 있어요: ${label}(${words}). 부정문으로도 쓰지 마세요.`);
     }
   }
-  const events = cardText ? [] : relationEventSentences(text);
+  // soft: logged and measured, never a failure nor a regeneration of its own (style.ts RELATION_EVENT_PREFIX)
+  const events = cardText ? [] : relationEventSentences(text, userText);
   if (events.length) {
-    out.push(`합·충 같은 관계를 사건으로 읽은 문장이 있어요(${events.slice(0, 2).map((e) => `"${e}"`).join(", ")}). 관계는 '정면으로 맞서는 배치', '묶이려는 짝'처럼 배치로만 말하고 이별·이사·사고 같은 일과 잇지 마세요.`);
+    out.push(`${RELATION_EVENT_PREFIX}(${events.slice(0, 2).map((e) => `"${e}"`).join(", ")}). 관계는 '정면으로 맞서는 배치', '묶이려는 짝'처럼 배치로만 말하고 이별·이사·사고 같은 일과 잇지 마세요.`);
   }
   const named = !cardText && names ? sinsalNameHits(text, userText) : [];
   if (named.length) out.push(`쓰지 않는 주제가 있어요: 살·귀인 이름(${named.join(", ")}). 이 풀이로는 말하기 어렵다고 짧게 밝히는 문장에서만 쓰세요.`);

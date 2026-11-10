@@ -109,6 +109,13 @@ export const SOFT_PREFIX_INTL = "[style] ";
  */
 export const VOICE_PREFIX = "[목소리] ";
 
+/**
+ * 합·충 read as an event (validate.ts relationEventSentences; review of 30babdf): a [문체] finding that is logged and measured only,
+ * as the voice findings were introduced. Fed back with a regeneration that happens for another reason, never one of its own, and
+ * never one of the ≥3, so a paid reading is never hurt by it.
+ */
+export const RELATION_EVENT_PREFIX = `${SOFT_PREFIX}합·충 같은 관계를 사건으로 읽은 문장이 있어요`;
+
 export const isSoftViolation = (violation: string) =>
   violation.startsWith(SOFT_PREFIX) || violation.startsWith(SOFT_PREFIX_INTL) || violation.startsWith(VOICE_PREFIX);
 
@@ -119,10 +126,10 @@ const AI_TELL_MESSAGE = `${SOFT_PREFIX}AI가 쓴 티가 나는 문장이 있어�
 /**
  * The ≥3 rule for soft findings: regenerate for style only when the AI-tell score fired (itself 3+
  * distinct tells) or when 3+ distinct soft checks fired together. One or two soft hits never do, nor
- * do voice findings, however many.
+ * do voice findings or the 합·충-as-event finding, however many.
  */
 export function softWarrantsRegeneration(violations: readonly string[]): boolean {
-  const soft = violations.filter((v) => isSoftViolation(v) && !v.startsWith(VOICE_PREFIX));
+  const soft = violations.filter((v) => isSoftViolation(v) && !v.startsWith(VOICE_PREFIX) && !v.startsWith(RELATION_EVENT_PREFIX));
   return soft.some((v) => v.startsWith(AI_TELL_MESSAGE)) || soft.length >= AI_TELL_THRESHOLD;
 }
 
