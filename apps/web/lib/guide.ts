@@ -822,6 +822,13 @@ function blockLines(block: GuideBlock): string[] {
     case "figure":
     case "diagram":
       return block.caption ? [block.caption] : [];
+    case "chart":
+      return [
+        block.caption,
+        ...(block.chart === "bar"
+          ? block.rows.map((row) => `${row.label}: ${row.value}${block.unit}`)
+          : block.lanes.map((lane) => `${lane.label}: ${lane.spans.map(([from, to]) => `${Math.floor(from)}–${Math.floor(to)}`).join(", ")}`)),
+      ];
   }
 }
 

@@ -131,11 +131,12 @@ export const sajuAbroadEnabled = (): boolean => process.env.NEXT_PUBLIC_SAJU_ABR
 
 const MINUTE_MS = 60_000;
 
+// Exported for the guide's 원본 자료 article on Korea's standard time and DST (apps/web), which prints this very table.
 // Wall-clock start of each period (read on the clock in force just before it), total UTC offset and
 // standard offset in minutes. Same data as manseryeok's internal table (dist/time/korea-timezone.js,
 // not exported), which the research checked against IANA tzdata 2026a; tests re-check it against
 // the runtime's tzdata. 1948–60 DST ended at 24:00 of the previous day, written here as 00:00.
-const KOREA_PERIODS_WALL: readonly (readonly [string, number, number])[] = [
+export const KOREA_CIVIL_PERIODS: readonly (readonly [string, number, number])[] = [
   ["1908-04-01T00:00", 510, 510],
   ["1912-01-01T00:00", 540, 540],
   ["1948-06-01T00:00", 600, 540], ["1948-09-13T00:00", 540, 540],
@@ -161,8 +162,8 @@ export interface CivilOffset {
   standardOffsetMinutes: number;
 }
 
-const KOREA_PERIODS: readonly (CivilOffset & { startUTC: number })[] = KOREA_PERIODS_WALL.map(([wall, offsetMinutes, standardOffsetMinutes], i) => {
-  const previousOffset = i === 0 ? offsetMinutes : KOREA_PERIODS_WALL[i - 1]![1];
+const KOREA_PERIODS: readonly (CivilOffset & { startUTC: number })[] = KOREA_CIVIL_PERIODS.map(([wall, offsetMinutes, standardOffsetMinutes], i) => {
+  const previousOffset = i === 0 ? offsetMinutes : KOREA_CIVIL_PERIODS[i - 1]![1];
   return { startUTC: Date.parse(`${wall}Z`) - previousOffset * MINUTE_MS, offsetMinutes, standardOffsetMinutes };
 });
 

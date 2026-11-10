@@ -49,7 +49,13 @@ export type GuideBlock =
   /** A whole suit at a glance: 6-14 card ids, small scans that wrap, with their names. */
   | { kind: "cardGrid"; cards: readonly string[]; caption?: string }
   | { kind: "diagram"; name: "five-elements" | "celtic-cross" | "daewoon"; caption?: string }
-  | { kind: "diagram"; name: "three-card"; spread: GuideThreeCardSpread; caption?: string };
+  | { kind: "diagram"; name: "three-card"; spread: GuideThreeCardSpread; caption?: string }
+  /**
+   * A data chart from the article's own numbers (app/guide/GuideChart.tsx): bars of non-negative values with a unit, or
+   * spans of years on lanes. A table with the same numbers stands next to it.
+   */
+  | { kind: "chart"; chart: "bar"; caption: string; unit: string; rows: ReadonlyArray<{ label: string; value: number }> }
+  | { kind: "chart"; chart: "timeline"; caption: string; from: number; to: number; lanes: ReadonlyArray<{ label: string; spans: ReadonlyArray<readonly [number, number]> }> };
 
 export interface GuideSection {
   heading: string;
