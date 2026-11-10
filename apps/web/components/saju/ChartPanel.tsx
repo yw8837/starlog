@@ -6,6 +6,7 @@ import { ChartTable } from "./ChartTable";
 import { GradeMini } from "./GradeMini";
 import { LuckTimeline } from "./LuckTimeline";
 import { NameChips } from "./NameChips";
+import { RelationChips } from "./RelationChips";
 import type { ChartResult } from "./useSajuChart";
 import s from "./ChartPanel.module.css";
 
@@ -22,6 +23,7 @@ export function ChartPanel({ result, gradeCard = false }: { result: ChartResult 
         <ChartTable chart={result.chart} title="네 기둥" />
         {/* keyed by the birth data, so an open chip closes when another chart comes in */}
         <NameChips key={JSON.stringify(result.chart.input)} chart={result.chart} />
+        <RelationChips key={`relations-${JSON.stringify(result.chart.input)}`} chart={result.chart} />
         <BalanceCard chart={result.chart} note={gaeunLine(scarceElements(result.chart))} />
         <LuckTimeline chart={result.chart} />
         <ChartCriteria chart={result.chart} />
