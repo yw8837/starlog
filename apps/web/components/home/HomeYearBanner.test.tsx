@@ -8,11 +8,11 @@ const NOV = Date.parse("2026-11-10T12:00:00+09:00");
 const LAST = Date.parse("2026-11-30T23:59:59+09:00");
 const DEC = Date.parse("2026-12-01T00:00:00+09:00");
 
-function stub(visible: boolean) {
+function stub(visible: boolean, open: boolean = visible) {
   vi.stubGlobal("fetch", vi.fn(async () => Response.json({ products: [
-    { id: "tarot-deep", open: visible, visible, opensAt: null },
-    { id: "match", open: visible, visible, opensAt: null },
-    { id: "newyear-2027", open: visible, visible, opensAt: null },
+    { id: "tarot-deep", open, visible, opensAt: null },
+    { id: "match", open, visible, opensAt: null },
+    { id: "newyear-2027", open, visible, opensAt: null },
   ] })));
 }
 
@@ -42,6 +42,17 @@ describe("the home's 2027 banner (sales 2026-11-10 item 5)", () => {
     await act(async () => {});
     expect(container.innerHTML).toBe("");
   });
+
+  // Review MED-3: visible but not on sale (sales mode off, or past closesAt 2027-12-01): the server's `open` is false.
+  for (const [label, at] of [["sales mode off", NOV], ["after closesAt", Date.parse("2027-12-01T00:00:00+09:00")]] as const) {
+    it(`shows nothing where the product is visible but not on sale (${label})`, async () => {
+      vi.setSystemTime(at);
+      stub(true, false);
+      const { container } = render(<HomeYearBanner />);
+      await act(async () => {});
+      expect(container.innerHTML).toBe("");
+    });
+  }
 });
 
 describe("the 오픈 기념 무료 notice, by the date", () => {

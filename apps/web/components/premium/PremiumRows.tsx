@@ -16,7 +16,7 @@ type PremiumRowsProps = {
   lines?: Partial<Record<PremiumId, string>>;
   /** The home's ivory cards (three across on desktop); otherwise glass rows. */
   look?: "home" | "rows";
-  /** Leave out a product before its sales window instead of showing when it opens (a reading's end). */
+  /** Only products on sale now (the status's `open`, as StarList): none before its window, after it, or with sales off (a reading's end, the home's banner). */
   onlyOpen?: boolean;
   /** The host the page is served on: a guide page links to the app host. */
   host?: SiteHost;
@@ -44,7 +44,7 @@ export function PremiumRows({ ids, title, lines = {}, look = "rows", onlyOpen = 
     const at = PREMIUM[id].opensAt;
     return at !== undefined && now < at ? at : null;
   };
-  const rows = ids.filter((id) => status[id].visible && !(onlyOpen && opensAt(id) !== null));
+  const rows = ids.filter((id) => status[id].visible && !(onlyOpen && !status[id].open));
   if (rows.length === 0) return null;
   return (
     <section className={[s.section, look === "home" ? s.home : "", className ?? ""].filter(Boolean).join(" ")} aria-labelledby={titleId}>
