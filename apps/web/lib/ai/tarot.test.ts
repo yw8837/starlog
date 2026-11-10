@@ -330,6 +330,9 @@ describe("mock provider", () => {
     // 감질맛: the first card is shown in full and the paid reading keeps it, so the locked list leaves it out.
     expect(teaser.data.lockedToc).toEqual(tarotLockedToc(ctx).filter((h) => h !== teaser.data.firstCard.heading));
     expect(teaser.data.lockedToc).toContain(teaser.data.secondCard!.heading);
+    // Real counts for the lock (spec 2026-11-11 3.6): all the headings, the first card shown whole, the second's first part.
+    expect(teaser.data).toMatchObject({ tocTotal: tarotLockedToc(ctx).length, tocOpen: 1, tocPartial: 1 });
+    expect(teaser.data.tocTotal! - teaser.data.tocOpen!).toBe(teaser.data.lockedToc.length);
   });
 
   it("keeps the first card in the locked list of a one-card spread, whose paid reading writes it anew", async () => {
@@ -338,6 +341,7 @@ describe("mock provider", () => {
     const teaser = await generateTarotTeaser(provider, one);
     expect(teaser.data.secondCard).toBeUndefined();
     expect(teaser.data.lockedToc).toEqual(tarotLockedToc(one));
+    expect(teaser.data).toMatchObject({ tocTotal: tarotLockedToc(one).length, tocOpen: 0, tocPartial: 0 });
   });
 });
 

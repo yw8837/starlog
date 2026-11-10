@@ -104,7 +104,8 @@ async function moneyFlow(page: Page, info: TestInfo, free: boolean) {
   // The free teaser from the API, then the scope before opening.
   const toc = page.getByRole("region", { name: "이어지는 풀이" });
   await expect(toc).toBeVisible({ timeout: 30_000 });
-  await expect(toc).toContainText(/소제목 \d+개 · 약 2,000자/);
+  // The real counts (spec 2026-11-11 3.6): 12 headings, the first card whole, the second card's first part.
+  await expect(toc).toContainText("소제목 12개 중 1개 공개 · 1개는 앞부분만 · 전체 약 2,000자");
   const sheet = page.getByRole("region", { name: "전체 풀이에 담긴 것" });
   await expect(sheet).toContainText("풀이 전체 · 약 2,000자");
   await expect(sheet).toContainText("내 기록에 계속 보관");

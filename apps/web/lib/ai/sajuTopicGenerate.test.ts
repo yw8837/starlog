@@ -52,6 +52,8 @@ describe("generation with the mock provider", () => {
     const spy = vi.spyOn(mockProvider, "generate");
     const { data } = await generateSajuTopicTeaser(mockProvider, f);
     expect(data).toMatchObject({ lockedToc: topicLockedToc("money"), topic: "money", freshUntil: "2026-11-01T03:00:00.000Z" });
+    // Real counts for the lock (spec 2026-11-11 3.6): the 맛보기 shows a name and a summary, no heading of the paid reading.
+    expect(data).toMatchObject({ tocTotal: topicLockedToc("money").length, tocOpen: 0, tocPartial: 0 });
     expect(spy.mock.calls[0]![0]).toMatchObject({ name: "saju-topic-teaser", system: SAJU_TOPIC_SYSTEM });
     spy.mockRestore();
   });

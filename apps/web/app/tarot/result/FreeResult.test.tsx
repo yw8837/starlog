@@ -534,6 +534,18 @@ describe("FreeResult and the 감질맛 teaser (owner 2026-10-14)", () => {
     expect(jump.compareDocumentPosition(screen.getByText(/^소제목 2개/)) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it("says the lock's real counts from the server (spec 2026-11-11 3.6 T13), and a kept teaser without them as before", async () => {
+    seed({ secondCard: SECOND, seal: "SEALED_teaser-1", lockedToc: ["흐름 · 바보", "조언"], tocTotal: 3, tocOpen: 1, tocPartial: 1 });
+    stub({ me: [() => Response.json(meBody())] });
+    render(<FreeResult instant />);
+    expect(await screen.findByText("소제목 3개 중 1개 공개 · 1개는 앞부분만 · 전체 약 2,000자")).toBeTruthy();
+    cleanup();
+    seed({ secondCard: SECOND, seal: "SEALED_teaser-1" });
+    stub({ me: [() => Response.json(meBody())] });
+    render(<FreeResult instant />);
+    expect(await screen.findByText("소제목 2개 · 약 2,000자")).toBeTruthy();
+  });
+
   it("sends the teaser's seal with the unlock, so the reading reads on from the cut", async () => {
     seed({ secondCard: SECOND, seal: "SEALED_teaser-1" });
     stub({ me: [() => Response.json(meBody())], reading: () => Response.json({ reading: TAROT_SAMPLE.paid, chapterToken: "t1" }) });

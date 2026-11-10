@@ -44,6 +44,7 @@ import { BACK_TO_OVERALL, TEASER_LIMIT_NOTICE, TOPIC_SECTIONS, UNLOCK_SCOPE_LINE
 import { historyFor, listChapters, mergeServerReadings, saveChapter, useChapters } from "@/lib/storage/chapters";
 import { LATER_CHECK_DELAYS, OPENING_WINDOW_MS, checkDelivery, heldCredit, type DeliveryCheck, type HeldCredit } from "@/lib/storage/sync";
 import s from "./SajuChartView.module.css";
+import { sajuTocMeta } from "@/lib/reading/tocMeta";
 import { isSajuReadingResponse, isSajuTeaser } from "@/lib/reading/validate";
 
 /** The body /api/saju/* take: birth data, 사주팔자's status chips or a 운's id, and the earlier readings that belong with it (spec §7.8). */
@@ -383,7 +384,7 @@ export function SajuChartView({
           전체 풀이 보러 가기<span aria-hidden="true"> ↓</span>
         </a>
         {topicRow}
-        <LockedToc items={teaser.lockedToc} meta={`소제목 ${teaser.lockedToc.length}개 · 약 ${approxCharsText(SITE.reading.approxChars.saju)}자`} />
+        <LockedToc items={teaser.lockedToc} meta={sajuTocMeta(teaser, approxCharsText(SITE.reading.approxChars.saju))} />
         <UnlockSheet
           kind="saju"
           topicLabel={topic !== "overall" ? topicLabel(topic) : undefined}
