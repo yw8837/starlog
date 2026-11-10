@@ -14,12 +14,14 @@ import { CardFan, fanIndexes } from "@/components/tarot/CardFan";
 import { ShuffleStage } from "@/components/tarot/ShuffleStage";
 import { TarotCard } from "@/components/tarot/TarotCard";
 import { KeptPanel, useKeptGate } from "@/components/reading/KeptPanel";
+import { LoginFirst } from "@/components/reading/LoginFirst";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
-import { loginHref, useAccount } from "@/lib/account/client";
+import { loginHref, loginMessage, useAccount } from "@/lib/account/client";
 import { birthProblem } from "@/lib/bonds/birth";
 import { CODE_LIMIT_MESSAGE, JOIN_FAILED, bondsApi, bondsMessage } from "@/lib/bonds/client";
 import { MESSAGE_MAX, NICKNAME_MAX, nicknameProblem, ordinalStar } from "@/lib/bonds/text";
+import { newResumeNonce } from "@/lib/flowState";
 import { useSajuProfile } from "@/lib/sajuFlow";
 import type { FriendResultView, InviteState } from "./loadInvite";
 import b from "@/components/bonds/bonds.module.css";
@@ -60,6 +62,27 @@ function writeDraft(code: string, draft: Draft | null) {
   }
 }
 
+/**
+ * The login 별 되기 sent a visitor to (owner 2026-11-10: a friend logs in to join), marked for that one trip in this tab: only
+ * a return to this invite with the same mark (?resume=, and ?login=ok) joins by itself, with the draft kept above.
+ */
+const tripKey = (code: string) => `${draftKey(code)}.login`;
+function readTrip(code: string): string | null {
+  try {
+    return window.sessionStorage.getItem(tripKey(code));
+  } catch {
+    return null;
+  }
+}
+function writeTrip(code: string, trip: string | null) {
+  try {
+    if (trip) window.sessionStorage.setItem(tripKey(code), trip);
+    else window.sessionStorage.removeItem(tripKey(code));
+  } catch {
+    // storage off: the login comes back to the form, and 별 되기 is pressed again
+  }
+}
+
 /** The step in the address (#cards, #message), so the back button goes to the step before instead of leaving the page. */
 type StepHash = "" | "#cards" | "#message";
 function setStep(hash: StepHash, mode: "push" | "replace") {
@@ -69,10 +92,11 @@ function setStep(hash: StepHash, mode: "push" | "replace") {
 }
 
 /**
- * The friend's side (spec §3 친구, no account): whose constellation this is, then nickname → birth date
- * → a card from the shuffled fan → an optional one-line message, and the result: the 인연 score with
- * its reasons, the 인연 카드 and its line. The birth date only travels in the join request. Joining needs no
- * login; seeing the result again after this screen does (owner 2026-11-05).
+ * The friend's side (spec §3 친구): whose constellation this is, then nickname → birth date → a card from the shuffled fan
+ * → an optional one-line message, and the result: the 인연 score with its reasons, the 인연 카드 and its line. The birth
+ * date only travels in the join request. The invite opens without a login; 별 되기 needs one (owner 2026-11-10): a visitor
+ * gets the login in its place, the form stays, and the join goes on after it. The star is then the account's, shown again
+ * wherever it logs in; a star a device left before that shows again on that device with a session (owner 2026-11-05).
  */
 export function JoinFlow({ state }: { state: InviteState }) {
   if (state.status === "open") return <OpenInvite invite={state} />;
@@ -80,7 +104,7 @@ export function JoinFlow({ state }: { state: InviteState }) {
   if (state.status === "joined") {
     return (
       <StillMember code={state.code} asVisitor={<HiddenStar code={state.code} />}>
-        <Result result={state.result} code={state.code} again />
+        <Result result={state.result} again />
       </StillMember>
     );
   }
@@ -236,11 +260,36 @@ function OpenInvite({ invite }: { invite: Open }) {
   pickRef.current = pick;
   const doneRef = useRef(false);
   const [restored, setRestored] = useState(false);
+  // A friend logs in to join (owner 2026-11-10): the login shows in place of 별 되기 for a known visitor (gone once a login is
+  // seen here), or when the server said so (a session that ended). `trip` marks the way back (see readTrip).
+  const account = useAccount();
+  const [loginAsk, setLoginAsk] = useState<"visitor" | "server" | null>(null);
+  const [loginNote, setLoginNote] = useState<string | null>(null);
+  const [trip] = useState(newResumeNonce);
+  const askLogin = loginAsk === "server" || (loginAsk === "visitor" && !account?.user);
+  const askForLogin = (why: "visitor" | "server") => {
+    writeTrip(invite.code, trip);
+    setLoginAsk(why);
+  };
+  // Back from that login: the join goes on once the session is known. The address read once (Strict Mode runs effects twice).
+  const arrival = useRef<URLSearchParams | null>(null);
+  const resumeJoin = useRef(false);
 
   // Back to this page in the same visit: the kept form, and the step its address names.
   useEffect(() => {
     const draft = readDraft(invite.code);
     const hash = window.location.hash;
+    arrival.current ??= new URLSearchParams(window.location.search);
+    const login = arrival.current.get("login");
+    const resume = arrival.current.get("resume");
+    const back = Boolean(resume && resume === readTrip(invite.code) && draft && draft.pick !== null);
+    if (resume !== null || login !== null) {
+      // the marks leave the address, so a shared device's history keeps none
+      const url = new URL(window.location.href);
+      url.searchParams.delete("resume");
+      url.searchParams.delete("login");
+      window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+    }
     if (draft) {
       setNickname(draft.nickname);
       if (draft.birth.year !== null) {
@@ -250,9 +299,17 @@ function OpenInvite({ invite }: { invite: Open }) {
       setConsent(draft.consent);
       setPick(draft.pick);
       setMessage(draft.message);
-      if (hash === "#message" && draft.pick !== null) setPhase("message");
+      if ((back || hash === "#message") && draft.pick !== null) setPhase("message");
       else if (hash === "#cards") setPhase("pick");
     } else if (hash === "#cards" || hash === "#message") setStep("", "replace");
+    if (back) {
+      setStep("#message", "replace");
+      if (login === "ok") resumeJoin.current = true;
+      else {
+        askForLogin("visitor");
+        setLoginNote(loginMessage(login));
+      }
+    }
     setRestored(true);
   }, [invite.code]);
 
@@ -308,6 +365,8 @@ function OpenInvite({ invite }: { invite: Open }) {
   const submit = async (constellationId: string = target) => {
     const birthDate = birthBody(birth);
     if (pick === null || !birthDate) return;
+    // A known visitor: the login, and nothing is sent (owner 2026-11-10).
+    if (account && !account.user) return askForLogin("visitor");
     setBusy(true);
     setErrors({});
     setMoved(null);
@@ -327,6 +386,7 @@ function OpenInvite({ invite }: { invite: Open }) {
         setMoved(res as unknown as Moved);
         return;
       }
+      if (res.code === "LOGIN_REQUIRED") return askForLogin("server");
       const text = bondsMessage(res, JOIN_FAILED);
       if (res.field === "nickname" || res.field === "birth") {
         setErrors({ [res.field]: text });
@@ -340,6 +400,7 @@ function OpenInvite({ invite }: { invite: Open }) {
     // The birth date and the rest of the form are not kept once the star is in.
     doneRef.current = true;
     writeDraft(invite.code, null);
+    writeTrip(invite.code, null);
     setBirthValue(EMPTY_BIRTH);
     setMessage("");
     setResult(joined as JoinResult);
@@ -347,7 +408,15 @@ function OpenInvite({ invite }: { invite: Open }) {
     setStep("", "replace");
   };
 
-  if (phase === "result" && result) return <Result result={result} code={invite.code} headingRef={resultRef} />;
+  // Back from the login with its mark: the join goes on by itself, once, when the session is known (owner 2026-11-10).
+  useEffect(() => {
+    if (!restored || !resumeJoin.current || !account?.user) return;
+    resumeJoin.current = false;
+    writeTrip(invite.code, null);
+    void submit();
+  }, [restored, account]);
+
+  if (phase === "result" && result) return <Result result={result} headingRef={resultRef} />;
 
   return (
     <>
@@ -500,9 +569,19 @@ function OpenInvite({ invite }: { invite: Open }) {
           }} /> : null}
           {/* Said right above the button that joins (owner 2026-10-23), once on the page (QA L5): this marks the star's score as shown. */}
           <p className={b.helper}>{shareNotice}</p>
-          <Button block onClick={() => void submit()} disabled={busy}>
-            {busy ? "별을 다는 중이에요" : "별 되기"}
-          </Button>
+          {askLogin ? (
+            <LoginFirst
+              title="별이 되려면 로그인해 주세요"
+              body="적은 닉네임과 생년월일, 고른 카드와 한 줄은 그대로 있어요. 카카오나 Google로 로그인하면 이어서 별이 돼요."
+              href={loginHref(`/b/${invite.code}?resume=${trip}`)}
+              action="로그인하고 별 되기"
+              note={loginNote}
+            />
+          ) : (
+            <Button block onClick={() => void submit()} disabled={busy}>
+              {busy ? "별을 다는 중이에요" : "별 되기"}
+            </Button>
+          )}
         </section>
       ) : null}
     </>
@@ -536,8 +615,7 @@ function MovedNotice({ moved, invite, busy, onGo }: { moved: Moved; invite: Open
   );
 }
 
-function Result({ result, code, headingRef, again = false }: { result: JoinResult; code: string; headingRef?: RefObject<HTMLHeadingElement | null>; again?: boolean }) {
-  const account = useAccount();
+function Result({ result, headingRef, again = false }: { result: JoinResult; headingRef?: RefObject<HTMLHeadingElement | null>; again?: boolean }) {
   const def = getConstellation(result.sign);
   const card = getCard(result.card.cardId);
   const reversed = result.card.orientation === "reversed";
@@ -563,16 +641,6 @@ function Result({ result, code, headingRef, again = false }: { result: JoinResul
           <p className={s.line}>{result.bondLine}</p>
         </div>
       </div>
-      {/* The join's answer is a visitor's one time to see it (owner 2026-11-05): a reload asks for the login. */}
-      {account !== undefined && !account?.user ? (
-        <p className={b.helper}>
-          나중에 이 결과를 다시 보려면{" "}
-          <Link href={loginHref(`/b/${code}`)} className={s.inlineLink}>
-            로그인
-          </Link>
-          해 주세요.
-        </p>
-      ) : null}
       <div className={b.actions}>
         <Button href="/today" variant="secondary" block>
           오늘의 한 장 받기

@@ -30,6 +30,7 @@ function keepDraft(hash: "" | "#cards" | "#message", draft: Partial<{ nickname: 
   window.history.replaceState(null, "", `/b/K7M4QX${hash}`);
 }
 
+const VISITOR = { payments: true, login: true, owner: false, user: null };
 const OPEN = { status: "open", kind: "open", code: "K7M4QX", ownerNickname: "용우", sign: "aries", filled: 1, slots: 4, earlier: null, earlierHidden: false, myNickname: null, scoresPrivate: false, constellationId: "cons0123456789abcdef" } as const;
 const RESULT = {
   nickname: "하늘", score: 87, parts: [{ id: "stem-generate" as const, points: 10, text: "두 분의 일간이 서로 살려 주는 사이예요" }], completed: false,
@@ -274,28 +275,75 @@ describe("JoinFlow", () => {
     expect(screen.getByRole("textbox", { name: "닉네임" })).toBeTruthy();
   });
 
-  it("says on the first result that seeing it again later needs a login, only to a visitor; the result itself needs none (owner 2026-11-05)", async () => {
-    const VISITOR = { payments: true, login: true, owner: false, user: null };
-    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ ok: true, ...RESULT }))));
+  /** A visitor on the last step presses 별 되기: the login in its place; where it comes back to (`next`). */
+  function pressAsVisitor(fetchMock = vi.fn()): string {
     setAccountForTests(VISITOR);
+    vi.stubGlobal("fetch", fetchMock);
+    keepDraft("#message", { message: "늘 고마워" });
+    render(<JoinFlow state={OPEN} />);
+    fireEvent.click(screen.getByRole("button", { name: "별 되기" }));
+    const href = screen.getByRole("link", { name: "로그인하고 별 되기" }).getAttribute("href")!;
+    return new URL(href, "http://localhost").searchParams.get("next")!;
+  }
+
+  it("a visitor's 별 되기 shows the login first and sends nothing; what was typed and picked stays (owner 2026-11-10)", () => {
+    const fetchMock = vi.fn();
+    const next = pressAsVisitor(fetchMock);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(screen.getByRole("heading", { level: 2, name: "별이 되려면 로그인해 주세요" })).toBeTruthy();
+    expect(screen.getByText("적은 닉네임과 생년월일, 고른 카드와 한 줄은 그대로 있어요. 카카오나 Google로 로그인하면 이어서 별이 돼요.")).toBeTruthy();
+    // back to this invite, with a mark for this one trip
+    expect(next).toMatch(/^\/b\/K7M4QX\?resume=[0-9a-f]{24}$/);
+    expect(screen.queryByRole("button", { name: "별 되기" })).toBeNull();
+    expect((screen.getByRole("textbox", { name: "한 줄 남기기 (선택)" }) as HTMLInputElement).value).toBe("늘 고마워");
+    expect(JSON.parse(window.sessionStorage.getItem(DRAFT_KEY)!)).toMatchObject({ nickname: "하늘", consent: true, pick: 4, message: "늘 고마워" });
+    // the share notice still says, above the way on, what joining means
+    expect(screen.getByText("용우님이 별자리를 공유하면 내 닉네임과 용우님과의 인연 점수가 공유 링크와 이미지에 보여요.")).toBeTruthy();
+  });
+
+  it("a session that ended (the server answers LOGIN_REQUIRED) gets the same login, not an error", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ ok: false, code: "LOGIN_REQUIRED" }), { status: 401 })));
     keepDraft("#message");
     render(<JoinFlow state={OPEN} />);
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "별 되기" }));
     });
-    await screen.findByRole("heading", { level: 1, name: "양자리에 별이 됐어요" });
-    expect(screen.getByText("87")).toBeTruthy();
-    await screen.findByText(/나중에 이 결과를 다시 보려면/);
-    expect(screen.getByRole("link", { name: "로그인" }).getAttribute("href")).toBe("/login?next=%2Fb%2FK7M4QX");
+    expect(screen.getByRole("link", { name: "로그인하고 별 되기" })).toBeTruthy();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("back from that login, the join goes on by itself with what was kept, once, and the marks leave the address (owner 2026-11-10)", async () => {
+    const next = pressAsVisitor();
+    cleanup();
+    asMember();
+    const bodies: Array<Record<string, unknown>> = [];
+    vi.stubGlobal("fetch", vi.fn(async (_url: string, init?: RequestInit) => {
+      bodies.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
+      return new Response(JSON.stringify({ ok: true, ...RESULT }));
+    }));
+    window.history.replaceState(null, "", `${next}&login=ok`);
+    render(<JoinFlow state={OPEN} />);
+    expect(await screen.findByRole("heading", { level: 1, name: "양자리에 별이 됐어요" })).toBeTruthy();
+    expect(bodies).toEqual([expect.objectContaining({ code: "K7M4QX", nickname: "하늘", pick: 4, message: "늘 고마워", birth: expect.objectContaining({ year: 1992, month: 8, day: 3 }) })]);
+    expect(window.location.search).toBe("");
+    expect(window.sessionStorage.getItem(DRAFT_KEY)).toBeNull();
+  });
+
+  it("a login that did not come back ok says why on the same login and joins nothing; a mark this tab did not make joins nothing either", async () => {
+    const fetchMock = vi.fn();
+    const next = pressAsVisitor(fetchMock);
+    cleanup();
+    window.history.replaceState(null, "", `${next}&login=cancel`);
+    render(<JoinFlow state={OPEN} />);
+    expect(await screen.findByText("로그인을 취소했어요")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "로그인하고 별 되기" })).toBeTruthy();
     cleanup();
     asMember();
     keepDraft("#message");
+    window.history.replaceState(null, "", "/b/K7M4QX?resume=0123456789abcdef01234567&login=ok#message");
     render(<JoinFlow state={OPEN} />);
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: "별 되기" }));
-    });
-    await screen.findByRole("heading", { level: 1, name: "양자리에 별이 됐어요" });
-    expect(screen.queryByText(/나중에 이 결과를 다시 보려면/)).toBeNull();
+    expect(await screen.findByRole("button", { name: "별 되기" })).toBeTruthy();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("a result the page state still holds is not shown to a visitor: a cached page after a logout gets the login, not the score (owner 2026-11-05)", () => {
