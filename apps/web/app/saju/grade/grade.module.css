@@ -407,3 +407,10 @@
   font-size: 12px;
   font-weight: 700;
 }
+
+.shareButtons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}

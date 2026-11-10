@@ -1,27 +1,28 @@
 "use client";
 
-import { gradeChartOf, SAJU_GRADE_RULE, type GradeChart, type SajuChart } from "@starlog/core";
+import { gradeChartOf, SAJU_GRADE_RULE, type GradeChart, type GradeLetter, type SajuChart } from "@starlog/core";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { PremiumRows } from "@/components/premium/PremiumRows";
 import { GradeCard } from "@/components/saju/GradeCard";
 import { SajuFields } from "@/components/saju/SajuForm";
 import { chartFor } from "@/components/saju/useSajuChart";
 import { Button } from "@/components/ui/Button";
+import { ShareButton } from "@/components/ui/ShareButton";
+import { ShareImageButton } from "@/components/ui/ShareImageButton";
 import { useAccount } from "@/lib/account/client";
 import { SITE, sajuGradeMode, won } from "@/lib/config";
 import { ENTRY_SAJU_HREF } from "@/lib/freshStart";
+import { isInAppBrowser } from "@/lib/inApp";
 import { saveSajuProfile, useSajuProfile } from "@/lib/sajuFlow";
 import { DEFAULT_SAJU_FORM, type SajuForm } from "@/lib/sajuForm";
 import {
-  GRADE_FIXED_LINE, GRADE_NOTICE, boundaryNotice, currentGradeYear, gradeChips, gradeObservations, gradePercentile, nextBrightLine, type GradePercentile,
+  GRADE_CONSENT, GRADE_FIXED_LINE, GRADE_NOTICE, boundaryNotice, currentGradeYear, gradeSlug, gradeChips, gradeObservations, gradePercentile, nextBrightLine, type GradePercentile,
 } from "@/lib/sajuGrade";
 import s from "./grade.module.css";
 
 /** The 1,900원 풀이's sections (spec D), shown locked while it is not on sale. */
 export const GRADE_REASON_TITLES = ["가장 크게 힘이 된 것", "아직 덜 채워진 칸", "언제, 무엇이 달라지나", "올해 이렇게 써 보기", "확인해 볼 신호"] as const;
-
-export const GRADE_CONSENT = "출생 정보를 등급 계산에 쓰는 데 동의해요";
 
 type Kind = "own" | "friend" | "example";
 
@@ -170,10 +171,45 @@ function GradeResult({
         {boundary ? <p className={s.boundary}>{boundary.message}</p> : null}
       </section>
 
+      {kind === "own" ? <ShareGrade year={shown.year} grade={shown.grade} nickname={shown.nickname} thisYear={shown.year === thisYear} /> : null}
+
       {/* the 1,900원 풀이 reads one's own chart: never offered on the example or a friend's */}
       {kind === "own" ? <LockedReasons /> : null}
       <HowItWorks gc={gc} year={shown.year} />
     </>
+  );
+}
+
+const noSubscribe = () => () => {};
+
+/**
+ * Sharing my card (spec C): the address and the pictures hold its year and grade only (/saju/grade/2026-s). An in-app browser
+ * (KakaoTalk, Instagram …) may not save the picture, so it says how to open the page outside.
+ */
+function ShareGrade({ year, grade, nickname, thisYear }: { year: number; grade: GradeLetter; nickname: string; thisYear: boolean }) {
+  const inApp = useSyncExternalStore(noSubscribe, () => isInAppBrowser(navigator.userAgent), () => false);
+  const slug = gradeSlug(year, grade);
+  const url = `${SITE.url}/saju/grade/${slug}`;
+  const text = `나는 ${thisYear ? "올해" : `${year}년`} ${grade} · ${nickname}. 너는?`;
+  return (
+    <section className={s.shareRow} aria-label="내 등급 공유하기">
+      <div className={s.shareButtons}>
+        <ShareButton
+          label="친구는 어떤 등급일까?"
+          text={text}
+          target={{
+            url,
+            imageUrl: `${SITE.url}/api/og/saju-grade/${slug}`,
+            button: "내 등급 보기",
+            description: "생일로 보는 올해의 사주 등급이에요. 로그인 없이 무료로 볼 수 있어요.",
+            imageSize: { width: 1200, height: 630 },
+          }}
+        />
+      </div>
+      <ShareImageButton imageUrl={`/api/og/saju-grade/${slug}?size=story`} fileName={`starlog-saju-grade-${slug}-story.png`} shareText={text} shareUrl={url} label="스토리용 이미지(9:16)" />
+      <p className={s.shareNote}>이름·생년월일은 들어가지 않아요</p>
+      {inApp ? <p className={s.shareNote}>앱 안의 브라우저에서는 이미지가 저장되지 않을 수 있어요. 메뉴의 &lsquo;다른 브라우저로 열기&rsquo;로 열면 저장돼요.</p> : null}
+    </section>
   );
 }
 

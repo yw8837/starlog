@@ -71,6 +71,9 @@ export const gradeLine = (grade: GradeLetter, thisYear: boolean): string => (thi
 export const GRADE_FIXED_LINE =
   "등급은 사람이나 사주의 좋고 나쁨이 아니에요. 올해 들어오는 기운이 내 명식의 다섯 기운을 얼마나 고르게 채우고 잇는지를 스타로그 규칙으로 계산한 거예요. 해마다 바뀌어요.";
 
+/** The birth fields' consent on the grade screens (spec B). */
+export const GRADE_CONSENT = "출생 정보를 등급 계산에 쓰는 데 동의해요";
+
 /** The entertainment notice at the end (E). */
 export const GRADE_NOTICE = "재미로 보는 계산이에요. 사람이나 사주의 좋고 나쁨, 앞으로 일어날 일을 정하지 않아요. 규칙은 '등급은 어떻게 나와요?'에 다 적어 두었어요.";
 

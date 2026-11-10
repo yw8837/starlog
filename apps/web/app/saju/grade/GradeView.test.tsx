@@ -187,6 +187,28 @@ describe("GradeView", () => {
     expect(order[1]!.compareDocumentPosition(order[2]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it("shares my card by its year and grade only: 친구는 어떤 등급일까? and the story picture; never the example's or a friend's", async () => {
+    const shared: ShareData[] = [];
+    Object.defineProperty(navigator, "share", { configurable: true, value: async (data: ShareData) => void shared.push(data) });
+    Object.defineProperty(navigator, "canShare", { configurable: true, value: () => true });
+    localStorage.setItem(SAJU_PROFILE_KEY, JSON.stringify(OWN));
+    render(<GradeView />);
+    await waitFor(() => expect(screen.getByRole("figure")).toBeTruthy());
+    const year = currentGradeYear();
+    const g = gradeForYear(gradeChartOf(chartOf(OWN)), year);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: /친구는 어떤 등급일까\?/ })));
+    expect(shared).toEqual([{ title: "스타로그", text: `나는 올해 ${g.grade} · ${g.nickname}. 너는?`, url: `https://starlog.yeolmaeapps.kr/saju/grade/${year}-${g.grade.toLowerCase()}` }]);
+    expect(screen.getByRole("button", { name: "스토리용 이미지(9:16)" })).toBeTruthy();
+    expect(screen.getByText("이름·생년월일은 들어가지 않아요")).toBeTruthy();
+    cleanup();
+    localStorage.clear();
+    render(<GradeView />);
+    await waitFor(() => expect(card().textContent).toContain("예시"));
+    expect(screen.queryByRole("button", { name: /친구는 어떤 등급일까/ })).toBeNull();
+    delete (navigator as { share?: unknown }).share;
+    delete (navigator as { canShare?: unknown }).canShare;
+  });
+
   it("links the next readings below, the 사주 전체 풀이 at its price", async () => {
     localStorage.setItem(SAJU_PROFILE_KEY, JSON.stringify(OWN));
     render(<GradeView />);
