@@ -14,8 +14,8 @@ export interface TocCounts {
 }
 
 const headings = (total: number, open: number) => (open > 0 ? `소제목 ${total}개 중 ${open}개 공개` : `소제목 ${total}개`);
-/** "전체 약 2,000자", 약 held to its number by a no-break space (at 375px the line broke between them). */
-const length = (chars: string) => `전체 약\u00a0${chars}자`;
+/** "전체 약 2,000자" in one piece (no-break spaces): at 375px the line broke inside it. */
+const length = (chars: string) => `전체\u00a0약\u00a0${chars}자`;
 
 /** Tarot (T13): "소제목 12개 중 1개 공개 · 1개는 앞부분만 · 전체 약 2,000자". `chars`: the length as approxCharsText writes it. */
 export function tarotTocMeta(teaser: TocCounts, chars: string): string {

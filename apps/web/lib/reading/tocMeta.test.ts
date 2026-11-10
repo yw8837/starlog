@@ -33,9 +33,9 @@ describe("the lock's line", () => {
     expect(sajuTocMeta({ lockedToc: ELEVEN.slice(0, 8) }, "2,500~3,000")).toBe("소제목 8개 · 약 2,500~3,000자");
   });
 
-  it("holds 약 to its number, so a wrapped line never ends in 약", () => {
-    expect(tarotRaw({ lockedToc: ELEVEN, tocTotal: 12, tocOpen: 1, tocPartial: 1 }, "2,000")).toContain("전체 약\u00a02,000자");
-    expect(sajuRaw({ lockedToc: ELEVEN, tocTotal: 11, tocOpen: 0, tocPartial: 0 }, "2,500~3,000")).toContain("전체 약\u00a02,500~3,000자");
+  it("keeps 전체 약 N자 in one piece, so a wrapped line never ends in 전체 or 약", () => {
+    expect(tarotRaw({ lockedToc: ELEVEN, tocTotal: 12, tocOpen: 1, tocPartial: 1 }, "2,000")).toContain("전체\u00a0약\u00a02,000자");
+    expect(sajuRaw({ lockedToc: ELEVEN, tocTotal: 11, tocOpen: 0, tocPartial: 0 }, "2,500~3,000")).toContain("전체\u00a0약\u00a02,500~3,000자");
   });
 
   it("passes the banned list (spec 2.4)", () => {
