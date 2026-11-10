@@ -349,6 +349,9 @@ describe("policy pages", () => {
     ]) {
       expect(text).toContain(phrase);
     }
+    // sl_fid also keeps 이번 주 행운 번호 the same all week on one device for someone with no constellation (api/lucky POST)
+    const fid = [...container.querySelectorAll("dt")].find((dt) => dt.textContent === "sl_fid")?.nextElementSibling?.textContent ?? "";
+    expect(fid).toContain("별자리를 만들지 않은 이용자가 이번 주 행운 번호를 볼 때는 로그인하지 않아도 같은 기기에서 그 주 내내 같은 번호를 보여 드리는 데도 씁니다.");
     const cloudflare = container.querySelector('[aria-label="Cloudflare, Inc."]')?.textContent ?? "";
     expect(cloudflare).toContain("Cloudflare D1");
     expect(cloudflare).toMatch(/별자리 인연 정보의 저장/);
