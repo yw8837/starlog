@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SITE } from "@/lib/config";
-import { GIFT_DAYS, GIFT_PRODUCT, PRODUCTS, lotProducts, productById, sellable, standardProduct } from "./catalog";
+import { GIFT_DAYS, GIFT_PRODUCT, PRODUCTS, lotProducts, productById, refundAmount, sellable, standardProduct } from "./catalog";
 
 const NOW = Date.parse("2026-10-01T12:00:00+09:00");
 
@@ -39,6 +39,18 @@ describe("catalog", () => {
     expect(sellable(set, set.closesAt!)).toBe(false);
     // Every other product opens one reading of itself.
     for (const id of ["tarot", "saju", "tarot-deep", "match", "newyear-2027"]) expect(lotProducts(productById(id)!)).toEqual([id]);
+  });
+
+  it("refunds what was not opened, from the catalog (owner 2026-11-10): a set's whole price, or less the single price of each reading kept, never below 0", () => {
+    expect(refundAmount(18900, [])).toBe(18900);
+    expect(refundAmount(18900, ["newyear-2027"])).toBe(4000);
+    expect(refundAmount(18900, ["match"])).toBe(11000);
+    expect(refundAmount(18900, ["newyear-2027", "match"])).toBe(0);
+    // What was refunded before comes off: the 신년운세 part after the 궁합's was refunded while the 신년운세 was being opened.
+    expect(refundAmount(18900, [], 11000)).toBe(7900);
+    expect(refundAmount(2900, [])).toBe(2900);
+    // An unknown reading kept refunds nothing rather than a guess.
+    expect(refundAmount(18900, ["moon-30"])).toBe(0);
   });
 
   it("knows no other ids", () => {

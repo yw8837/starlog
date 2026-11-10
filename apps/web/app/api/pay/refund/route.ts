@@ -8,8 +8,9 @@ import { tossClient } from "@/lib/pay/toss";
 const RefundBody = z.object({ orderId: z.string().regex(/^[A-Za-z0-9_-]{6,64}$/) });
 
 /**
- * POST {orderId} → full refund of a paid reading that was never opened (내 정보 > 결제 내역 > 환불받기),
- * through the end of the REFUND_DAYS-th KST day after the payment; after that REFUND_WINDOW_CLOSED
+ * POST {orderId} → refund of what was never opened of a paid order (내 정보 > 결제한 풀이 > 환불받기): all of it, or for a
+ * set with one reading opened the other's part (owner 2026-11-10; the amount from the catalog, never the request), through
+ * the end of the REFUND_DAYS-th KST day after the payment; `amount` says what was refunded. After that REFUND_WINDOW_CLOSED
  * (the reading can still be opened, and the operator still refunds company-side failures by hand).
  */
 export async function POST(request: Request): Promise<Response> {
@@ -32,5 +33,5 @@ export async function POST(request: Request): Promise<Response> {
   if (ctx.now > refundDeadline(paid.created_at)) return errorResponse("REFUND_WINDOW_CLOSED");
   const outcome = await refundUnusedOrder(ctx.db, toss, { order, reason: "구매자 요청: 열지 않은 풀이 환불", now: ctx.now });
   if (!outcome.ok) return errorResponse(outcome.code, outcome.message ? { message: outcome.message } : {});
-  return json({ ok: true, status: "refunded" });
+  return json({ ok: true, status: "refunded", amount: outcome.amount });
 }

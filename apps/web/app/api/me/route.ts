@@ -19,8 +19,9 @@ import { signingSecret } from "@/lib/security/sign";
  * - `owner`: whether it holds the owner pass;
  * - `user`: the logged-in user's nickname, `gift` (the signup gift: `{ status: "unused", until }` with
  *   its last moment, `{ status: "used" }`, or null when there is none), unopened purchases (each with
- *   `refundUntil`, the last moment 환불받기 works, or `refundable: false` instead for one given back
- *   after its client left, SEC-02) and `opening`, the readings being opened right now
+ *   `refundUntil`, the last moment 환불받기 works, and `refundAmount`, what it refunds in 원: a set's whole price, or once
+ *   its other reading was opened its own part; or `refundable: false` instead for one given back after its client left,
+ *   SEC-02) and `opening`, the readings being opened right now
  *   (a paid one is never also in `unused`); `review: true` only on the review account, `google: true`
  *   only on a Google account; `openingUsed: true` once the account took 오픈 기념 무료 (owner 2026-10-27), while it runs.
  * Without a session cookie it never touches D1, so the site works with no database. Rate-limited per
@@ -55,7 +56,9 @@ export async function GET(request: Request): Promise<Response> {
           ? { status: "unused", until: gift.expiresAt === null ? null : new Date(gift.expiresAt).toISOString() }
           : gift,
       unused: held.unused.map(({ orderId, productId, paidAt, refundable, set }) => ({
-        ...(refundable ? { orderId, productId, refundUntil: new Date(refundDeadline(paidAt)).toISOString() } : { orderId, productId, refundable: false }),
+        ...(refundable > 0
+          ? { orderId, productId, refundUntil: new Date(refundDeadline(paidAt)).toISOString(), refundAmount: refundable }
+          : { orderId, productId, refundable: false }),
         ...(set ? { set } : {}),
       })),
       opening: held.opening,

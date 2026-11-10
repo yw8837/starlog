@@ -81,6 +81,18 @@ export function lotProducts(product: Product): readonly ProductId[] {
   return product.includes ?? [product.id];
 }
 
+/**
+ * What refunding a purchase's unopened readings returns, in 원 (owner 2026-11-10; 전자상거래법 제17조 제2항 제5호 단서: a
+ * set is divisible): its price, less the single price of each of its readings kept (opened, being opened, or given back after
+ * it was cut off), less what was refunded before. A set with one reading opened refunds the other's part: 18,900 − 14,900 =
+ * 4,000원 once the 신년운세 was opened, 18,900 − 7,900 = 11,000원 once the 궁합 was. Never below 0; an unknown reading kept
+ * refunds nothing.
+ */
+export function refundAmount(price: number, kept: readonly string[], refunded = 0): number {
+  const keptKrw = kept.reduce((sum, id) => sum + (productById(id)?.krw ?? price), 0);
+  return Math.max(0, price - keptKrw - refunded);
+}
+
 export function productById(id: string): Product | null {
   return PRODUCTS.find((product) => product.id === id) ?? null;
 }

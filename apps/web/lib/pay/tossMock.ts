@@ -19,7 +19,8 @@ export interface MockToss extends TossClient {
  *   `confirm-<orderId>`, as the real client sends). 409 processing and no answer are not kept;
  * - a payment is confirmed once (another order with that paymentKey → ALREADY_PROCESSED_PAYMENT);
  * - a paymentKey starting with "mock_fail" is declined;
- * - cancel empties the balance once (a new key afterwards → ALREADY_CANCELED_PAYMENT).
+ * - cancel empties the balance once (a new key afterwards → ALREADY_CANCELED_PAYMENT); with `amount` it cancels that
+ *   much (PARTIAL_CANCELED while a balance is left, CANCELED once none is), never more than is left (NOT_CANCELABLE_AMOUNT).
  */
 export function createMockToss(): MockToss {
   const payments = new Map<string, TossPayment>();
@@ -79,11 +80,14 @@ export function createMockToss(): MockToss {
         for (const payment of payments.values()) if (payment.orderId === orderId) return payment;
         throw notFound();
       }),
-    cancel: (paymentKey, { idempotencyKey }) =>
+    cancel: (paymentKey, { idempotencyKey, amount }) =>
       post("cancel", idempotencyKey, () => {
         const payment = find(paymentKey);
         if (payment.status === "CANCELED") throw new TossError(400, "ALREADY_CANCELED_PAYMENT", "이미 취소된 결제 입니다.");
-        const canceled = { ...payment, status: "CANCELED", balanceAmount: 0 };
+        const cancel = amount ?? payment.balanceAmount;
+        if (cancel <= 0 || cancel > payment.balanceAmount) throw new TossError(400, "NOT_CANCELABLE_AMOUNT", "취소 할 수 없는 금액 입니다.");
+        const balanceAmount = payment.balanceAmount - cancel;
+        const canceled = { ...payment, status: balanceAmount === 0 ? "CANCELED" : "PARTIAL_CANCELED", balanceAmount };
         payments.set(paymentKey, canceled);
         return canceled;
       }),

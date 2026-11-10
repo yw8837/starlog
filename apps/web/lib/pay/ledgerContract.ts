@@ -166,7 +166,7 @@ export function ledgerContract(make: Make) {
     const unlock = await reserved(db, "paid");
     expect(await releaseUnlock(db, { unlockId: unlock.unlockId, now: NOW + 1, began: true })).toBe(true);
     expect(await lotById(db, "lot_order_a")).toMatchObject({ status: "active", units_left: 1 });
-    expect((await entitlements(db, "u_1", NOW + 2)).unused).toEqual([{ orderId: "order_a", productId: "tarot", paidAt: NOW, refundable: true }]);
+    expect((await entitlements(db, "u_1", NOW + 2)).unused).toEqual([{ orderId: "order_a", productId: "tarot", paidAt: NOW, refundable: 2900 }]);
     expect(await lockPaidLotForRefund(db, "order_a", NOW + 3)).not.toBeNull();
     await expectLotsMatchLedger(db);
   });
@@ -191,7 +191,7 @@ export function ledgerContract(make: Make) {
     const reserve = () => reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "paid", now: ++at, payMode: "live" });
     expect(await reserve()).toEqual({ ok: false, capped: true, lotId: "lot_order_a" });
     expect(await lotById(db, "lot_order_a")).toMatchObject({ status: "active", units_left: 1 });
-    expect((await entitlements(db, "u_1", ++at)).unused).toEqual([{ orderId: "order_a", productId: "tarot", paidAt: NOW, refundable: true }]);
+    expect((await entitlements(db, "u_1", ++at)).unused).toEqual([{ orderId: "order_a", productId: "tarot", paidAt: NOW, refundable: 2900 }]);
     expect(await orderHistory(db, "u_1")).toMatchObject([{ orderId: "order_a", opened: false, unfinished: false, refundable: true }]);
     // Another purchase of the product still opens.
     await paidOrder(db, "order_b");
@@ -244,7 +244,7 @@ export function ledgerContract(make: Make) {
     expect(await db.prepare("SELECT status FROM unlocks WHERE id = ?").bind(unlock.unlockId).first()).toEqual({ status: "released" });
     expect(await lotById(db, "lot_order_a")).toMatchObject({ status: "active", units_left: 1 });
     expect(await kinds(db, "lot_order_a")).toEqual(["grant", "reserve", "restore"]);
-    expect((await entitlements(db, "u_1", NOW + 2)).unused).toEqual([{ orderId: "order_a", productId: "tarot", paidAt: NOW, refundable: false }]);
+    expect((await entitlements(db, "u_1", NOW + 2)).unused).toEqual([{ orderId: "order_a", productId: "tarot", paidAt: NOW, refundable: 0 }]);
     expect(await lockPaidLotForRefund(db, "order_a", NOW + 3)).toBeNull();
     expect((await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "paid", now: NOW + 4, payMode: "live" })).ok).toBe(true);
     await expectLotsMatchLedger(db);
@@ -264,7 +264,7 @@ export function ledgerContract(make: Make) {
     expect(await sweepStale(db, NOW + 60_000 + RESERVATION_MS + 1)).toEqual({ released: 1, expired: 0 });
     const later = NOW + 60_000 + RESERVATION_MS + 2;
     expect(await lotById(db, "lot_order_ny")).toMatchObject({ status: "active", units_left: 1 });
-    expect((await entitlements(db, "u_1", later)).unused).toEqual([{ orderId: "order_ny", productId: "newyear-2027", paidAt: NOW, refundable: false }]);
+    expect((await entitlements(db, "u_1", later)).unused).toEqual([{ orderId: "order_ny", productId: "newyear-2027", paidAt: NOW, refundable: 0 }]);
     expect(await orderHistory(db, "u_1")).toMatchObject([{ orderId: "order_ny", refundable: false }]);
     expect(await lockPaidLotForRefund(db, "order_ny", later)).toBeNull();
     // A server failure on the resumed part 2 gives it back the same way, never counted as the client leaving.
@@ -300,7 +300,7 @@ export function ledgerContract(make: Make) {
     const failed = await premium(NOW + RESERVATION_MS + 2);
     if (!failed.ok) throw new Error("not reserved");
     expect(await releaseUnlock(db, { unlockId: failed.unlockId, now: NOW + RESERVATION_MS + 3 })).toBe(true);
-    expect((await entitlements(db, "u_1", NOW + RESERVATION_MS + 4)).unused).toEqual([{ orderId: "order_ny", productId: "newyear-2027", paidAt: NOW, refundable: true }]);
+    expect((await entitlements(db, "u_1", NOW + RESERVATION_MS + 4)).unused).toEqual([{ orderId: "order_ny", productId: "newyear-2027", paidAt: NOW, refundable: 2900 }]);
     expect(await lockPaidLotForRefund(db, "order_ny", NOW + RESERVATION_MS + 5)).not.toBeNull();
   });
 
@@ -324,7 +324,7 @@ export function ledgerContract(make: Make) {
   it("spends a paid lot only on its own product", async () => {
     const db = await setup(make);
     await paidOrder(db, "order_tarot_1", "tarot");
-    expect((await entitlements(db, "u_1", NOW)).unused).toEqual([{ orderId: "order_tarot_1", productId: "tarot", paidAt: NOW, refundable: true }]);
+    expect((await entitlements(db, "u_1", NOW)).unused).toEqual([{ orderId: "order_tarot_1", productId: "tarot", paidAt: NOW, refundable: 2900 }]);
     expect(await reserveUnlock(db, { userId: "u_1", productId: "saju", currency: "paid", now: NOW, payMode: "live" })).toEqual({ ok: false });
     expect((await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "paid", now: NOW, payMode: "live" })).ok).toBe(true);
     expect((await entitlements(db, "u_1", NOW)).unused).toEqual([]);
@@ -343,7 +343,7 @@ export function ledgerContract(make: Make) {
       { productId: "tarot", currency: "paid", orderId: opened },
       { productId: "tarot", currency: "gift", orderId: null },
     ]);
-    expect(held.unused).toEqual([{ orderId: other, productId: "tarot", paidAt: NOW, refundable: true }]);
+    expect(held.unused).toEqual([{ orderId: other, productId: "tarot", paidAt: NOW, refundable: 2900 }]);
     expect(await deliverUnlock(db, { unlockId: paid.unlockId, readingId: "r1", now: NOW + 3 })).toBe("delivered");
     expect(await releaseUnlock(db, { unlockId: free.unlockId, now: NOW + 4 })).toBe(true);
     expect(await entitlements(db, "u_1", NOW + 5)).toMatchObject({ opening: [], unused: [{ orderId: other, productId: "tarot" }], gift: UNUSED });
@@ -464,7 +464,7 @@ export function ledgerContract(make: Make) {
     expect(await lockPaidLotForRefund(db, opened, NOW)).toBeNull();
     expect(await orderOf(db, opened)).toEqual({ status: "paid", cancel_attempt: 1 });
     const locked = await lockPaidLotForRefund(db, unused, NOW);
-    expect(locked).toMatchObject({ id: `lot_${unused}`, status: "refunding", units_left: 0 });
+    expect(locked).toMatchObject({ lots: [{ id: `lot_${unused}`, status: "refunding", units_left: 0 }], amount: 2900 });
     expect(await orderOf(db, unused)).toEqual({ status: "refunding", cancel_attempt: 1 });
     expect(await lockPaidLotForRefund(db, unused, NOW + 1)).toBeNull();
     await db.batch(refundedLotStatements(db, unused, NOW));

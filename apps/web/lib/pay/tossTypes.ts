@@ -39,7 +39,8 @@ export interface TossClient {
   confirm(input: { paymentKey: string; orderId: string; amount: number }): Promise<TossPayment>;
   getPayment(paymentKey: string): Promise<TossPayment>;
   getPaymentByOrder(orderId: string): Promise<TossPayment>;
-  cancel(paymentKey: string, input: { reason: string; idempotencyKey: string }): Promise<TossPayment>;
+  /** `amount`: cancel only this much (cancelAmount, a partial cancel); without it, the whole balance. */
+  cancel(paymentKey: string, input: { reason: string; idempotencyKey: string; amount?: number }): Promise<TossPayment>;
 }
 
 /** The fields we use from a Payment object; anything that is not one is a TossError. */
