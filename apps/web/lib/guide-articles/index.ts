@@ -1,5 +1,6 @@
 import type { GuideArticle } from "../guide";
 import { GUIDE_DATES, GUIDE_SUMMARIES } from "./answers";
+import { DATA_ARTICLES } from "./data-articles";
 import { DAY_MASTER_ARTICLES } from "./day-masters";
 import { MAJOR_ARCANA_ARTICLES } from "./tarot";
 import { TAROT_BASICS_ARTICLES } from "./tarot-basics";
@@ -39,7 +40,7 @@ function withAnswers(article: GuideArticle): GuideArticle {
 
 /**
  * Base articles first (their order is the tab and home order), then spreads, the tarot basics (two
- * arcana, four suits, the 22 in order), cards 0–21, saju, the saju concepts and the ten day masters.
+ * arcana, four suits, the 22 in order), cards 0–21, saju, the saju concepts, the ten day masters and the 원본 자료 articles.
  */
 export function withGuideLibrary(base: readonly GuideArticle[]): GuideArticle[] {
   return [
@@ -53,5 +54,7 @@ export function withGuideLibrary(base: readonly GuideArticle[]): GuideArticle[] 
     ...SAJU_ARTICLES,
     ...SAJU_CONCEPT_ARTICLES,
     ...DAY_MASTER_ARTICLES,
+    // 원본 자료 (2026-11-10): each out on its publishAt day, at the end of the saju tab.
+    ...DATA_ARTICLES,
   ].map(withAnswers);
 }

@@ -220,7 +220,7 @@ const MIXED_CASE = [
   "/_NEXT/static/media/font.woff2",
   "/Opengraph-Image",
   "/OPENGRAPH-IMAGE",
-  "/About",
+  "/Contact",
   "/PRIVACY",
   "/Privacy/",
   "/Terms",
@@ -245,7 +245,9 @@ describe("the rules (NEXT_PUBLIC_SPLIT_HOSTS=1, the deploy build)", () => {
     // The known app paths, just ahead of the catch-all.
     expect(redirects.at(-2)?.permanent).toBe(true);
     expect(redirects.at(-2)?.destination).toBe(redirects.at(-1)?.destination);
-    for (const rule of redirects.slice(0, -2).filter((r) => r.permanent)) {
+    // The root domain's /about goes to the guide's own 가이드 소개, ahead of the known app paths.
+    expect(redirects.at(-3)).toMatchObject({ destination: "/guide/about", permanent: true });
+    for (const rule of redirects.slice(0, -3).filter((r) => r.permanent)) {
       expect(rule.source.startsWith("/guide")).toBe(true);
       expect(rule.destination === "/" || rule.destination.startsWith(`${SITE.guideUrl}/`), rule.destination).toBe(true);
     }
@@ -341,7 +343,7 @@ describe("on https://yeolmaeapps.kr", () => {
       "/apple-icon.png",
       "/manifest.webmanifest",
       "/logo.png",
-      "/about",
+      "/contact",
       "/privacy",
       "/terms",
       "/privacy/anything",
@@ -563,10 +565,17 @@ describe("wrangler.jsonc", () => {
   });
 });
 
-describe("the root domain's own pages: the operator's page and the two policies", () => {
+describe("the root domain's own pages: the two policies and 문의", () => {
   it("are served on https://yeolmaeapps.kr itself, so the domain AdSense reviews carries them, in any letter case", () => {
-    for (const path of ["/about", "/privacy", "/terms", "/About", "/PRIVACY", "/Terms"]) expectRedirect(APEX, path, null);
+    for (const path of ["/contact", "/privacy", "/terms", "/Contact", "/PRIVACY", "/Terms"]) expectRedirect(APEX, path, null);
     expectRedirect(`${APEX}:443`, "/privacy", null);
+    // On the app host too: one page, each host's copy its own canonical.
+    expectRedirect(STARLOG, "/contact", null);
+  });
+
+  it("send the root domain's /about to the guide's own 가이드 소개 for good (308), in any letter case: the app's /about introduces the app", () => {
+    for (const path of ["/about", "/About", "/ABOUT"]) expectRedirect(APEX, path, to(308, "/guide/about"));
+    expectRedirect(STARLOG, "/about", null);
   });
 
   it("take nothing else with them: the other policy and service pages still go to the app host", () => {
@@ -581,7 +590,7 @@ describe("the root domain's own pages: the operator's page and the two policies"
   });
 
   it("are the same pages lib/hosts.ts says a guide page may link on its own host", () => {
-    expect([...GUIDE_HOST_PAGES]).toEqual(["/about", "/privacy", "/terms"]);
+    expect([...GUIDE_HOST_PAGES]).toEqual(["/privacy", "/terms", "/contact"]);
   });
 });
 
@@ -660,7 +669,7 @@ describe("trailing-slash URLs (the Worker in front of OpenNext)", () => {
   it("still strip the slash when the slash-less address is a page (the app host's own, or the root domain's guide)", async () => {
     expect(await hopsFrom(`https://${STARLOG}/pricing/`, viaWorker)).toEqual([[308, `https://${STARLOG}/pricing`]]);
     expect(await hopsFrom(`https://${APEX}/guide/saju/`, viaWorker)).toEqual([[308, `https://${APEX}/guide/saju`]]);
-    expect(await hopsFrom(`https://${APEX}/about/`, viaWorker)).toEqual([[308, `https://${APEX}/about`]]);
+    expect(await hopsFrom(`https://${APEX}/contact/`, viaWorker)).toEqual([[308, `https://${APEX}/contact`]]);
   });
 
   it("ask OpenNext for the slash-less address with the query kept, as a request of the same kind", async () => {

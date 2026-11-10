@@ -72,7 +72,7 @@ describe("guide tabs", () => {
       expect(screen.getByRole("button", { name: tab.host })).toBeTruthy();
       expect(GUIDE_HOST_LINES[tab.category].some((line) => screen.queryByText(line))).toBe(true);
 
-      const items = within(screen.getByRole("main").querySelector("ul") as HTMLElement).getAllByRole("link");
+      const items = within(screen.getByRole("main").querySelector('section[aria-labelledby="guide-group-title"] ul') as HTMLElement).getAllByRole("link");
       const articles = articlesIn(tab.category);
       expect(items.map((a) => a.getAttribute("href"))).toEqual(articles.map((a) => `/guide/${a.slug}`));
       for (const [i, article] of articles.entries()) expect(items[i]?.textContent).toContain(article.title);
@@ -250,7 +250,7 @@ describe("links from a guide page", () => {
       brand: "/",
       pills: ["/guide/tarot", "/guide/saju", "/guide/about", "/"],
       bar: ["/guide/tarot", "/guide/saju", "/guide/about", "/"],
-      footer: ["/about", "/how", "/evidence", "/help", "/faq", "/guide/tarot", "/guide/about", "/guide/about#contact", "/pricing", "/terms", "/privacy", "/refund", "/privacy#analytics"],
+      footer: ["/guide/tarot", "/guide/saju", "/guide/about", "/contact", "/terms", "/privacy", "/about", "/privacy#analytics"],
     });
   });
 
@@ -261,12 +261,12 @@ describe("links from a guide page", () => {
       brand: `${APP}/`,
       pills: ["/", "/guide/saju", "/guide/about", `${APP}/`],
       bar: ["/", "/guide/saju", "/guide/about", `${APP}/`],
-      footer: ["/about", `${APP}/how`, `${APP}/evidence`, `${APP}/help`, `${APP}/faq`, "/", "/guide/about", "/guide/about#contact", `${APP}/pricing`, "/terms", "/privacy", `${APP}/refund`, "/privacy#analytics"],
+      footer: ["/", "/guide/saju", "/guide/about", "/contact", "/terms", "/privacy", `${APP}/about`, "/privacy#analytics"],
     });
     // The tabs and the article cards are the guide's own pages: paths, so they stay on the root domain.
     const tabs = within(screen.getByRole("navigation", { name: "가이드 분류" })).getAllByRole("link");
     expect(tabs.map((a) => a.getAttribute("href"))).toEqual(["/", "/guide/saju"]);
-    const items = within(screen.getByRole("main").querySelector("ul") as HTMLElement).getAllByRole("link");
+    const items = within(screen.getByRole("main").querySelector('section[aria-labelledby="guide-group-title"] ul') as HTMLElement).getAllByRole("link");
     expect(items.map((a) => a.getAttribute("href"))).toEqual(articlesIn(category).map((a) => `/guide/${a.slug}`));
   });
 
@@ -332,11 +332,14 @@ describe("ads on guide pages", () => {
     expect(slot).not.toBeNull();
     // Not inside the cream paper: the "광고" label is light ink and would vanish on it.
     expect(slot?.closest("section")).toBeNull();
-    const [before, after] = [slot?.previousElementSibling, slot?.nextElementSibling] as HTMLElement[];
+    const after = slot?.nextElementSibling as HTMLElement;
     const headings = (sheet: HTMLElement | undefined) => [...(sheet?.querySelectorAll("h2") ?? [])].map((h) => h.textContent);
+    // The sheets before the ad (the Waite quote may split them too, after the section on the picture).
+    const sheets: HTMLElement[] = [];
+    for (let el = slot?.previousElementSibling; el; el = el.previousElementSibling) if (el.querySelector("h2")) sheets.unshift(el as HTMLElement);
     const all = findArticle("the-hermit")?.sections.map((section) => section.heading) ?? [];
     expect(all.length).toBeGreaterThan(3);
-    expect(headings(before)).toEqual(all.slice(0, 2));
+    expect(sheets.flatMap(headings)).toEqual(all.slice(0, 2));
     expect(headings(after)).toEqual(all.slice(2));
     // Every section is still there once, in order, and the button comes after the whole body.
     expect([...container.querySelectorAll("article h2")].map((h) => h.textContent).slice(0, all.length)).toEqual(all);

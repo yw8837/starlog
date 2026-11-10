@@ -17,11 +17,12 @@ const { Footer } = await import("./Footer");
 afterEach(cleanup);
 
 describe("Footer prefetch (F-05)", () => {
-  it("never prefetches an app page the root domain does not serve: /about, /privacy and /terms render this footer there too, and that prefetch is a blocked cross-host redirect", () => {
+  it("never prefetches an app page the root domain does not serve: /privacy, /terms and /contact render this footer there too, and that prefetch is a blocked cross-host redirect", () => {
     render(<Footer />);
     const prefetch = Object.fromEntries(screen.getAllByRole("link").map((link) => [link.getAttribute("href"), link.getAttribute("data-prefetch")]));
     expect(prefetch).toEqual({
-      "/about": "auto",
+      // The root domain's /about moves to 가이드 소개 (2026-11-10): the app's /about is the app host's only.
+      "/about": "false",
       "/how": "false",
       "/evidence": "false",
       "/help": "false",

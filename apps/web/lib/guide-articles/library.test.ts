@@ -4,7 +4,8 @@ import { CARDS, getCard } from "@starlog/core";
 import { describe, expect, it } from "vitest";
 import { aiTells } from "../ai/style";
 import { SITE, won } from "../config";
-import { GUIDE_ARTICLES, GUIDE_CATEGORIES, articlesIn, findArticle, guideSectionText, type GuideArticle } from "../guide";
+import { ALL_GUIDE_ARTICLES, GUIDE_ARTICLES, GUIDE_CATEGORIES, articlesIn, findArticle, guideSectionText, type GuideArticle } from "../guide";
+import { publishInstant } from "../guideMeta";
 import { GUIDE_MOVED_TO_HELP } from "../hostRoutes";
 import { llmsFullTxt } from "../llms";
 import { guideRss } from "../rss";
@@ -66,7 +67,8 @@ describe("guide library", () => {
   it("adds at least 60 articles on top of the six, every major arcana card has exactly one article", () => {
     // 62 until the two app manuals moved to /help (AdSense audit 2026-10-27).
     expect(LIBRARY.length).toBeGreaterThanOrEqual(60);
-    expect(GUIDE_ARTICLES.length).toBe(6 + LIBRARY.length);
+    // The 원본 자료 articles (data-articles.ts) join on their publishAt days.
+    expect(GUIDE_ARTICLES.length).toBe(6 + LIBRARY.length + GUIDE_ARTICLES.filter((article) => article.publishAt).length);
     const majors = CARDS.filter((card) => card.arcana === "major").map((card) => card.id);
     const cardIds = GUIDE_ARTICLES.flatMap((article) => (article.cardId ? [article.cardId] : []));
     expect([...cardIds].sort()).toEqual([...majors].sort());
@@ -81,7 +83,7 @@ describe("guide library", () => {
     }
   });
 
-  it.each(GUIDE_ARTICLES.map((article) => [article.slug, article] as const))("%s: 4-7 sections in 해요체, a description of 80 characters or less", (_slug, article) => {
+  it.each(ALL_GUIDE_ARTICLES.map((article) => [article.slug, article] as const))("%s: 4-7 sections in 해요체, a description of 80 characters or less", (_slug, article) => {
     expect(article.sections.length).toBeGreaterThanOrEqual(4);
     expect(article.sections.length).toBeLessThanOrEqual(7);
     expect(new Set(article.sections.map((section) => section.heading)).size).toBe(article.sections.length);
@@ -91,7 +93,7 @@ describe("guide library", () => {
     expect(article.description).toMatch(/요[.?]$/);
   });
 
-  it.each(GUIDE_ARTICLES.map((article) => [article.slug, article] as const))("%s: no banned words, 켈틱 크로스 only in the spread article", (slug, article) => {
+  it.each(ALL_GUIDE_ARTICLES.map((article) => [article.slug, article] as const))("%s: no banned words, 켈틱 크로스 only in the spread article", (slug, article) => {
     const text = allText(article);
     for (const word of BANNED) expect(text, word).not.toContain(word);
     // 운명 only as the card name 운명의 수레바퀴.
@@ -99,18 +101,20 @@ describe("guide library", () => {
     if (slug !== CELTIC_SLUG) expect(text).not.toMatch(/켈틱|Celtic/i);
   });
 
-  it.each(GUIDE_ARTICLES.map((article) => [article.slug, article] as const))("%s: AI-tell score below 3", (_slug, article) => {
+  it.each(ALL_GUIDE_ARTICLES.map((article) => [article.slug, article] as const))("%s: AI-tell score below 3", (_slug, article) => {
     const hits = aiTells(bodyText(article));
     expect(hits.map((hit) => hit.id).length, hits.map((hit) => `${hit.id} ${hit.label}`).join(", ")).toBeLessThan(3);
   });
 
-  it.each(GUIDE_ARTICLES.map((article) => [article.slug, article] as const))("%s: 3-5 related reads that exist", (slug, article) => {
+  it.each(ALL_GUIDE_ARTICLES.map((article) => [article.slug, article] as const))("%s: 3-5 related reads that exist", (slug, article) => {
     const related = article.related ?? [];
     expect(related.length).toBeGreaterThanOrEqual(3);
     expect(related.length).toBeLessThanOrEqual(5);
     expect(new Set(related).size).toBe(related.length);
     expect(related).not.toContain(slug);
-    for (const other of related) expect(findArticle(other), other).toBeDefined();
+    // An article dated ahead points only at pages out by its own day.
+    const at = article.publishAt ? publishInstant(article.publishAt) : Date.now();
+    for (const other of related) expect(findArticle(other, at), other).toBeDefined();
   });
 
   it("gives every library article a substantial body (card articles 3,000-7,800 characters, others 1,500-6,000, in whatever shape they have)", () => {
@@ -201,7 +205,7 @@ describe("the premium readings, on sale since 2026-10-20, are introduced as they
   });
 
   it("no other article promises an opening date", () => {
-    for (const article of GUIDE_ARTICLES) expect(allText(article), article.slug).not.toMatch(OPENING_DATE);
+    for (const article of ALL_GUIDE_ARTICLES) expect(allText(article), article.slug).not.toMatch(OPENING_DATE);
   });
 
   // AdSense audit 2026-10-27: a price is product info, so it stays in the boxes after the article (the CTA and
@@ -220,11 +224,12 @@ describe("answer-first fields (요약, dates)", () => {
   const slugs = GUIDE_ARTICLES.map((article) => article.slug);
   const sentences = (text: string) => text.split(/(?<=[.?!])\s+/).filter(Boolean);
 
-  it("keeps answers.ts keyed by real slugs only", () => {
-    for (const map of [GUIDE_SUMMARIES, GUIDE_DATES]) for (const slug of Object.keys(map)) expect(slugs, slug).toContain(slug);
+  it("keeps answers.ts keyed by real slugs only (the articles dated ahead included)", () => {
+    const all = ALL_GUIDE_ARTICLES.map((article) => article.slug);
+    for (const map of [GUIDE_SUMMARIES, GUIDE_DATES]) for (const slug of Object.keys(map)) expect(all, slug).toContain(slug);
   });
 
-  it.each(GUIDE_ARTICLES.map((article) => [article.slug, article] as const))("%s: a 2-3 sentence 요약 in 해요체 with no AI tells", (_slug, article) => {
+  it.each(ALL_GUIDE_ARTICLES.map((article) => [article.slug, article] as const))("%s: a 2-3 sentence 요약 in 해요체 with no AI tells", (_slug, article) => {
     const summary = article.summary ?? "";
     expect(sentences(summary).length).toBeGreaterThanOrEqual(2);
     expect(sentences(summary).length).toBeLessThanOrEqual(3);
@@ -236,7 +241,7 @@ describe("answer-first fields (요약, dates)", () => {
     expect(hits.length, hits.map((hit) => `${hit.id} ${hit.label}`).join(", ")).toBe(0);
   });
 
-  it.each(GUIDE_ARTICLES.map((article) => [article.slug, article] as const))("%s: published and updated dates, updated not before published", (_slug, article) => {
+  it.each(ALL_GUIDE_ARTICLES.map((article) => [article.slug, article] as const))("%s: published and updated dates, updated not before published", (_slug, article) => {
     expect(article.published).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(article.updated).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect((article.updated ?? "") >= (article.published ?? "")).toBe(true);
@@ -294,7 +299,7 @@ describe("the app's manuals left the guide for /help (AdSense audit 2026-10-27)"
     expect(MOVED).toEqual(["now-card-how-to", "bond-score"]);
     for (const slug of MOVED) expect(findArticle(slug), slug).toBeUndefined();
     // 37 and 31 before the move, 36 and 30 after it, then 재회 타로 and 재회운 (2026-10-31): the hubs, the article pages and 가이드 소개 read these counts.
-    expect([articlesIn("tarot").length, articlesIn("saju").length]).toEqual([37, 31]);
+    expect([articlesIn("tarot").length, articlesIn("saju").length]).toEqual([37, 31 + GUIDE_ARTICLES.filter((article) => article.publishAt).length]);
     for (const text of [sitemapXml("guide"), sitemapXml("app"), llmsFullTxt(), guideRss()]) {
       for (const slug of MOVED) expect(text).not.toContain(`/guide/${slug}`);
     }

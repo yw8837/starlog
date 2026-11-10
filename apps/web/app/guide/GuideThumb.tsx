@@ -35,6 +35,11 @@ const SAJU_GLYPH: Record<string, { char: string; el: string }> = {
   "day-master-singeum": { char: "辛", el: "metal" },
   "day-master-imsu": { char: "壬", el: "water" },
   "day-master-gyesu": { char: "癸", el: "water" },
+  // 원본 자료 (lib/guide-articles/data-articles.ts).
+  "manseryeok-engine-comparison": { char: "算", el: "earth" },
+  "jeolip-times-2026-2027": { char: "節", el: "wood" },
+  "korea-dst-standard-time": { char: "夏", el: "fire" },
+  "birthplace-longitude-table": { char: "經", el: "water" },
 };
 
 /**

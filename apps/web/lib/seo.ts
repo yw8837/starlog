@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { BIRTH_CARD_PATH } from "./birthCard";
 import { SITE } from "./config";
-import { GUIDE_ABOUT_PATH, GUIDE_ARTICLES, GUIDE_CATEGORIES, articlesIn, guideIndexPath, lastReviewed } from "./guide";
+import { ALL_GUIDE_ARTICLES, GUIDE_ABOUT_PATH, GUIDE_ARTICLES, GUIDE_CATEGORIES, guideIndexPath, lastReviewed, publishedArticles } from "./guide";
 import { GUIDE_EDITOR } from "./guideReview";
-import { FEED_URL, absoluteUrl, isGuidePath, type SiteHost } from "./hosts";
+import { FEED_URL, GUIDE_HOST_PAGES, absoluteUrl, isGuidePath, type SiteHost } from "./hosts";
 import { INFO_PAGES } from "./infoPages";
 import { KEYWORD_PATH } from "./keyword2027";
 import { OG_ALT } from "./og";
@@ -56,6 +56,8 @@ interface PageMetadataInput {
   modifiedTime?: string;
   /** The page's own picture, ahead of the shared one (a card article's scan, SEO audit 2026-10-27). */
   image?: { url: string; width: number; height: number; alt: string };
+  /** A page both hosts serve (GUIDE_HOST_PAGES): the origin that served it (lib/servedOrigin.ts), so it is its own canonical there. */
+  origin?: string;
 }
 
 /**
@@ -65,8 +67,8 @@ interface PageMetadataInput {
  * the guide's: those pages live on the root domain, so their canonical and og:url name it in full,
  * whichever host serves them.
  */
-export function pageMetadata({ title, description, path, type = "website", publishedTime, modifiedTime, image }: PageMetadataInput): Metadata {
-  const url = isGuidePath(path) ? absoluteUrl(path) : path;
+export function pageMetadata({ title, description, path, type = "website", publishedTime, modifiedTime, image, origin }: PageMetadataInput): Metadata {
+  const url = isGuidePath(path) ? absoluteUrl(path) : origin ? new URL(path, origin).toString() : path;
   const shared = { url, siteName: OG_SITE_NAME, locale: "ko_KR", images: [...(image ? [image] : []), { ...OG_IMAGE }] };
   return {
     ...(title === undefined ? {} : { title }),
@@ -148,7 +150,9 @@ const latest = (dates: ReadonlyArray<string | undefined>): string | undefined =>
  * hold a few names), and no page links to them. sitemapEntriesFor splits them by host. The premium product
  * pages join with `premium` (STARLOG_PREMIUM=on, the sitemap route decides): never their samples or flow screens.
  */
-export function sitemapEntries({ premium = false }: { premium?: boolean } = {}): SitemapEntry[] {
+export function sitemapEntries({ premium = false, now = Date.now() }: { premium?: boolean; now?: number } = {}): SitemapEntry[] {
+  // Read at the request's time, so an article dated ahead (publishAt) joins on its day without a deploy.
+  const articles = publishedArticles(ALL_GUIDE_ARTICLES, now);
   return [
     { path: "/", changeFrequency: "daily", priority: 1 },
     { path: "/tarot/new", changeFrequency: "monthly", priority: 0.9 },
@@ -160,12 +164,13 @@ export function sitemapEntries({ premium = false }: { premium?: boolean } = {}):
     ...GUIDE_CATEGORIES.map(
       (category): SitemapEntry => ({
         path: guideIndexPath(category),
-        lastModified: latest(articlesIn(category).map(lastReviewed)),
+        // The tab pages are built ahead: their lastmod is the build's list (GUIDE_ARTICLES), not one an article opening today would move.
+        lastModified: latest(GUIDE_ARTICLES.filter((article) => article.category === category).map(lastReviewed)),
         changeFrequency: "weekly",
         priority: 0.8,
       }),
     ),
-    ...GUIDE_ARTICLES.map(
+    ...articles.map(
       (article): SitemapEntry => ({ path: `/guide/${article.slug}`, lastModified: lastReviewed(article), changeFrequency: "monthly", priority: 0.7 }),
     ),
     // 가이드 소개와 편집 원칙: who writes the guide and how (no lastModified: the page carries no date of its own).
@@ -177,8 +182,12 @@ export function sitemapEntries({ premium = false }: { premium?: boolean } = {}):
     ...(premium ? PREMIUM_IDS.map((id): SitemapEntry => ({ path: premiumPath(id), changeFrequency: "monthly", priority: 0.5 })) : []),
     // No lastModified: the only date the policies carry is their 시행일, which can be ahead of today and is not when the text changed.
     ...["/refund", "/terms", "/privacy"].map((path): SitemapEntry => ({ path, changeFrequency: "yearly", priority: 0.2 })),
+    // 문의: who runs the sites and where to write (no date of its own).
+    { path: "/contact", changeFrequency: "yearly", priority: 0.3 },
   ];
 }
+
+const isServedBoth = (path: string): boolean => (GUIDE_HOST_PAGES as readonly string[]).includes(path);
 
 /** Every indexable path across both hosts' sitemaps. */
 export const SITEMAP_PATHS: readonly string[] = sitemapEntries().map((entry) => entry.path);
@@ -187,18 +196,19 @@ export const SITEMAP_PATHS: readonly string[] = sitemapEntries().map((entry) => 
  * What one host's sitemap lists: the guide URLs on the root domain, every other page on the app host
  * (the app host's /guide URLs redirect to the root domain, so they are not listed there).
  */
-export function sitemapEntriesFor(host: SiteHost, options: { premium?: boolean } = {}): SitemapEntry[] {
-  return sitemapEntries(options).filter((entry) => isGuidePath(entry.path) === (host === "guide"));
+export function sitemapEntriesFor(host: SiteHost, options: { premium?: boolean; now?: number } = {}): SitemapEntry[] {
+  // GUIDE_HOST_PAGES are on both, each host's copy its own canonical.
+  return sitemapEntries(options).filter((entry) => isServedBoth(entry.path) || isGuidePath(entry.path) === (host === "guide"));
 }
 
 /**
  * app/sitemap.xml/route.ts: one host's sitemap, as the sitemaps.org XML Next's own sitemap route
  * wrote (a `sitemap.ts` is handed no request, so a route reads the host and builds it).
  */
-export function sitemapXml(host: SiteHost, options: { premium?: boolean } = {}): string {
+export function sitemapXml(host: SiteHost, options: { premium?: boolean; now?: number } = {}): string {
   const urls = sitemapEntriesFor(host, options).flatMap(({ path, lastModified, changeFrequency, priority }) => [
     "<url>",
-    `<loc>${absoluteUrl(path)}</loc>`,
+    `<loc>${host === "guide" && isServedBoth(path) ? new URL(path, SITE.guideUrl).toString() : absoluteUrl(path)}</loc>`,
     ...(lastModified ? [`<lastmod>${lastModified}</lastmod>`] : []),
     ...(changeFrequency ? [`<changefreq>${changeFrequency}</changefreq>`] : []),
     ...(priority === undefined ? [] : [`<priority>${priority}</priority>`]),

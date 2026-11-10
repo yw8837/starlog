@@ -18,6 +18,8 @@ import {
   recentlyReviewed,
   type GuideCategory,
 } from "@/lib/guide";
+import { SITE } from "@/lib/config";
+import { GUIDE_EDITOR } from "@/lib/guideReview";
 import { appHref, linkHref } from "@/lib/hosts";
 import { KEYWORD_PATH, KEYWORD_TITLE } from "@/lib/keyword2027";
 import { koreanDate } from "@/lib/legal";
@@ -72,6 +74,32 @@ const FREE_TOOLS: ReadonlyArray<{ path: string; name: string; line: string }> = 
   { path: KEYWORD_PATH, name: KEYWORD_TITLE, line: "생일의 일주로 2027년 정미년에 붙들 키워드를 골라 드려요." },
 ];
 
+/**
+ * The home's introduction after its lead (AdSense audit 2026-11-06: the root domain had no written introduction): how the
+ * guide is made and checked, and what is its own. Every claim is one the repository backs: the editorial page's sources,
+ * the checks in lib/guide-articles/*.test.ts and the card KB (content/kb/cards).
+ */
+function HomeAbout() {
+  return (
+    <>
+      <div className={s.introPart}>
+        <h3 className={s.introSub}>어떻게 만들고 확인하나요</h3>
+        <p className={s.introText}>
+          {`글은 AI 도구로 초안을 쓰고, 근거 자료와 계산 규칙에 대 보며 고쳐서 올려요. 타로 글은 1909년 라이더-웨이트-스미스 원판 스캔, 덱을 기획한 웨이트의 해설서(1910), 78장마다 그림에 실제로 그려진 것을 정리한 카드 지식 베이스에 맞춰 봐요. 사주 글의 예시 명식은 ${SITE.nameKo} 앱이 쓰는 만세력 엔진으로 다시 계산해서 글에 적힌 기둥과 같은지 자동 검사로 확인해요. 모든 글의 편집 책임은 ${GUIDE_EDITOR.title} ${GUIDE_EDITOR.name}에게 있어요.`}
+        </p>
+      </div>
+      <div className={s.introPart}>
+        <h3 className={s.introSub}>여기서만 볼 수 있는 것</h3>
+        <ul className={s.introList}>
+          <li>카드 그림 설명: 카드마다 잘못 묘사하기 쉬운 부분을 지식 베이스에 적어 두고, 글에 그런 묘사가 들어가지 않았는지 자동 검사로 걸러요.</li>
+          <li>사주 예시 명식: 글에 나오는 명식은 앱의 만세력 엔진으로 직접 세웠고, 글을 고칠 때마다 자동 검사가 다시 계산해 맞춰 봐요.</li>
+          <li>계산 규칙 공개: 서머타임과 표준시가 바뀐 해, 출생지 경도 보정, 밤 11시 이후 출생을 앱이 어떻게 계산하는지 가이드 소개에 그대로 적어 두었어요.</li>
+        </ul>
+      </div>
+    </>
+  );
+}
+
 /** How many articles 최근 고친 글 lists. */
 const RECENT_COUNT = 5;
 
@@ -125,6 +153,7 @@ export function GuideIndex({ category }: { category: GuideCategory }) {
               {copy.intro[0]}
             </h2>
             <p className={s.introText}>{copy.intro[1]}</p>
+            {category === "tarot" ? <HomeAbout /> : null}
             <p className={s.introMeta}>
               {GUIDE_CATEGORIES.map((tab) => `${GUIDE_CATEGORY_LABEL[tab]} ${articlesIn(tab).length}편`).join(" · ")}
               {newest ? (
@@ -145,6 +174,9 @@ export function GuideIndex({ category }: { category: GuideCategory }) {
               <h2 id="hub-start-title" className={s.groupTitle}>
                 {copy.start}
               </h2>
+              {copy.starters.length > 1 ? (
+                <p className={s.groupSub}>{`타로와 사주 가운데 궁금한 쪽부터 골라 ${GUIDE_STARTERS.tarot.length}편씩 차례로 읽어 보세요.`}</p>
+              ) : null}
             </div>
             <div className={s.starters}>
               {copy.starters.map((tab) => (

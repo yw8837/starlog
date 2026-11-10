@@ -1,6 +1,7 @@
 import { getCard } from "@starlog/core";
 import { TarotCard } from "@/components/tarot/TarotCard";
 import type { GuideBlock, GuideCalloutTone } from "@/lib/guideMeta";
+import { GuideChart } from "./GuideChart";
 import { GuideDiagram } from "./GuideDiagram";
 import { GuideText } from "./GuideText";
 import s from "./GuideBlocks.module.css";
@@ -136,8 +137,24 @@ function Block({ block, id }: { block: GuideBlock; id: string }) {
           {block.caption ? <figcaption className={s.caption}>{block.caption}</figcaption> : null}
         </figure>
       );
+    case "cardGrid":
+      return (
+        <figure className={`${s.block} ${s.cardRow}`}>
+          <ul className={`${s.cards} ${s.cardGrid}`}>
+            {block.cards.map((cardId) => (
+              <li key={cardId} className={`${s.cardItem} ${s.cardGridItem}`}>
+                <TarotCard cardId={cardId} faceUp size="sm" className={s.card} imageSizes="62px" loading="lazy" deck="rws1909" alt={getCard(cardId).names.ko} />
+                <span className={s.cardName}>{getCard(cardId).names.ko}</span>
+              </li>
+            ))}
+          </ul>
+          {block.caption ? <figcaption className={s.caption}>{block.caption}</figcaption> : null}
+        </figure>
+      );
     case "diagram":
       return <GuideDiagram block={block} id={id} />;
+    case "chart":
+      return <GuideChart block={block} id={id} />;
   }
 }
 

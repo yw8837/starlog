@@ -164,3 +164,37 @@ describe("the tarot basics say exactly what the deck holds (review 2026-10-23)",
     ]);
   });
 });
+
+describe("all fourteen cards of each suit, as the app's own 1909 scans (2026-11-10, AdSense audit task E)", () => {
+  const shown = (a: GuideArticle) =>
+    a.sections.flatMap((section) => section.blocks ?? []).flatMap((block) => (block.kind === "cardRow" || block.kind === "cardGrid" ? [...block.cards] : []));
+
+  it.each(Object.entries(SUITS))("%s: every card of the suit in a card row, next to the text that reads it", (slug, suit) => {
+    const a = article(slug);
+    const ids = CARDS.filter((card) => card.suit === suit).map((card) => card.id);
+    expect(new Set(shown(a).filter((id) => ids.includes(id))).size).toBe(14);
+    // A row sits in a section whose text names each card it shows.
+    for (const section of a.sections) {
+      for (const block of section.blocks ?? []) {
+        if (block.kind !== "cardRow") continue;
+        for (const id of block.cards) expect(guideSectionText(section), `${slug}: ${id}`).toContain(getCard(id).names.ko);
+      }
+    }
+  });
+
+  it("the overview shows the 56 cards, fourteen a suit in its own grid, each linked to its suit article", () => {
+    const a = article(OVERVIEW);
+    const grids = a.sections.flatMap((section) => section.blocks ?? []).filter((block): block is Extract<GuideBlock, { kind: "cardGrid" }> => block.kind === "cardGrid");
+    expect(grids).toHaveLength(4);
+    for (const [i, suit] of Object.values(SUITS).entries()) {
+      expect(grids[i]?.cards).toEqual(CARDS.filter((card) => card.suit === suit).map((card) => card.id));
+    }
+    const section = a.sections.find((s) => (s.blocks ?? []).some((block) => block.kind === "cardGrid")) as GuideArticle["sections"][number];
+    const linked = JSON.stringify(section);
+    for (const slug of Object.keys(SUITS)) expect(linked, slug).toContain(`(/guide/${slug})`);
+  });
+
+  it("dates the five on the day they changed", () => {
+    for (const a of ARTICLES) expect(a.updated, a.slug).toBe("2026-11-10");
+  });
+});

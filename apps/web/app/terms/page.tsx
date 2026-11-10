@@ -11,16 +11,21 @@ import {
 import { REFUND_DAYS } from "@/lib/pay/catalog";
 import { appHref } from "@/lib/hosts";
 import { pageMetadata } from "@/lib/seo";
+import { servedOrigin } from "@/lib/servedOrigin";
 
 const host = new URL(SITE.url).host;
 /** 별자리 인연 (with 이번 주 행운 번호) is in the service list and has its own article while it is live. */
 const BONDS = SITE.features.bonds;
 
-export const metadata: Metadata = pageMetadata({
-  title: "이용약관",
-  description: `${SITE.nameKo}(${SITE.name}) 서비스의 이용 조건, 유료 서비스와 결제, 이용자의 의무, 서비스 변경과 면책, 분쟁 해결을 정한 이용약관이에요.`,
-  path: "/terms",
-});
+/** The canonical names the host that served the page: the root domain serves it too (lib/hosts.ts GUIDE_HOST_PAGES). */
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMetadata({
+    title: "이용약관",
+    description: `${SITE.nameKo}(${SITE.name}) 서비스의 이용 조건, 유료 서비스와 결제, 이용자의 의무, 서비스 변경과 면책, 분쟁 해결을 정한 이용약관이에요.`,
+    path: "/terms",
+    origin: await servedOrigin(),
+  });
+}
 
 /**
  * The revision of SYNC_REVISION_DATE (lib/legal.ts): shown as 개정 예정 until then, in the text from then. The AI item has a

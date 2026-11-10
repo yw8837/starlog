@@ -120,8 +120,8 @@ describe("linkHref", () => {
 });
 
 describe("the pages the root domain serves besides the guide", () => {
-  it("are the operator's page and the two policies, and their canonical stays on the app host", () => {
-    expect([...GUIDE_HOST_PAGES]).toEqual(["/about", "/privacy", "/terms"]);
+  it("are the two policies and 문의; absoluteUrl names the app host (each page names the root domain itself when served there: lib/servedOrigin.ts)", () => {
+    expect([...GUIDE_HOST_PAGES]).toEqual(["/privacy", "/terms", "/contact"]);
     for (const path of GUIDE_HOST_PAGES) {
       expect(hostOfPath(path), path).toBe("app");
       expect(absoluteUrl(path), path).toBe(`https://starlog.yeolmaeapps.kr${path}`);

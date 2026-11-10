@@ -44,8 +44,8 @@ export default function AboutPage() {
   const related = [INFO_PAGES.how, INFO_PAGES.evidence, INFO_PAGES.help, INFO_PAGES.faq];
 
   return (
-    // The root domain serves this page too (lib/hosts.ts GUIDE_HOST_PAGES): every link names the host that serves it,
-    // so none takes the root domain's redirect to the app host.
+    // Served on the app host (the root domain's /about moves to 가이드 소개 since 2026-11-10); every link still names the host that serves it,
+    // as on the pages both hosts serve.
     <InfoPage
       host="either"
       eyebrow="ABOUT"

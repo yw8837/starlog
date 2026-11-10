@@ -148,8 +148,8 @@ describe("the editorial page", () => {
     vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
     render(<GuideAboutPage />);
     const split = within(screen.getByRole("navigation", { name: "더 둘러보기" })).getAllByRole("link").map((a) => a.getAttribute("href"));
-    // On the root domain the tarot tab is its "/", and /about is served there too.
-    expect(split).toEqual(expect.arrayContaining(["/", "/guide/saju", "/about"]));
+    // On the root domain the tarot tab is its "/"; the app's /about is the app host's (the root domain's /about moves here).
+    expect(split).toEqual(expect.arrayContaining(["/", "/guide/saju", `${SITE.url}/about`]));
   });
 
   it("carries no ad, no ad script and nothing unfinished", () => {
@@ -174,15 +174,15 @@ describe("the editorial page", () => {
 });
 
 describe("the root domain's footer", () => {
-  it("links the editorial page and the contact anchor on a guide page, as paths on the root domain", () => {
+  it("links the editorial page and 문의 on a guide page, as paths on the root domain", () => {
     vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
     render(<Footer host="guide" />);
     const links = within(screen.getByRole("navigation", { name: "사이트 안내" })).getAllByRole("link");
     const byLabel = Object.fromEntries(links.map((a) => [a.textContent, a.getAttribute("href")]));
     expect(byLabel["편집 원칙"]).toBe(GUIDE_ABOUT_PATH);
-    expect(byLabel["문의"]).toBe(`${GUIDE_ABOUT_PATH}#contact`);
-    // The operator's page and the two policies stay on the root domain too (it serves them itself).
-    expect(byLabel["스타로그란?"]).toBe("/about");
+    expect(byLabel["문의"]).toBe("/contact");
+    // 문의 and the two policies stay on the root domain (it serves them itself); the app is named once, on its host.
+    expect(byLabel[`${SITE.nameKo} 앱 소개`]).toBe(`${SITE.url}/about`);
     expect(byLabel["이용약관"]).toBe("/terms");
     expect(byLabel["개인정보처리방침"]).toBe("/privacy");
   });

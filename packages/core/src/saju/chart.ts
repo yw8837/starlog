@@ -660,6 +660,14 @@ function jeolAround(instantMs: number): Jeol[] {
   return out.sort((p, q) => p.ms - q.ms);
 }
 
+/** The 24 terms of a year from 소한, as the engine has them (minute-rounded instants): the guide's 절입 table prints them. */
+export function solarTermsOfYear(year: number): { name: string; hanja: string; instantUTC: string }[] {
+  return Array.from({ length: 24 }, (_, index) => {
+    const t = getSolarTerm(year, index);
+    return { name: t.name, hanja: t.hanja, instantUTC: t.date.toISOString() };
+  });
+}
+
 function monthStartTerm(instantMs: number): SajuChart["monthStartTerm"] {
   const t = jeolAround(instantMs).filter(j => j.ms <= instantMs).at(-1);
   return t ? { name: t.name, hanja: t.hanja, instantUTC: new Date(t.ms).toISOString() } : null;

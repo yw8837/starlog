@@ -63,7 +63,7 @@ describe("the same date on the page, in the JSON-LD and in the sitemap", () => {
   it.each(GUIDE_ARTICLES.map((article) => [article.slug] as const))("%s", async (slug) => {
     const dates = GUIDE_DATES[slug] as { published: string; updated: string };
     const { container } = render(await GuideArticlePage({ params: Promise.resolve({ slug }) } as PageProps<"/guide/[slug]">));
-    const byline = [...container.querySelectorAll("article header p")].find((p) => p.textContent?.startsWith("글 AI 도구로 초안"));
+    const byline = [...container.querySelectorAll("article header p")].find((p) => p.textContent?.startsWith("만든 방법 "));
     // An owner's review (lib/guideReview.ts) adds its own day after the two.
     const review = guideReview(slug);
     const days = [dates.published, dates.updated, ...(review ? [review.on] : [])];

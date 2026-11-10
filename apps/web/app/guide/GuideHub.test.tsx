@@ -168,7 +168,9 @@ describe("the two hubs", () => {
     const saju = read(GuideSajuPage);
     expect(saju.intro).not.toBe(tarot.intro);
     expect(saju.start).not.toBe(tarot.start);
-    for (const hub of [tarot, saju]) expect(hub.meta).toContain("타로 37편 · 사주 31편");
+    // The 원본 자료 articles join the saju count on their days (publishAt), as the build that day reads it.
+    const data = GUIDE_ARTICLES.filter((article) => article.publishAt).length;
+    for (const hub of [tarot, saju]) expect(hub.meta).toContain(`타로 37편 · 사주 ${31 + data}편`);
   });
 });
 

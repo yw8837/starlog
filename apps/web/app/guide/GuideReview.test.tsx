@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import GuideArticlePage from "@/app/guide/[slug]/page";
 import { SITE } from "@/lib/config";
 import { findArticle, lastReviewed, type GuideArticle } from "@/lib/guide";
+import { guideMadeHow } from "@/lib/guideMadeHow";
 import { GUIDE_EDITOR, GUIDE_REVIEWS } from "@/lib/guideReview";
 import { guideArticleJsonLd } from "@/lib/jsonld";
 import { koreanDate } from "@/lib/legal";
@@ -29,7 +30,7 @@ afterEach(() => {
 });
 
 const renderSlug = async (slug: string) => render(await GuideArticlePage({ params: Promise.resolve({ slug }) } as PageProps<"/guide/[slug]">));
-const byline = (container: HTMLElement) => [...container.querySelectorAll("article header p")].find((p) => p.textContent?.startsWith("글 AI 도구로 초안")) as HTMLElement | undefined;
+const byline = (container: HTMLElement) => [...container.querySelectorAll("article header p")].find((p) => p.textContent?.startsWith("만든 방법 ")) as HTMLElement | undefined;
 const trustBox = (container: HTMLElement) => container.querySelector<HTMLElement>('section[aria-labelledby="trust-title"]') as HTMLElement;
 const article = (slug: string) => findArticle(slug) as GuideArticle;
 const dates = (slug: string) => `처음 쓴 날 ${koreanDate(article(slug).published as string)} · 마지막 수정 ${koreanDate(lastReviewed(article(slug)) as string)}`;
@@ -57,17 +58,17 @@ describe("the editor and the reviewer the guide names", () => {
 describe("the byline and the trust box", () => {
   it("name the AI draft and the editor on every article, and no review where there is no record", async () => {
     const { container } = await renderSlug("the-star");
-    expect(byline(container)?.textContent).toBe(`글 AI 도구로 초안 · 편집 책임 최용우(열매스튜디오 대표) · ${dates("the-star")} · 편집 원칙`);
+    expect(byline(container)?.textContent).toBe(`만든 방법 ${guideMadeHow(article("the-star")).short} · 편집 책임 최용우(열매스튜디오 대표) · ${dates("the-star")} · 편집 원칙`);
     const box = trustBox(container).textContent ?? "";
     expect(box).toContain("편집 책임최용우(열매스튜디오 대표)");
-    expect(box).toContain("만든 방법AI 도구로 초안을 쓰고");
+    expect(box).toContain(`만든 방법${guideMadeHow(article("the-star")).long}`);
     expect(box).not.toContain("검토");
   });
 
   it("add 검토 최용우 and the day on an article he has read", async () => {
     const { container } = await renderSlug(REVIEWED);
     const line = byline(container) as HTMLElement;
-    expect(line.textContent).toBe(`글 AI 도구로 초안 · 편집 책임 최용우(열매스튜디오 대표) · ${dates(REVIEWED)} · 검토 최용우(2026년 10월 24일) · 편집 원칙`);
+    expect(line.textContent).toBe(`만든 방법 ${guideMadeHow(article(REVIEWED)).short} · 편집 책임 최용우(열매스튜디오 대표) · ${dates(REVIEWED)} · 검토 최용우(2026년 10월 24일) · 편집 원칙`);
     expect([...line.querySelectorAll("time")].map((time) => time.getAttribute("datetime")).at(-1)).toBe(REVIEW_DAY);
     const box = trustBox(container);
     expect(box.textContent).toContain("검토최용우 · 2026년 10월 24일");

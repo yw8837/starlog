@@ -8,6 +8,7 @@ import { GUIDE_ABOUT_PATH, GUIDE_ARTICLES, lastReviewed, type GuideArticle } fro
 import { INFO_PAGES } from "@/lib/infoPages";
 import { guideReview } from "@/lib/guideReview";
 import { guideArticleJsonLd } from "@/lib/jsonld";
+import { guideMadeHow } from "@/lib/guideMadeHow";
 import { koreanDate } from "@/lib/legal";
 import { sitemapEntriesFor } from "@/lib/seo";
 
@@ -30,7 +31,7 @@ afterEach(() => {
 
 const renderSlug = async (slug: string) => render(await GuideArticlePage({ params: Promise.resolve({ slug }) } as PageProps<"/guide/[slug]">));
 const trustBox = (container: HTMLElement) => container.querySelector<HTMLElement>('section[aria-labelledby="trust-title"]');
-const byline = (container: HTMLElement) => [...container.querySelectorAll("article header p")].find((p) => p.textContent?.startsWith("글 AI 도구로 초안")) as HTMLElement | undefined;
+const byline = (container: HTMLElement) => [...container.querySelectorAll("article header p")].find((p) => p.textContent?.startsWith("만든 방법 ")) as HTMLElement | undefined;
 /** The editor of every article (owner decision 2026-10-23): the business owner, by name and title. */
 const EDITOR = `${SITE.business.ceo}(${SITE.business.name} 대표)`;
 
@@ -74,13 +75,13 @@ describe("the sources a guide article names, by category", () => {
 });
 
 describe("the byline under the title", () => {
-  it.each(GUIDE_ARTICLES.map((article) => [article.slug, article] as const))("%s: an AI draft, its editor, both dates, a review only on record, and the editorial page", async (slug, article) => {
+  it.each(GUIDE_ARTICLES.map((article) => [article.slug, article] as const))("%s: how it was made (the AI draft and what this page is checked against), its editor, both dates, a review only on record, and the editorial page", async (slug, article) => {
     const { container } = await renderSlug(slug);
     const line = byline(container);
     const changed = lastReviewed(article) as string;
     const review = guideReview(slug);
     const reviewed = review ? ` · 검토 ${review.by}(${koreanDate(review.on)})` : "";
-    expect(line?.textContent).toBe(`글 AI 도구로 초안 · 편집 책임 ${EDITOR} · 처음 쓴 날 ${koreanDate(article.published as string)} · 마지막 수정 ${koreanDate(changed)}${reviewed} · 편집 원칙`);
+    expect(line?.textContent).toBe(`만든 방법 ${guideMadeHow(article).short} · 편집 책임 ${EDITOR} · 처음 쓴 날 ${koreanDate(article.published as string)} · 마지막 수정 ${koreanDate(changed)}${reviewed} · 편집 원칙`);
     expect([...(line?.querySelectorAll("time") ?? [])].map((time) => time.getAttribute("datetime"))).toEqual([article.published, changed, ...(review ? [review.on] : [])]);
     expect(within(line as HTMLElement).getByRole("link", { name: "편집 원칙" }).getAttribute("href")).toBe(GUIDE_ABOUT_PATH);
   });
@@ -98,8 +99,8 @@ describe("the trust box after the body", () => {
     const review = guideReview(slug);
     if (review) expect(text).toContain(`검토${review.by} · ${koreanDate(review.on)}`);
     else expect(text).not.toContain("검토");
-    // How it was made, the same facts as the editorial page: an AI draft checked against its category's sources.
-    expect(text).toContain(article.category === "tarot" ? "AI 도구로 초안을 쓰고 1909년 원판 그림과 웨이트 해설서에 대조해 다듬었어요" : "AI 도구로 초안을 쓰고 만세력 계산 규칙에 대조해 다듬었어요");
+    // How it was made, this page's own (lib/guideMadeHow.ts): an AI draft and what it was checked against.
+    expect(text).toContain(`만든 방법${guideMadeHow(article).long}`);
     expect([...(box?.querySelectorAll("time") ?? [])].map((time) => time.getAttribute("datetime"))).toEqual([article.published, lastReviewed(article), ...(review ? [review.on] : [])]);
 
     const listed = [...(box?.querySelectorAll("li") ?? [])].map((li) => li.textContent);

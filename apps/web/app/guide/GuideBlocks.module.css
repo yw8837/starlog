@@ -175,6 +175,16 @@
   --card-w: 100%;
 }
 
+/* A whole suit: rows of small scans that wrap, centred. */
+.cardGrid {
+  flex-wrap: wrap;
+  gap: 12px 10px;
+}
+
+.cardGridItem {
+  flex: 0 0 62px;
+}
+
 .cardName {
   font-size: 14px;
   font-weight: 700;
@@ -461,4 +471,46 @@
   color: var(--navy);
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+/* ---- data charts (GuideChart): the article's own numbers, on the paper ---- */
+
+.chartSvg {
+  display: block;
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+}
+
+.chartLabel,
+.chartValue {
+  fill: var(--paper-ink);
+  font-size: 13px;
+}
+
+.chartValue {
+  font-weight: 700;
+}
+
+.chartTick {
+  fill: var(--paper-ink);
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.chartTrack {
+  fill: rgba(43, 33, 64, 0.08);
+}
+
+.chartBar {
+  fill: #6a55a8;
+}
+
+.chartBarAlt {
+  fill: #c0763a;
+}
+
+.chartGrid {
+  stroke: rgba(43, 33, 64, 0.15);
+  stroke-width: 1;
 }

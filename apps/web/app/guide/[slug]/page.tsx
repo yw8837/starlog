@@ -1,6 +1,7 @@
 import { cardImage, getCard } from "@starlog/core";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Fragment } from "react";
 import { notFound } from "next/navigation";
 import Script from "next/script";
 import { AdSlot } from "@/components/ads/AdSlot";
@@ -15,7 +16,8 @@ import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
 import { adsConfig, adsScriptSrc } from "@/lib/ads";
 import { won } from "@/lib/config";
-import { GUIDE_ARTICLES, GUIDE_CATEGORY_LABEL, adjacentArticles, articlesIn, findArticle, guideIndexPath, guideSectionText, lastReviewed } from "@/lib/guide";
+import { GUIDE_ARTICLES, GUIDE_CATEGORY_LABEL, adjacentArticles, articlesIn, findArticle, guideIndexPath, guideSectionText, lastReviewed, type GuideArticle } from "@/lib/guide";
+import { guideLinkTarget, inlineParts } from "@/lib/guideLinks";
 import { appHref, linkHref } from "@/lib/hosts";
 import { guideArticleBreadcrumbJsonLd, guideArticleCrumbs, guideArticleJsonLd, guideFaqJsonLd } from "@/lib/jsonld";
 import { premiumForGuide } from "@/lib/premium/landing";
@@ -46,6 +48,10 @@ const SECTIONS_BEFORE_AD = 2;
  */
 const MIN_AD_BODY_CHARS = 2500;
 
+/**
+ * The articles out at build time. One dated ahead (publishAt) is not built: until its day findArticle misses it and the
+ * page is a 404, from its day it renders on request (the incremental cache is read-only, so nothing keeps the 404).
+ */
 export function generateStaticParams() {
   return GUIDE_ARTICLES.map((article) => ({ slug: article.slug }));
 }
@@ -67,6 +73,26 @@ export async function generateMetadata({ params }: PageProps<"/guide/[slug]">): 
   });
 }
 
+/** Links to the app in the article's own text (its sections, 요약 and 한눈에 보기 hold none: plain strings). */
+const appLinksIn = (article: GuideArticle): number =>
+  article.sections
+    .flatMap((section) => [section.body, ...(section.blocks ?? []).flatMap((block) => JSON.stringify(block))])
+    .flatMap((text) => inlineParts(text))
+    .filter((part) => typeof part !== "string" && guideLinkTarget(part.url)?.kind === "app").length;
+
+/**
+ * Where Waite's sentence on the card stands (AdSense audit 2026-11-06 task F: not one fixed skeleton): right after the
+ * section on the card's history and Waite's book, or else the one on its picture (the section with the deck figure);
+ * under the scan when there is neither. The index of the section it comes before, or null for under the scan.
+ */
+function waiteQuoteAt(article: GuideArticle): number | null {
+  if (!article.cardId) return null;
+  const history = article.sections.findIndex((section) => /웨이트|옛/.test(section.heading));
+  const picture = article.sections.findIndex((section) => (section.blocks ?? []).some((block) => block.kind === "figure"));
+  const after = history >= 0 ? history : picture;
+  return after >= 0 && after + 1 < article.sections.length ? after + 1 : null;
+}
+
 const CTA = {
   tarot: { text: "카드 3장으로 지금을 봐요", label: "타로 보기", href: ENTRY_TAROT_HREF },
   saju: { text: "타고난 결로 나를 봐요", label: "사주 보기", href: ENTRY_SAJU_HREF },
@@ -81,6 +107,10 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
   // The premium product this article explains (owner: every premium has its guide), linked under the article where
   // premium is visible (a client island); the static HTML links it in one line until the status answers.
   const premium = premiumForGuide(article.slug);
+  // Two app links at most besides the sources (AdSense audit 2026-11-06): the 보기 button only while the article's own
+  // links to the app (in its text, its product) are fewer than two.
+  const ownAppLinks = appLinksIn(article) + (premium ? 1 : 0);
+  const showCta = ownAppLinks < 2;
   const tab = GUIDE_CATEGORY_LABEL[article.category];
   // The article's own picks; an article without them falls back to the first others in its tab.
   const picked = (article.related ?? []).map((other) => findArticle(other)).filter((other) => other !== undefined);
@@ -91,6 +121,8 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
   // Where the ad goes in the body, or null: with the unit set, a substantial body, and sections left after it.
   const substantial = article.sections.map(guideSectionText).join("\n").length >= MIN_AD_BODY_CHARS;
   const adAt = ads?.guideSlot && substantial && article.sections.length > SECTIONS_BEFORE_AD ? SECTIONS_BEFORE_AD : null;
+  const quoteAt = waiteQuoteAt(article);
+  const breaks = [...new Set([0, ...(quoteAt === null ? [] : [quoteAt]), ...(adAt === null ? [] : [adAt])])].sort((a, b) => a - b);
   const sections = (from: number, to: number) =>
     article.sections.slice(from, to).map((section, i) => (
       <section key={section.heading} className={s.section}>
@@ -147,16 +179,19 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
               <figcaption className={s.caption}>{`${card.arcana === "major" ? `${card.roman} ` : ""}${card.names.ko} · 라이더-웨이트-스미스 덱(1909)`}</figcaption>
             </figure>
           ) : null}
-          {article.cardId ? <CardQuote cardId={article.cardId} /> : null}
+          {article.cardId && quoteAt === null ? <CardQuote cardId={article.cardId} /> : null}
 
-          <Paper className={s.body}>{sections(0, adAt ?? article.sections.length)}</Paper>
-          {/* On the sky, between two sheets of paper: the label is light ink, which the cream paper would hide. */}
-          {adAt !== null && ads?.guideSlot ? (
-            <>
-              <AdSlot client={ads.client} slot={ads.guideSlot} />
-              <Paper className={s.body}>{sections(adAt, article.sections.length)}</Paper>
-            </>
-          ) : null}
+          {/* Sheets of paper split where the quote or the ad stands on the sky: both are light ink, which the cream paper would hide. */}
+          {breaks.map((from, i) => {
+            const to = breaks[i + 1] ?? article.sections.length;
+            return (
+              <Fragment key={from}>
+                {from === quoteAt && article.cardId ? <CardQuote cardId={article.cardId} /> : null}
+                {from === adAt && ads?.guideSlot ? <AdSlot client={ads.client} slot={ads.guideSlot} /> : null}
+                <Paper className={s.body}>{sections(from, to)}</Paper>
+              </Fragment>
+            );
+          })}
           <GuideSourceLine article={article} />
           <GuideTrustBox article={article} />
 
@@ -179,12 +214,14 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
           </nav>
 
           {/* Reading first (review 2026-10-23): the app and the paid product follow the related reads, not the body. */}
-          <aside className={s.cta} aria-label={cta.label}>
-            <p className={s.ctaText}>{cta.text}</p>
-            <Button href={appHref(cta.href)} block trailing="→">
-              {cta.label}
-            </Button>
-          </aside>
+          {showCta ? (
+            <aside className={s.cta} aria-label={cta.label}>
+              <p className={s.ctaText}>{cta.text}</p>
+              <Button href={appHref(cta.href)} block trailing="→">
+                {cta.label}
+              </Button>
+            </aside>
+          ) : null}
 
           {premium ? (
             <PremiumRows

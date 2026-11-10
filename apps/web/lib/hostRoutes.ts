@@ -1,5 +1,6 @@
 // next.config.ts loads this file through its own loader, which has no "@/" alias: relative imports only.
 import { SITE } from "./config";
+import { GUIDE_ABOUT_PATH } from "./guideMeta";
 import { GUIDE_HOME, GUIDE_HOST_PAGES, splitHosts } from "./hosts";
 
 /**
@@ -12,9 +13,9 @@ import { GUIDE_HOME, GUIDE_HOST_PAGES, splitHosts } from "./hosts";
  *   move there for good (308), in one hop.
  * - Every other /guide URL on the app host moves to the same path on the root domain for good (308),
  *   so each guide URL has one home and search engines carry its signals over.
- * - The root domain also serves the operator's page and the two policies (GUIDE_HOST_PAGES: /about,
- *   /privacy, /terms), so the domain AdSense reviews has them at its own address. Their canonical is
- *   still the app host's.
+ * - The root domain also serves the two policies and 문의 (GUIDE_HOST_PAGES: /privacy, /terms, /contact), so the
+ *   domain AdSense reviews has them at its own address, each its own canonical there. Its /about moves to the guide's
+ *   own 가이드 소개 for good (308): the app's /about introduces the app (AdSense audit 2026-11-06).
  * - A known app path on the root domain (its first segment one of APP_SEGMENTS, the app's own routes) moves to the
  *   same path on the app host for good (308): those addresses are Starlog's, whatever else the root domain gets.
  * - Any other path there goes to the same path on the app host for now (307): temporary on purpose, because the
@@ -69,7 +70,7 @@ const SEGMENT = "[^/.]+";
  * root domain serves itself and the dev-only pages (lib/hostRoutes.test.ts reads app/ to keep this list whole).
  */
 export const APP_SEGMENTS = [
-  "2027-keyword", "b", "birth-card", "bonds", "chapter", "evidence", "faq", "help", "how", "invite", "login", "lucky", "me",
+  "2027-keyword", "about", "b", "birth-card", "bonds", "chapter", "evidence", "faq", "help", "how", "invite", "login", "lucky", "me",
   "now", "owner", "pay", "premium", "pricing", "ranking", "refund", "s", "saju", "story", "tarot", "today",
 ] as const;
 
@@ -100,6 +101,8 @@ export function hostRedirects(): HostRedirect[] {
     // redirects in both runtimes, so it never loops back here.
     { source: "/guide", has: onGuide, destination: "/", permanent: true },
     { source: GUIDE_HOME, has: onGuide, destination: "/", permanent: true },
+    // Ahead of KNOWN_APP_PATH, which would send it to the app's /about. One param, so the Worker has one to fill.
+    { source: `/:about(${anyCase("about")})`, has: onGuide, destination: GUIDE_ABOUT_PATH, permanent: true },
     { source: KNOWN_APP_PATH, has: onGuide, destination: `${SITE.url}/:first/:rest*`, permanent: true },
     { source: APP_PATH, has: onGuide, destination: `${SITE.url}/:first/:rest*`, permanent: false },
   ];

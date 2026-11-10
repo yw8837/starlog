@@ -46,8 +46,16 @@ export type GuideBlock =
   | { kind: "steps"; items: ReadonlyArray<{ title: string; text: string }> }
   /** 2-5 card ids (content/kb/cards), shown small with their names. */
   | { kind: "cardRow"; cards: readonly string[]; caption?: string }
+  /** A whole suit at a glance: 6-14 card ids, small scans that wrap, with their names. */
+  | { kind: "cardGrid"; cards: readonly string[]; caption?: string }
   | { kind: "diagram"; name: "five-elements" | "celtic-cross" | "daewoon"; caption?: string }
-  | { kind: "diagram"; name: "three-card"; spread: GuideThreeCardSpread; caption?: string };
+  | { kind: "diagram"; name: "three-card"; spread: GuideThreeCardSpread; caption?: string }
+  /**
+   * A data chart from the article's own numbers (app/guide/GuideChart.tsx): bars of non-negative values with a unit, or
+   * spans of years on lanes. A table with the same numbers stands next to it.
+   */
+  | { kind: "chart"; chart: "bar"; caption: string; unit: string; rows: ReadonlyArray<{ label: string; value: number }> }
+  | { kind: "chart"; chart: "timeline"; caption: string; from: number; to: number; lanes: ReadonlyArray<{ label: string; spans: ReadonlyArray<readonly [number, number]> }> };
 
 export interface GuideSection {
   heading: string;
@@ -77,7 +85,26 @@ export interface GuideArticle {
   /** First published and last content change, YYYY-MM-DD (lib/guide-articles/answers.ts). */
   published?: string;
   updated?: string;
+  /**
+   * The day an article dated ahead comes out, YYYY-MM-DD, from 00:00 Korean time (guidePublished). Until then it is in
+   * no list, not in the sitemap and its address is a 404. Articles released one by one carry it (2026-11-10: about two a
+   * week instead of a batch); `published` and `updated` are the same day.
+   */
+  publishAt?: string;
+  /** 만든 방법 of its own (lib/guideMadeHow.ts writes the others'): the byline's short line and the 이 글에 대해 sentence. */
+  madeHow?: { short: string; long: string };
 }
+
+/** A timeline span's years as words: "1948" when it starts and ends in one year, else "1912–1954". */
+export const spanLabel = ([from, to]: readonly [number, number]): string =>
+  Math.floor(from) === Math.floor(to) ? `${Math.floor(from)}` : `${Math.floor(from)}–${Math.floor(to)}`;
+
+/** 00:00 Korean time (UTC+9, no daylight saving since 1988) of a YYYY-MM-DD day, in epoch milliseconds. */
+export const publishInstant = (day: string): number => Date.parse(`${day}T00:00:00+09:00`);
+
+/** The article is out at `now`: it has no publishAt, or that day has begun in Korea. */
+export const guidePublished = (article: Pick<GuideArticle, "publishAt">, now: number = Date.now()): boolean =>
+  !article.publishAt || now >= publishInstant(article.publishAt);
 
 /**
  * 마지막 검토: the article's last content change (`updated`, made when it was checked against its sources again), or

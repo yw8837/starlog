@@ -44,10 +44,12 @@ describe("the footer's 프리미엄 풀이 link (plan-reconciled §4.5)", () => 
     expect(labels()).toHaveLength(12);
   });
 
-  it("names the app host from a guide page when the hosts are split", async () => {
+  it("is not in the guide's footer, which names the app once (AdSense audit 2026-11-06)", async () => {
     vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
     stub(true);
     render(<Footer host="guide" />);
-    expect((await screen.findByRole("link", { name: "프리미엄 풀이" })).getAttribute("href")).toBe(`${SITE.url}/pricing#premium`);
+    await screen.findByRole("link", { name: "개인정보처리방침" });
+    expect(screen.queryByRole("link", { name: "프리미엄 풀이" })).toBeNull();
+    expect(screen.getByRole("link", { name: `${SITE.nameKo} 앱 소개` }).getAttribute("href")).toBe(`${SITE.url}/about`);
   });
 });

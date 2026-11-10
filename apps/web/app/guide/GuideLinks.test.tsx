@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import GuideArticlePage from "@/app/guide/[slug]/page";
 import { GuideBlocks } from "@/app/guide/GuideBlocks";
 import { SITE } from "@/lib/config";
-import { GUIDE_ABOUT_PATH, GUIDE_ARTICLES, findArticle, type GuideArticle, type GuideBlock } from "@/lib/guide";
+import { ALL_GUIDE_ARTICLES, GUIDE_ABOUT_PATH, GUIDE_ARTICLES, findArticle, type GuideArticle, type GuideBlock } from "@/lib/guide";
 import { guideLinkTarget, inlineParts } from "@/lib/guideLinks";
 
 /**
@@ -94,9 +94,10 @@ describe("the renderer", () => {
 });
 
 describe("the links the articles carry", () => {
-  const pages = new Set(["/guide/tarot", "/guide/saju", GUIDE_ABOUT_PATH, ...GUIDE_ARTICLES.map((article) => `/guide/${article.slug}`)]);
+  // Every article, the ones dated ahead included; which day a link may point at one is data-articles.test.ts's.
+  const pages = new Set(["/guide/tarot", "/guide/saju", GUIDE_ABOUT_PATH, ...ALL_GUIDE_ARTICLES.map((article) => `/guide/${article.slug}`)]);
 
-  it.each(GUIDE_ARTICLES.map((article) => [article.slug, article] as const))("%s: every link is allowed, a guide link opens a real page", (_slug, article) => {
+  it.each(ALL_GUIDE_ARTICLES.map((article) => [article.slug, article] as const))("%s: every link is allowed, a guide link opens a real page", (_slug, article) => {
     for (const link of linksOf(article)) {
       const target = guideLinkTarget(link.url);
       expect(target, link.url).not.toBeNull();
@@ -107,7 +108,7 @@ describe("the links the articles carry", () => {
     for (const text of elsewhere) expect(text, text).not.toMatch(/\[[^\]]+\]\([^)]+\)/);
   });
 
-  it.each(GUIDE_ARTICLES.map((article) => [article.slug, article] as const))("%s: no app address left as plain text", (_slug, article) => {
+  it.each(ALL_GUIDE_ARTICLES.map((article) => [article.slug, article] as const))("%s: no app address left as plain text", (_slug, article) => {
     for (const text of linkableTexts(article)) {
       const outsideLinks = text.replace(/\[[^\]]+\]\([^)]+\)/g, "");
       expect(outsideLinks, text).not.toContain("yeolmaeapps.kr");
