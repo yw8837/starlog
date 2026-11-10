@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { resetAccountForTests } from "@/lib/account/client";
+import { onLoginLost } from "@/lib/bonds/client";
 import { TAROT_SAMPLE } from "@/lib/fixtures";
 import { kstDate } from "@/lib/kst";
 import { clearChapters, deleteChapter, listChapters, saveChapter } from "@/lib/storage/chapters";
 import {
-  createBondShareLink, createBondsShareLink, createDailyShareLink, createShareLink, knownBondShareLink, knownBondsShareLink, knownDailyShareLink, knownShareLink,
+  createBondShareLink, createBondsShareLink, createDailyShareLink, createFreeShareLink, createShareLink, knownBondShareLink, knownBondsShareLink, knownDailyShareLink, knownShareLink,
   stopBondsShareLink, stopDailyShareLink, stopShareLink,
 } from "./client";
 
@@ -166,5 +168,36 @@ describe("별자리 인연 links a device remembers (QA L6: the sheet opened aga
     expect(knownBondsShareLink("cons0123456789abcdef")).toBeNull();
     expect(knownBondShareLink("star0123456789abcdef")).not.toBeNull();
     expect(calls.map((c) => c.method)).toEqual(["POST", "POST", "DELETE"]);
+  });
+});
+
+describe("a session that ended while the share sheet is open (code review 2026-11-06)", () => {
+  const MESSAGE = "공유 링크는 로그인하고 만들 수 있어요.";
+  const ended = () => {
+    const fetchMock = vi.fn(async (url: string) =>
+      url === "/api/me"
+        ? Response.json({ payments: true, login: true, owner: false, user: null })
+        : Response.json({ code: "LOGIN_REQUIRED", reason: "share", message: MESSAGE }, { status: 401 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    return fetchMock;
+  };
+  afterEach(() => resetAccountForTests());
+
+  it("별자리: says so and tells the screen, like an owner's other actions, both making and stopping", async () => {
+    ended();
+    const lost = vi.fn();
+    const stop = onLoginLost(lost);
+    expect(await createBondsShareLink("cons0123456789abcdef")).toEqual({ ok: false, message: MESSAGE });
+    expect(lost).toHaveBeenCalledTimes(1);
+    expect(await stopBondsShareLink("cons0123456789abcdef")).toBe(false);
+    expect(lost).toHaveBeenCalledTimes(2);
+    stop();
+  });
+
+  it("맛보기: says so and reads the account again, so the screen turns into the login panel", async () => {
+    const fetchMock = ended();
+    expect(await createFreeShareLink("sealed")).toEqual({ ok: false, message: MESSAGE });
+    expect(fetchMock.mock.calls.filter(([url]) => url === "/api/me")).toHaveLength(1);
   });
 });

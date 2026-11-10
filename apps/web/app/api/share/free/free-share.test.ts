@@ -101,9 +101,25 @@ describe("POST /api/share/free", () => {
     expect(JSON.stringify(stored?.payload)).not.toContain(String(DEFAULT_SAJU_FORM.year));
   });
 
+  it("answers the login without a session: a kept 맛보기 does not become a public link; stopping needs none (code review 2026-11-06)", async () => {
+    const db = useTestDb();
+    const secret = signingSecret() as string;
+    const payload = buildSajuFreePayload({ birth: DEFAULT_SAJU_FORM as never }, { title: "고요한 물", summary: "천천히 데워지는 마음이에요." });
+    const share = await sealFreeShare(payload, secret, Date.now());
+    const visitor = device("203.0.113.74");
+    const refused = await visitor(POST, { share });
+    expect(refused.status).toBe(401);
+    expect(refused.data).toMatchObject({ code: "LOGIN_REQUIRED", reason: "share", message: "공유 링크는 로그인하고 만들 수 있어요." });
+    expect(await db.prepare("SELECT COUNT(*) AS n FROM shares").first()).toEqual({ n: 0 });
+    const made = await (await member("203.0.113.75"))(POST, { share });
+    expect(made.status).toBe(200);
+    expect((await visitor(DELETE, { share }, "DELETE")).data).toEqual({ deleted: true });
+    expect(await findShare(db, made.data.id as string)).toBeNull();
+  });
+
   it("stops a share after its seal's week too: DELETE ignores the expiry, only a new POST is refused (review 2026-10-23)", async () => {
     const db = useTestDb();
-    const call = device("203.0.113.73");
+    const call = await member("203.0.113.73");
     const secret = signingSecret() as string;
     const payload = buildSajuFreePayload({ birth: DEFAULT_SAJU_FORM as never }, { title: "고요한 물", summary: "천천히 데워지는 마음이에요." });
     const made = await call(POST, { share: await sealFreeShare(payload, secret, Date.now()) });

@@ -188,6 +188,31 @@ describe("POST /api/share/bonds and /api/share/bond", () => {
     expect((await bondDelete(req("/api/share/bond", me.jar, { starId: me.starId }, { method: "DELETE" }))).status).toBe(200);
   });
 
+  it("without a session: making and stopping answer the login, with no word about this device (code review 2026-11-06)", async () => {
+    useTestDb();
+    const { owner, constellationId } = await constellationWithTwo();
+    const noSession: Jar = new Map([...owner].filter(([name]) => !name.includes("sl_sid")));
+    const asks = [
+      await bondsPost(req("/api/share/bonds", noSession, { constellationId })),
+      await bondsDelete(req("/api/share/bonds", noSession, { constellationId }, { method: "DELETE" })),
+    ];
+    for (const res of asks) {
+      expect(res.status).toBe(401);
+      const body = (await res.json()) as Record<string, unknown>;
+      expect(body).toMatchObject({ code: "LOGIN_REQUIRED", reason: "share" });
+      expect(JSON.stringify(body)).not.toContain("이 기기에서 만든");
+    }
+  });
+
+  it("with a session that does not own it: the same not-yours answer as before", async () => {
+    useTestDb();
+    const { constellationId } = await constellationWithTwo();
+    const other: Jar = new Map();
+    await signIn(other);
+    const res = await bondsPost(req("/api/share/bonds", other, { constellationId }));
+    expect(await res.json()).toMatchObject({ code: "NOT_AVAILABLE", message: "이 기기에서 만든 별자리 인연만 공유할 수 있어요." });
+  });
+
   it("refuses another site's page", async () => {
     useTestDb();
     const { owner, constellationId } = await constellationWithTwo();

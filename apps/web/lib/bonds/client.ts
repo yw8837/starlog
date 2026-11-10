@@ -17,6 +17,9 @@ export function onLoginLost(listener: () => void): () => void {
   return () => loginLostListeners.delete(listener);
 }
 
+/** An owner's action was answered LOGIN_REQUIRED: the screens that listen read themselves again. */
+export const notifyLoginLost = (): void => loginLostListeners.forEach((listener) => listener());
+
 /** `path` under /api/bonds/, or an absolute path such as "/api/lucky". */
 export async function bondsApi<T>(path: string, body?: unknown): Promise<ApiResult<T>> {
   try {
@@ -28,7 +31,7 @@ export async function bondsApi<T>(path: string, body?: unknown): Promise<ApiResu
     });
     const data = (await res.json().catch(() => null)) as ApiResult<T> | null;
     if (data && typeof data === "object" && "ok" in data) {
-      if (!data.ok && data.code === "LOGIN_REQUIRED") loginLostListeners.forEach((listener) => listener());
+      if (!data.ok && data.code === "LOGIN_REQUIRED") notifyLoginLost();
       return data;
     }
     return { ok: false, code: res.status === 404 ? "NOT_FOUND" : "SERVER" };

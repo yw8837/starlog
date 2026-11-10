@@ -1,4 +1,5 @@
 import { refreshAccount } from "@/lib/account/client";
+import { notifyLoginLost } from "@/lib/bonds/client";
 import { kstDate } from "@/lib/kst";
 import { postJson } from "@/lib/reading/api";
 import type { SharePreview } from "./preview";
@@ -116,7 +117,11 @@ async function makeShare(route: string, body: unknown): Promise<ShareLinkResult>
 /** makeShare, remembering the link under `key` (knownShareLink) so the sheet shows it again later. */
 async function makeRemembered(route: string, body: unknown, key: string): Promise<ShareLinkResult> {
   const result = await postJson<Made>(route, body);
-  if (!result.ok) return { ok: false, message: result.error.message || FAILED };
+  if (!result.ok) {
+    // An owner's share with no session any more: the screen reads itself again, like the owner's other actions.
+    if (result.error.code === "LOGIN_REQUIRED") notifyLoginLost();
+    return { ok: false, message: result.error.message || FAILED };
+  }
   remember(key, result.data);
   return made(result.data);
 }
@@ -136,6 +141,7 @@ export const createNowShareLink = (draw: { cardId: string; orientation: string; 
 async function stopShare(route: string, body: unknown): Promise<boolean> {
   try {
     const response = await fetch(route, { method: "DELETE", headers: { "Content-Type": "application/json", Accept: "application/json" }, credentials: "same-origin", body: JSON.stringify(body) });
+    if (response.status === 401) notifyLoginLost();
     return response.ok;
   } catch {
     return false;
@@ -150,7 +156,11 @@ const freeKey = (share: string) => `free:${share.slice(-32)}`;
 
 export async function createFreeShareLink(share: string): Promise<ShareLinkResult> {
   const result = await postJson<Made>("/api/share/free", { share });
-  if (!result.ok) return { ok: false, message: result.error.message || FAILED };
+  if (!result.ok) {
+    // The session ended while this screen was open: the screen turns into the login panel (useShown), the 맛보기 stays kept.
+    if (result.error.code === "LOGIN_REQUIRED") void refreshAccount();
+    return { ok: false, message: result.error.message || FAILED };
+  }
   remember(freeKey(share), result.data);
   return made(result.data);
 }
