@@ -373,7 +373,7 @@ export interface JoinInput {
   /** hash of the friend's device cookie: one star per device per constellation round */
   friendKey: string;
   /** set when the friend is an owner on this device (their own link is refused) */
-  joinerOwnerId?: string | null;
+  joinerOwnerIds?: ReadonlyArray<string | null>;
   nickname: string;
   birth: BondBirth;
   /** index 0-20 into the friend's fan of face-down cards */
@@ -419,7 +419,7 @@ export async function joinStar(repo: BondsRepo, now: number, input: JoinInput): 
   if (!Number.isInteger(input.pick) || input.pick < 0 || input.pick >= FAN_SIZE) throw new BondsError("BAD_INPUT", "pick");
 
   const owner = await ownerOfCode(repo, input.code);
-  if (input.joinerOwnerId && input.joinerOwnerId === owner.id) throw new BondsError("SELF_JOIN");
+  if (input.joinerOwnerIds?.includes(owner.id)) throw new BondsError("SELF_JOIN");
   const today = kstDay(now);
   if (owner.joinsDay === today && owner.joinsCount >= DAILY_STAR_LIMIT) throw new BondsError("DAILY_STAR_LIMIT");
 

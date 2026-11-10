@@ -162,6 +162,20 @@ describe("별자리 인연 owners belong to accounts", () => {
     expect((back.filling?.stars[0] as unknown as { score: number }).score).toBe(score);
   });
 
+  it("logged in with an owner on the account and another on this device: neither's link joins as a friend (code review 2026-11-06)", async () => {
+    const web: Jar = new Map();
+    const userId = await signIn(web);
+    const accountCode = await accountOwner(web, "계정주인", "aries");
+    const { jar: device, id: deviceId } = await deviceOwner("기기주인", "leo");
+    await signIn(device, userId);
+    const { code: deviceCode } = await inviteOf(bondsRepo(), Date.now(), deviceId);
+    for (const code of [accountCode, deviceCode]) {
+      const res = await joinPost(req("/api/bonds/join", device, { code, nickname: "다른이름", birth: { calendar: "solar", year: 1995, month: 1, day: 1 }, pick: 0, scoreNotice: true }));
+      expect(res.status, code).toBe(403);
+      expect(await res.json(), code).toMatchObject({ code: "SELF_JOIN" });
+    }
+  });
+
   it("logged in on that device: offers 연결하기 and links only when asked; then the account's other devices show it", async () => {
     const { jar, id } = await deviceOwner("예전주인");
     const userId = await signIn(jar);

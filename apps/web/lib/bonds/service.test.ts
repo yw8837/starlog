@@ -121,7 +121,7 @@ describe("bonds service", () => {
   it("rejects self-joins, repeat joins and revoked codes", async () => {
     const { repo, t0, code } = await setup();
     await chooseSign(repo, t0, "o1", "aries");
-    await expect(joinStar(repo, t0, { code, friendKey: "x", joinerOwnerId: "o1", nickname: "나야", birth: me, pick: 0, message: null }))
+    await expect(joinStar(repo, t0, { code, friendKey: "x", joinerOwnerIds: ["o1"], nickname: "나야", birth: me, pick: 0, message: null }))
       .rejects.toMatchObject({ code: "SELF_JOIN" });
     await join(repo, t0, code, 0);
     await expect(join(repo, t0, code, 0)).rejects.toMatchObject({ code: "ALREADY_JOINED" });

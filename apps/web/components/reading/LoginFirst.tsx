@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useId, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/Button";
 import { isInAppBrowser, isKakaoTalk } from "@/lib/inApp";
 import s from "./reading.module.css";
@@ -29,9 +29,10 @@ type LoginFirstProps = {
  */
 export function LoginFirst({ title, body, href, action, note, onGo }: LoginFirstProps) {
   const inApp = useSyncExternalStore(noSubscribe, outsideKakao, () => false);
+  const titleId = useId();
   return (
-    <section className={s.error} aria-labelledby="login-first-title">
-      <h2 id="login-first-title" className={s.errorTitle}>
+    <section className={s.error} aria-labelledby={titleId}>
+      <h2 id={titleId} className={s.errorTitle}>
         {title}
       </h2>
       <p className={s.errorBody}>{body}</p>

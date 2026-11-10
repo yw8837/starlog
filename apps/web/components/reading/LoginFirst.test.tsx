@@ -22,6 +22,19 @@ afterEach(() => {
 });
 
 describe("LoginFirst", () => {
+  it("gives each panel its own heading id, so two on one screen each name themselves (code review 2026-11-06)", () => {
+    render(
+      <>
+        <LoginFirst title="첫째 패널" body="본문" href="/login" action="로그인" />
+        <LoginFirst title="둘째 패널" body="본문" href="/login" action="로그인" />
+      </>,
+    );
+    expect(screen.getByRole("region", { name: "첫째 패널" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "둘째 패널" })).toBeTruthy();
+    const ids = screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.id);
+    expect(new Set(ids).size).toBe(2);
+  });
+
   it.each([["Instagram", INSTAGRAM], ["Threads", THREADS]])("adds one line in %s's own browser on how to finish the login outside it", async (_name, userAgent) => {
     vi.stubGlobal("navigator", { ...navigator, userAgent });
     panel();
