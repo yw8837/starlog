@@ -114,20 +114,32 @@ export function PremiumChapterView({ chapter, followUp, checkin, rating, shareab
               {share ? (
                 <ShareResultButton
                   kind="premium"
+                  primary
                   text={`${SITE.nameKo} · ${PREMIUM[chapter.kind].name}`}
                   {...share}
                   // The image goes with the reading's own link, never the product page (owner 2026-10-23).
                   extra={
                     shareBody
                       ? (link) => (
-                          <ShareImageButton
-                            imageUrl="/api/og/premium"
-                            body={shareBody}
-                            fileName={`starlog-${PREMIUM[chapter.kind].slug}.png`}
-                            shareText={`${SITE.nameKo} · ${PREMIUM[chapter.kind].name}`}
-                            shareUrl={link.url}
-                            label="이미지로 공유"
-                          />
+                          <>
+                            <ShareImageButton
+                              imageUrl="/api/og/premium"
+                              body={shareBody}
+                              fileName={`starlog-${PREMIUM[chapter.kind].slug}.png`}
+                              shareText={`${SITE.nameKo} · ${PREMIUM[chapter.kind].name}`}
+                              shareUrl={link.url}
+                              label="이미지로 공유"
+                            />
+                            {/* Sales 2026-11-10 item 4: the same picture at story size (1080×1920), from the same route. */}
+                            <ShareImageButton
+                              imageUrl="/api/og/premium?size=story"
+                              body={shareBody}
+                              fileName={`starlog-${PREMIUM[chapter.kind].slug}-story.png`}
+                              shareText={`${SITE.nameKo} · ${PREMIUM[chapter.kind].name}`}
+                              shareUrl={link.url}
+                              label="스토리용 이미지(9:16)"
+                            />
+                          </>
                         )
                       : undefined
                   }

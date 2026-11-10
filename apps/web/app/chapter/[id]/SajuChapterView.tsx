@@ -57,7 +57,7 @@ export function SajuChapterView({ eyebrow, title, birth, reading, followUp, chec
             <InputLine form={birth} className={s.question} />
             <div className={s.share}>
               {/* The share link carries the reading, never the birth data above; no reading of its own, no share. */}
-              {share ? <ShareResultButton kind="saju" text={`나의 ${SITE.nameKo} · ${title}`} {...share} /> : null}
+              {share ? <ShareResultButton kind="saju" primary text={`나의 ${SITE.nameKo} · ${title}`} {...share} /> : null}
               <SavePdfButton type="사주" kept={kept} />
             </div>
           </header>

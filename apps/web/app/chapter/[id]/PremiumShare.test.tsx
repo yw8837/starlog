@@ -120,6 +120,31 @@ describe("sharing a premium record", () => {
     expect((await sharedBody("match0002")).body).toEqual({ product: "match", relation: "friend" });
   });
 
+  it("공유하기 is the record's one prominent button, and a 9:16 story image goes out with the same body (sales 2026-11-10 item 4)", async () => {
+    seed([YEAR]);
+    const fetchMock = vi.fn(async (url: string, _init?: RequestInit) =>
+      String(url) === "/api/share"
+        ? new Response(JSON.stringify({ id: "premshare001", path: "/s/premshare001" }), { status: 200, headers: { "content-type": "application/json" } })
+        : new Response(new Blob([new Uint8Array([137, 80, 78, 71])], { type: "image/png" })),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText: vi.fn(async () => undefined) }, configurable: true });
+    URL.createObjectURL = vi.fn(() => "blob:x");
+    URL.revokeObjectURL = vi.fn();
+    render(<LocalChapter id="year0001" />);
+    const share = screen.getByRole("button", { name: "공유하기" });
+    expect(share.className).toContain("primary");
+    fireEvent.click(share);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "공유 링크 만들기", hidden: true }));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "스토리용 이미지(9:16)", hidden: true }));
+    });
+    const call = fetchMock.mock.calls.find(([url]) => String(url) === "/api/og/premium?size=story") as unknown as [string, RequestInit];
+    expect(JSON.parse(String(call[1].body))).toEqual({ product: "newyear-2027", title: "차근차근 쌓아 가는 해" });
+  });
+
   it("신년운세: the year's own title only; a title the image would refuse means no image, though the link still shares", async () => {
     seed([YEAR]);
     const { body } = await sharedBody("year0001");

@@ -77,7 +77,7 @@ export function ChapterView({ eyebrow, question, cards, reading, followUp, keepO
             <h1 className={s.title}>{question}</h1>
             <div className={s.share}>
               {/* Only the reading's own link is shared (owner 2026-10-14: a share that opened the home misled). */}
-              {share ? <ShareResultButton kind="tarot" text={`${SITE.nameKo}에서 뽑은 카드 · ${names}`} {...share} /> : null}
+              {share ? <ShareResultButton kind="tarot" primary text={`${SITE.nameKo}에서 뽑은 카드 · ${names}`} {...share} /> : null}
               <SavePdfButton type="타로" kept={kept} />
             </div>
             {keepOnly ? <p className={s.keepOnly}>{keepOnly}</p> : null}
