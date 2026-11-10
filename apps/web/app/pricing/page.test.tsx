@@ -11,6 +11,7 @@ vi.mock("@/lib/config", async (importOriginal) => {
     SITE: {
       ...actual.SITE,
       price: {
+        set: actual.SITE.price.set,
         tarotStandardKrw: 3100,
         sajuStandardKrw: 4100,
         premium: [

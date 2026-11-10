@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BusinessFacts, LegalNote, LegalPage, LegalSection } from "@/components/legal/LegalPage";
-import { PremiumChangeNotice, PremiumLegalNotice, PremiumTerms, PremiumUpcoming } from "@/components/legal/PremiumLegal";
+import { PremiumChangeNotice, PremiumLegalNotice, PremiumTerms, PremiumUpcoming, SetRuleNotice } from "@/components/legal/PremiumLegal";
 import s from "@/components/legal/legal.module.css";
 import { OPENING_LAST_DATE, SITE, openingFreeOn } from "@/lib/config";
 import {
-  KEPT_RULE_DATE, LOGIN_RULE_DATE, OPENING_ACCOUNT_DATE, SYNC_REVISION_DATE, contactChannels, keptRuleNoticeShown, koreanDate, loginRuleNoticeShown, premiumChangeNoticeShown, premiumLegalInForce, syncRevisionInForce,
+  KEPT_RULE_DATE, LOGIN_RULE_DATE, OPENING_ACCOUNT_DATE, SYNC_REVISION_DATE, contactChannels, keptRuleNoticeShown, setRuleNoticeShown, koreanDate, loginRuleNoticeShown, premiumChangeNoticeShown, premiumLegalInForce, syncRevisionInForce,
   termsEffectiveDate,
 } from "@/lib/legal";
 import { REFUND_DAYS } from "@/lib/pay/catalog";
@@ -106,6 +106,8 @@ export default function TermsPage() {
     <LegalPage title="이용약관" effective={effective} host="either">
       {inForce ? null : <PremiumLegalNotice />}
       {premiumChangeNoticeShown(now) ? <PremiumChangeNotice /> : null}
+      {/* The 2027 신년운세 + 프리미엄 궁합 set (lib/legal.ts SET_RULE_DATE): from the deploy until 30 days after 12/1. */}
+      {setRuleNoticeShown(now) ? <SetRuleNotice now={now} /> : null}
       {keptRuleNoticeShown(now) ? <KeptRuleNotice /> : null}
       {loginRuleNoticeShown(now) ? <LoginRuleNotice /> : null}
       {openingFreeOn(now) ? <OpeningChangeNotice /> : null}

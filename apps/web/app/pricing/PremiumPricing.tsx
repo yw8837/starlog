@@ -3,8 +3,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import s from "@/components/legal/legal.module.css";
-import { won } from "@/lib/config";
-import { REFUND_DAYS } from "@/lib/pay/catalog";
+import { SITE, won } from "@/lib/config";
+import { REFUND_DAYS, SET_PRODUCT_ID } from "@/lib/pay/catalog";
+import { checkoutHref } from "@/lib/pay/offer";
 import { opensAtText } from "@/lib/premium/offer";
 import { PREMIUM, PREMIUM_IDS, premiumPath } from "@/lib/premium/products";
 import { usePremiumStatus } from "@/lib/premium/status";
@@ -14,6 +15,42 @@ function Check() {
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
       <path d="m5 12.5 4.5 4.5L19 7.5" />
     </svg>
+  );
+}
+
+/** The set's price against its two readings apart (owner 2026-11-10: the real saving, nothing else). */
+const SET_APART = PREMIUM["newyear-2027"].krw + PREMIUM.match.krw;
+
+/** The 2027 신년운세 + 프리미엄 궁합 set, where the server sells it (from 2026-12-01 KST): one of each, refunded only whole. */
+function SetCard() {
+  return (
+    <section className={s.card} aria-labelledby="premium-set">
+      <div>
+        <h3 id="premium-set" className={s.cardTitle}>
+          {SITE.price.set.name} <span className={s.badge}>판매 중</span>
+        </h3>
+        <p className={s.cardSub}>한 번 결제로 두 풀이가 하나씩 열려요</p>
+      </div>
+      <p className={s.price}>
+        {won(SITE.price.set.krw)}
+        <span className={s.priceUnit}>1회</span>
+      </p>
+      <ul className={s.checks}>
+        {[
+          ...SITE.price.set.includes.map((id) => `${PREMIUM[id].name} · ${PREMIUM[id].scope[0]}`),
+          `따로 사면 ${won(SET_APART)}, ${won(SET_APART - SITE.price.set.krw)} 아껴요`,
+        ].map((line) => (
+          <li key={line}>
+            <Check />
+            <span>{line}</span>
+          </li>
+        ))}
+      </ul>
+      <p>{`두 풀이를 모두 열기 전에만 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있어요. 하나라도 열면 환불되지 않아요.`}</p>
+      <p>
+        <Link href={checkoutHref(SET_PRODUCT_ID, "/premium/newyear-2027/new")}>세트로 결제하기</Link>
+      </p>
+    </section>
   );
 }
 
@@ -64,6 +101,7 @@ export function PremiumPricing({ fallback }: { fallback: ReactNode }) {
             </section>
           );
         })}
+        {status.set?.open ? <SetCard /> : null}
       </div>
       <p>{`깊게 보는 풀이도 결제와 환불 기준은 같아요. 열기 전에는 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있어요.`}</p>
     </section>

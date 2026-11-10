@@ -116,6 +116,20 @@ const META_NOTICE_UNTIL_AT = META_REVISION_AT + 30 * 24 * 60 * 60 * 1000;
 export const metaRevisionInForce = (now: number = Date.now()): boolean => now >= META_REVISION_AT;
 export const metaNoticeShown = (now: number = Date.now()): boolean => now < META_NOTICE_UNTIL_AT;
 
+/**
+ * The 2027 신년운세 + 프리미엄 궁합 set (owner 2026-11-10): on sale from this KST midnight (it takes 오픈 기념 무료's place),
+ * refunded whole within REFUND_DAYS only while neither reading was opened, and not at all once either was. It concerns the
+ * new set only (each reading bought apart keeps its rule). The terms and the refund policy say so on top from the deploy
+ * until 30 days after this day (바뀌는 내용 before it, 바뀐 내용 from it), and from it in their premium part, with no deploy.
+ * The 시행일 shown stays.
+ */
+export const SET_RULE_DATE = "2026-12-01";
+const SET_RULE_AT = Date.parse(`${SET_RULE_DATE}T00:00:00+09:00`);
+const SET_RULE_NOTICE_UNTIL_AT = SET_RULE_AT + 30 * 24 * 60 * 60 * 1000;
+
+export const setRuleInForce = (now: number = Date.now()): boolean => now >= SET_RULE_AT;
+export const setRuleNoticeShown = (now: number = Date.now()): boolean => now < SET_RULE_NOTICE_UNTIL_AT;
+
 /** The 시행일 the privacy policy shows at `now` (the terms and the refund policy keep legalEffectiveDate). */
 export const privacyEffectiveDate = (now: number = Date.now()): string =>
   syncRevisionInForce(now)

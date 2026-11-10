@@ -1,8 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { won } from "@/lib/config";
+import { SITE, won } from "@/lib/config";
 import { appHref } from "@/lib/hosts";
-import { PREMIUM_LEGAL_EFFECTIVE_DATE, koreanDate } from "@/lib/legal";
+import { PREMIUM_LEGAL_EFFECTIVE_DATE, SET_RULE_DATE, koreanDate, setRuleInForce } from "@/lib/legal";
 import { REFUND_DAYS } from "@/lib/pay/catalog";
 import { PREMIUM, PREMIUM_CHAPTER_TTL_MS, PREMIUM_IDS } from "@/lib/premium/products";
 import s from "./legal.module.css";
@@ -61,6 +61,40 @@ export function PremiumPrivacy() {
   );
 }
 
+const SET_ON = koreanDate(SET_RULE_DATE);
+const SET_NAME = `${SITE.price.set.name} 세트`;
+const SET_READINGS = SITE.price.set.includes.map((id) => PREMIUM[id].name).join("와 ");
+
+/** The set's sale and refund rule (owner 2026-11-10), in the terms' voice or the refund page's (`haeyo`). */
+function setClause(haeyo: boolean): string {
+  const end = (plain: string, polite: string) => (haeyo ? polite : plain);
+  return (
+    `${SET_NAME}는 ${SET_ON}부터 ${PREMIUM["newyear-2027"].name}의 판매 기간 동안 ${won(SITE.price.set.krw)}에 판매하며, 한 번 결제로 ${SET_READINGS}이 하나씩 열${end("립니다", "려요")}. ` +
+    `세트는 두 풀이를 모두 열기 전에만 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있${end("으며", "고")}, 둘 중 하나라도 열면 환불되지 않${end("습니다", "아요")}.`
+  );
+}
+
+/**
+ * On top of the terms and the refund policy from the deploy until 30 days after SET_RULE_DATE (lib/legal.ts): what the set
+ * changes, dated, 바뀌는 내용 before that day and 바뀐 내용 from it. It concerns the new set only. `haeyo`: the refund page's voice.
+ */
+export function SetRuleNotice({ haeyo = false, now = Date.now() }: { haeyo?: boolean; now?: number }) {
+  const end = (plain: string, polite: string) => (haeyo ? polite : plain);
+  const title = setRuleInForce(now) ? `${SET_ON} 바뀐 내용 · 신년운세 + 궁합 세트` : `${SET_ON}부터 바뀌는 내용 · 신년운세 + 궁합 세트`;
+  return (
+    <aside className={s.note} aria-labelledby={`set-rule-title${haeyo ? "-refund" : ""}`}>
+      <h2 id={`set-rule-title${haeyo ? "-refund" : ""}`} className={s.noteTitle}>
+        {title}
+      </h2>
+      <ul className={s.list}>
+        <li>{`${SET_NAME}를 ${won(SITE.price.set.krw)}에 판매${end("합니다", "해요")}. 한 번 결제로 ${SET_READINGS}이 하나씩 열${end("립니다", "려요")}${haeyo ? "." : "(제7조의3)."}`}</li>
+        <li>{`세트는 두 풀이를 모두 열기 전에만 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있${end("습니다", "어요")}. 둘 중 하나라도 열면 환불되지 않${end("습니다", "아요")}.`}</li>
+        <li>{`이 내용은 새로 판매하는 세트에만 적용${end("되며", "되고")}, 풀이를 따로 결제할 때의 기준은 그대로${end("입니다", "예요")}.`}</li>
+      </ul>
+    </aside>
+  );
+}
+
 /** 이용약관 제7조의3 (합니다체, as the terms). */
 export function PremiumTerms() {
   const year = PREMIUM["newyear-2027"];
@@ -92,6 +126,7 @@ export function PremiumTerms() {
           끊긴 풀이는 3번까지 다시 열어 이어서 받을 수 있고, 환불 대상이 아닙니다. 네 번째로 끊긴 때에는 그 결제 풀이를 쓴 것으로 봅니다. 운영자 쪽 문제로 완성되지 않은
           풀이는 쓰이지 않습니다. 그 밖의 결제와 환불은 제7조와 환불 정책을 따릅니다.
         </li>
+        {setRuleInForce() ? <li>{setClause(false)}</li> : null}
         <li>{`${PREMIUM.match.name}의 상대방 정보는 그 사람의 동의를 받은 경우에만 입력해야 합니다(제8조). 운영자는 상대방의 생년월일과 태어난 시를 서버에 저장하지 않으며(계정에는 관계, 부르는 말, 고민과 풀이 글을 보관합니다), 이어서 물어보기는 풀이를 연 기기에서만 할 수 있습니다.`}</li>
       </ol>
     </section>
@@ -108,6 +143,7 @@ export function PremiumRefund() {
       <ul className={s.list}>
         <li>{`${PREMIUM["tarot-deep"].name}, ${PREMIUM.match.name}, ${PREMIUM["newyear-2027"].name}도 같은 기준이에요. 열기 전의 결제는 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있고, 풀이를 적기 시작하면 청약철회가 제한돼요.`}</li>
         <li>{`결제하기 전에 무료로 먼저 보여 드려요. ${PREMIUM["tarot-deep"].name}은 카드 10장의 키워드와 '지금의 나' 풀이, ${PREMIUM.match.name}은 두 사람의 명식과 한눈에 보는 요약, ${PREMIUM["newyear-2027"].name}는 한 해의 제목과 요약이에요.`}</li>
+        {setRuleInForce() ? <li>{setClause(true)}</li> : null}
         <li>프리미엄 풀이는 여러 부분으로 나눠 적어요. 중간에 생성이 실패하면 결제한 풀이는 그대로 남아 다시 열어 이어서 받을 수 있어요. 다 받기 전에 화면을 닫거나 연결이 끊긴 경우는 위와 같이 3번까지 다시 열 수 있어요.</li>
       </ul>
     </section>
