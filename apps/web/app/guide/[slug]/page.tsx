@@ -46,6 +46,10 @@ const SECTIONS_BEFORE_AD = 2;
  */
 const MIN_AD_BODY_CHARS = 2500;
 
+/**
+ * The articles out at build time. One dated ahead (publishAt) is not built: until its day findArticle misses it and the
+ * page is a 404, from its day it renders on request (the incremental cache is read-only, so nothing keeps the 404).
+ */
 export function generateStaticParams() {
   return GUIDE_ARTICLES.map((article) => ({ slug: article.slug }));
 }

@@ -77,7 +77,20 @@ export interface GuideArticle {
   /** First published and last content change, YYYY-MM-DD (lib/guide-articles/answers.ts). */
   published?: string;
   updated?: string;
+  /**
+   * The day an article dated ahead comes out, YYYY-MM-DD, from 00:00 Korean time (guidePublished). Until then it is in
+   * no list, not in the sitemap and its address is a 404. Articles released one by one carry it (2026-11-10: about two a
+   * week instead of a batch); `published` and `updated` are the same day.
+   */
+  publishAt?: string;
 }
+
+/** 00:00 Korean time (UTC+9, no daylight saving since 1988) of a YYYY-MM-DD day, in epoch milliseconds. */
+export const publishInstant = (day: string): number => Date.parse(`${day}T00:00:00+09:00`);
+
+/** The article is out at `now`: it has no publishAt, or that day has begun in Korea. */
+export const guidePublished = (article: Pick<GuideArticle, "publishAt">, now: number = Date.now()): boolean =>
+  !article.publishAt || now >= publishInstant(article.publishAt);
 
 /**
  * 마지막 검토: the article's last content change (`updated`, made when it was checked against its sources again), or

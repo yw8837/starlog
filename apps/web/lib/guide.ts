@@ -7,10 +7,10 @@
 import { getCard } from "@starlog/core";
 import { withGuideLibrary } from "./guide-articles";
 import { guidePlainText } from "./guideLinks";
-import { lastReviewed, type GuideArticle, type GuideBlock, type GuideCategory, type GuideSection } from "./guideMeta";
+import { guidePublished, lastReviewed, type GuideArticle, type GuideBlock, type GuideCategory, type GuideSection } from "./guideMeta";
 
 // Server side only: the article data below. Client components import ./guideMeta (guide.client.test.ts).
-export { GUIDE_ABOUT_PATH, GUIDE_CATEGORIES, GUIDE_CATEGORY_LABEL, guideIndexPath, lastReviewed } from "./guideMeta";
+export { GUIDE_ABOUT_PATH, GUIDE_CATEGORIES, GUIDE_CATEGORY_LABEL, guideIndexPath, guidePublished, lastReviewed } from "./guideMeta";
 export type { GuideArticle, GuideBlock, GuideCalloutTone, GuideCategory, GuideSection, GuideThreeCardSpread } from "./guideMeta";
 
 const BASE_ARTICLES: readonly GuideArticle[] = [
@@ -747,10 +747,31 @@ const BASE_ARTICLES: readonly GuideArticle[] = [
   },
 ];
 
-/** The six articles above first (their order is the home and tab order), then the library in lib/guide-articles. */
-export const GUIDE_ARTICLES: readonly GuideArticle[] = withGuideLibrary(BASE_ARTICLES);
+/**
+ * Every article, including those dated ahead (publishAt): the six above first (their order is the home and tab order),
+ * then the library in lib/guide-articles. Only checks and the per-request sitemap read this list; pages read the ones out.
+ */
+export const ALL_GUIDE_ARTICLES: readonly GuideArticle[] = withGuideLibrary(BASE_ARTICLES);
 
-export const findArticle = (slug: string): GuideArticle | undefined => GUIDE_ARTICLES.find((article) => article.slug === slug);
+/** The articles out at `now` (guidePublished), in their order. */
+export const publishedArticles = (articles: readonly GuideArticle[], now: number = Date.now()): GuideArticle[] =>
+  articles.filter((article) => guidePublished(article, now));
+
+/**
+ * The articles out when this module loads: at build time for the prerendered pages (tabs, home, llms-full, the feed), so
+ * an article dated ahead joins those lists with the first deploy on or after its day. The sitemap and an article's own
+ * address are read per request instead (sitemapEntries, findArticle).
+ */
+export const GUIDE_ARTICLES: readonly GuideArticle[] = publishedArticles(ALL_GUIDE_ARTICLES);
+
+/** The article with `slug` if it is out at `now`. */
+export const findArticleIn = (articles: readonly GuideArticle[], slug: string, now: number = Date.now()): GuideArticle | undefined => {
+  const article = articles.find((entry) => entry.slug === slug);
+  return article && guidePublished(article, now) ? article : undefined;
+};
+
+/** An article by slug, read at the time of the call: an article dated ahead is not found until its day (its page is a 404). */
+export const findArticle = (slug: string, now: number = Date.now()): GuideArticle | undefined => findArticleIn(ALL_GUIDE_ARTICLES, slug, now);
 
 /** One tab's list: the category's articles in their GUIDE_ARTICLES order. */
 export const articlesIn = (category: GuideCategory): GuideArticle[] => GUIDE_ARTICLES.filter((article) => article.category === category);

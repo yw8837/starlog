@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { BIRTH_CARD_PATH } from "./birthCard";
 import { SITE } from "./config";
-import { GUIDE_ABOUT_PATH, GUIDE_ARTICLES, GUIDE_CATEGORIES, articlesIn, guideIndexPath, lastReviewed } from "./guide";
+import { ALL_GUIDE_ARTICLES, GUIDE_ABOUT_PATH, GUIDE_CATEGORIES, guideIndexPath, lastReviewed, publishedArticles } from "./guide";
 import { GUIDE_EDITOR } from "./guideReview";
 import { FEED_URL, absoluteUrl, isGuidePath, type SiteHost } from "./hosts";
 import { INFO_PAGES } from "./infoPages";
@@ -148,7 +148,9 @@ const latest = (dates: ReadonlyArray<string | undefined>): string | undefined =>
  * hold a few names), and no page links to them. sitemapEntriesFor splits them by host. The premium product
  * pages join with `premium` (STARLOG_PREMIUM=on, the sitemap route decides): never their samples or flow screens.
  */
-export function sitemapEntries({ premium = false }: { premium?: boolean } = {}): SitemapEntry[] {
+export function sitemapEntries({ premium = false, now = Date.now() }: { premium?: boolean; now?: number } = {}): SitemapEntry[] {
+  // Read at the request's time, so an article dated ahead (publishAt) joins on its day without a deploy.
+  const articles = publishedArticles(ALL_GUIDE_ARTICLES, now);
   return [
     { path: "/", changeFrequency: "daily", priority: 1 },
     { path: "/tarot/new", changeFrequency: "monthly", priority: 0.9 },
@@ -160,12 +162,12 @@ export function sitemapEntries({ premium = false }: { premium?: boolean } = {}):
     ...GUIDE_CATEGORIES.map(
       (category): SitemapEntry => ({
         path: guideIndexPath(category),
-        lastModified: latest(articlesIn(category).map(lastReviewed)),
+        lastModified: latest(articles.filter((article) => article.category === category).map(lastReviewed)),
         changeFrequency: "weekly",
         priority: 0.8,
       }),
     ),
-    ...GUIDE_ARTICLES.map(
+    ...articles.map(
       (article): SitemapEntry => ({ path: `/guide/${article.slug}`, lastModified: lastReviewed(article), changeFrequency: "monthly", priority: 0.7 }),
     ),
     // 가이드 소개와 편집 원칙: who writes the guide and how (no lastModified: the page carries no date of its own).
@@ -187,7 +189,7 @@ export const SITEMAP_PATHS: readonly string[] = sitemapEntries().map((entry) => 
  * What one host's sitemap lists: the guide URLs on the root domain, every other page on the app host
  * (the app host's /guide URLs redirect to the root domain, so they are not listed there).
  */
-export function sitemapEntriesFor(host: SiteHost, options: { premium?: boolean } = {}): SitemapEntry[] {
+export function sitemapEntriesFor(host: SiteHost, options: { premium?: boolean; now?: number } = {}): SitemapEntry[] {
   return sitemapEntries(options).filter((entry) => isGuidePath(entry.path) === (host === "guide"));
 }
 
@@ -195,7 +197,7 @@ export function sitemapEntriesFor(host: SiteHost, options: { premium?: boolean }
  * app/sitemap.xml/route.ts: one host's sitemap, as the sitemaps.org XML Next's own sitemap route
  * wrote (a `sitemap.ts` is handed no request, so a route reads the host and builds it).
  */
-export function sitemapXml(host: SiteHost, options: { premium?: boolean } = {}): string {
+export function sitemapXml(host: SiteHost, options: { premium?: boolean; now?: number } = {}): string {
   const urls = sitemapEntriesFor(host, options).flatMap(({ path, lastModified, changeFrequency, priority }) => [
     "<url>",
     `<loc>${absoluteUrl(path)}</loc>`,
