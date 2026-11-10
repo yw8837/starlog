@@ -16,7 +16,8 @@ function stub(visible: boolean | "fail") {
         products: [
           { id: "tarot-deep", open: visible, visible, opensAt: null },
           { id: "match", open: visible, visible, opensAt: null },
-          { id: "newyear-2027", open: false, visible, opensAt: Date.parse("2026-11-15T00:00:00+09:00") },
+          // On sale with no opening date (owner 2026-10-20); the banner needs `open` (review MED-3).
+          { id: "newyear-2027", open: visible, visible, opensAt: null },
         ],
       });
     }
