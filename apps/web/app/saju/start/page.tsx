@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Cat } from "@/components/characters/Cat";
 import { Rabbit } from "@/components/characters/Rabbit";
@@ -36,6 +37,10 @@ export default function SajuStartPage() {
 
           <div className={s.formCol}>
             <TopicPicker />
+            {/* the free grade card (spec 2026-11-11 B, 들어오는 곳 2): small, under the topics */}
+            <p className={s.gradeLink}>
+              <Link href="/saju/grade">올해 내 사주 등급은? · 로그인 없이 무료</Link>
+            </p>
           </div>
         </div>
       </main>

@@ -32,6 +32,13 @@ describe("saju in three steps: 무엇이 궁금해요? → 태어난 날 → 명
     expect(screen.queryByRole("button", { name: "명식 보기" })).toBeNull();
   });
 
+  it("step 1 has a small link to the free grade card under the topics (사주 등급, spec 2026-11-11 B)", () => {
+    render(<SajuStartPage />);
+    const link = screen.getByRole("link", { name: "올해 내 사주 등급은? · 로그인 없이 무료" });
+    expect(link.getAttribute("href")).toBe("/saju/grade");
+    expect(screen.getByRole("list", { name: "무엇이 궁금해요?" }).compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it("step 2 is the birth input, back to the topic step", () => {
     render(<SajuNewPage />);
     expect(screen.getByText("3단계 중", { exact: false })).toBeTruthy();
