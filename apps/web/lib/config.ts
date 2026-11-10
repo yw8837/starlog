@@ -17,6 +17,18 @@ export function sajuTopicsMode(raw: string | undefined = process.env.NEXT_PUBLIC
   return production ? "off" : "on";
 }
 
+/**
+ * 사주 등급 풀이 (1,900원, spec 2026-11-11 D), NEXT_PUBLIC_SAJU_GRADE inlined at build time: `off` (default, any build) hides the
+ * locked 이 등급인 이유 block under the free card; `owner` shows it on the owner pass's device; `on` to everyone. It is not on
+ * sale yet: the block says 곧 열려요 and has no buy button.
+ */
+export type SajuGradeMode = "off" | "owner" | "on";
+
+export function sajuGradeMode(raw: string | undefined = process.env.NEXT_PUBLIC_SAJU_GRADE): SajuGradeMode {
+  const value = raw?.trim().toLowerCase();
+  return value === "owner" || value === "on" ? value : "off";
+}
+
 export const SITE = {
   name: "Starlog",
   nameKo: "스타로그",

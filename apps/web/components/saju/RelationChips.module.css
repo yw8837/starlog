@@ -1,0 +1,7 @@
+/* 글자끼리 맺은 관계: NameChips' look, plus the pillars in each chip (two chips of one name stay apart) */
+.chipPlace {
+  margin-left: 4px;
+  color: var(--ink-sub);
+  font-size: 12px;
+  font-weight: 400;
+}

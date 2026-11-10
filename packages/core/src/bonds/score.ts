@@ -79,6 +79,8 @@ function branchKinds(a: string, b: string): BranchKind[] {
   if (i === j) kinds.push("same");
   else {
     if ((i + j) % 12 === 1) kinds.push("six");
+    // Any two of one 삼합 count here, while the readings' 반합 (core saju/relations.ts) needs the 왕지 (子午卯酉) in the
+    // pair: a school difference. Kept as is: bond scores are already public (spec 2026-11-11 F, C1).
     if (i % 4 === j % 4) kinds.push("three");
     if (Math.abs(i - j) === 6) kinds.push("clash");
     if (WONJIN.has(`${Math.min(i, j)}-${Math.max(i, j)}`)) kinds.push("wonjin");

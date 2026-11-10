@@ -3,13 +3,19 @@ import { gaeunLine, scarceElements } from "@/lib/sajuEnrichment";
 import { BalanceCard } from "./BalanceCard";
 import { ChartCriteria } from "./ChartCriteria";
 import { ChartTable } from "./ChartTable";
+import { GradeMini } from "./GradeMini";
 import { LuckTimeline } from "./LuckTimeline";
 import { NameChips } from "./NameChips";
+import { RelationChips } from "./RelationChips";
 import type { ChartResult } from "./useSajuChart";
 import s from "./ChartPanel.module.css";
 
-/** Pillars, the names they carry, 오행과 나의 힘 with the 개운 line, 대운과 세운, and the applied criteria for one computed chart (or why it could not be computed). */
-export function ChartPanel({ result }: { result: ChartResult | null }) {
+/**
+ * Pillars, the names they carry, 오행과 나의 힘 with the 개운 line, 대운과 세운, and the applied criteria for one computed chart (or why it
+ * could not be computed). `gradeCard`: the free 명식 (/saju/chart) ends with 이 명식의 올해 등급; a reading's chapter or a partner's
+ * chart does not (the grade card reads the device's own profile).
+ */
+export function ChartPanel({ result, gradeCard = false }: { result: ChartResult | null; gradeCard?: boolean }) {
   let content;
   if (result && "chart" in result) {
     content = (
@@ -17,9 +23,11 @@ export function ChartPanel({ result }: { result: ChartResult | null }) {
         <ChartTable chart={result.chart} title="네 기둥" />
         {/* keyed by the birth data, so an open chip closes when another chart comes in */}
         <NameChips key={JSON.stringify(result.chart.input)} chart={result.chart} />
+        <RelationChips key={`relations-${JSON.stringify(result.chart.input)}`} chart={result.chart} />
         <BalanceCard chart={result.chart} note={gaeunLine(scarceElements(result.chart))} />
         <LuckTimeline chart={result.chart} />
         <ChartCriteria chart={result.chart} />
+        {gradeCard ? <GradeMini chart={result.chart} /> : null}
       </>
     );
   } else if (result) {

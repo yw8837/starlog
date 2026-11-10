@@ -96,7 +96,7 @@ export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOption
           q: `${nameKo}는 무료인가요?`,
           // The direct answer first, in facts that stay true (AEO); the dated offer only in `opening`.
           a: [
-            `일부는 무료예요. 지금의 한 장은 로그인 없이 횟수 제한 없이 무료이고, 오늘의 한 장은 로그인하면 무료예요. 타로 전체 풀이는 ${won(tarotStandardKrw)}, 사주 전체 풀이는 ${won(sajuStandardKrw)}이에요.`,
+            `일부는 무료예요. 지금의 한 장은 로그인 없이 횟수 제한 없이 무료이고, 오늘의 한 장은 로그인하면 무료예요. 올해의 사주 등급 카드도 로그인 없이 무료예요. 타로 전체 풀이는 ${won(tarotStandardKrw)}, 사주 전체 풀이는 ${won(sajuStandardKrw)}이에요.`,
             "타로와 사주의 맛보기도 로그인하면 무료로 볼 수 있어요. 깊게 보는 풀이의 가격도 가격 안내에서 볼 수 있어요.",
           ],
           opening: `${openingFreeText(firstFreeTarot)} 사주 전체 풀이는 결제하고 열어요.`,
@@ -116,7 +116,7 @@ export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOption
           q: "가입하거나 로그인해야 하나요?",
           a: [
             `AI가 써 주는 풀이를 보려면 로그인해요. 타로와 사주의 맛보기, 오늘의 한 장, 결제${site.features.bonds ? ", 별자리 인연의 내 별자리 만들기와 초대받아 별 되기" : ""}는 카카오나 Google로 로그인하고 써요.`,
-            `질문 만들기와 카드 뽑기, 무료 사주 명식, 지금의 한 장, 탄생 카드, 2027 키워드${site.features.bonds ? ", 이번 주 행운 번호" : ""}, 공유받은 링크는 로그인 없이 쓸 수 있어요.`,
+            `질문 만들기와 카드 뽑기, 무료 사주 명식, 지금의 한 장, 탄생 카드, 2027 키워드${site.features.bonds ? ", 이번 주 행운 번호" : ""}, 사주 등급 카드와 규칙 페이지, 공유받은 링크는 로그인 없이 쓸 수 있어요.`,
             `이 기기에 남은 풀이와 맛보기${site.features.bonds ? ", 친구로 참여한 별자리 인연 결과" : ""}를 다시 볼 때는 로그인해요. 로그인하기 전에는 보이지 않을 뿐 지워지지 않아요.`,
           ],
           // owner 2026-10-27: 오픈 기념 무료 is per logged-in account
@@ -175,6 +175,17 @@ export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOption
             "한 번 연 풀이는 이 기기에 저장돼서 로그인하고 다시 열면 같은 글이 나와요. 사주 명식도 출생 정보가 같으면 언제 계산해도 같아요.",
             "새로 카드를 뽑거나 새 풀이를 열면 AI가 새로 쓰기 때문에 표현과 초점이 달라질 수 있어요. 같은 질문으로 여러 번 뽑기보다 이어서 물어보기로 궁금한 점을 좁혀 보길 권해요.",
           ],
+        },
+        {
+          // 사주 등급 (spec 2026-11-11 E): our own words; "열 해 내내 C" is 0 in both populations (lib/sajuGradeMeasured.ts)
+          id: "grade-c",
+          q: "C가 나왔어요. 안 좋은 건가요?",
+          a: [
+            "아니에요. 사주 등급은 사람이나 사주가 좋은지 나쁜지를 매기지 않아요. 그해 들어오는 세운 두 글자가 내 명식의 다섯 기운 가운데 빈칸을 채우는지, 이미 많은 쪽과 겹치는지를 정해진 규칙으로 잰 거예요.",
+            "C는 그해 기운이 이미 많은 쪽과 겹친다는 뜻이에요. 등급은 해마다 다시 계산하고, 카드 아래 10년 칩에서 해마다의 등급과 다음 S·A 해를 볼 수 있어요. 가능한 조합을 모두 계산해 봤을 때, 어느 10년을 잡아도 열 해 내내 C인 명식은 없었어요.",
+            "앞으로 일어날 일을 정하지 않는, 재미로 보는 계산이에요. 계산하는 방법과 잰 분포는 규칙 페이지에 모두 적어 두었어요.",
+          ],
+          link: { href: "/saju/grade/how", label: "사주 등급 규칙" },
         },
         {
           id: "trust",

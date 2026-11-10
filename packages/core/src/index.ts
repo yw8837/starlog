@@ -6,6 +6,8 @@ export * from "./saju/labels";
 export * from "./saju/policy";
 export * from "./saju/chart";
 export * from "./saju/sinsal";
+export * from "./saju/relations";
+export * from "./saju/grade";
 export * from "./saju/zones";
 export * from "./saju/abroadPlaces";
 export * from "./bonds";

@@ -56,7 +56,9 @@ const TIME_OPTIONS = [
   { value: "unknown", label: "몰라요" },
 ] as const;
 
-const CONSENT_ERROR = "출생 정보를 풀이에 쓰는 데 먼저 동의해 주세요.";
+const CONSENT_LABEL = "출생 정보를 풀이에 쓰는 데 동의해요";
+/** "…동의해요" → "…먼저 동의해 주세요." */
+const consentError = (label: string) => `${label.replace(/\s?동의해요$/, "")} 먼저 동의해 주세요.`;
 /** Focus goes to the first problem, top to bottom. */
 const ERROR_ORDER: readonly ErrorKey[] = ["date", "time", "gender", "place", "consent", "form"];
 
@@ -96,6 +98,10 @@ type FieldsOptions = {
   partner?: boolean;
   /** The submit button (명식 보기 by default). */
   submitLabel?: string;
+  /** false: no 요즘 상황 chips (the grade card asks only the birth). */
+  chips?: boolean;
+  /** The consent line, when the birth is used for something other than a reading ("…등급 계산에 쓰는 데 동의해요"). */
+  consentLabel?: string;
 };
 
 /**
@@ -121,7 +127,7 @@ function FieldError({ id, message }: { id: string; message: string | undefined }
  * year read back as "" became year 0.
  */
 function SajuFormFields({
-  initial, initialContext, ready, onDone, partner = false, submitLabel = "명식 보기",
+  initial, initialContext, ready, onDone, partner = false, submitLabel = "명식 보기", chips = true, consentLabel = CONSENT_LABEL,
 }: { initial: SajuDraft; initialContext: SajuContext; ready: boolean } & FieldsOptions) {
   const router = useRouter();
   const [draft, setDraft] = useState<SajuDraft>(initial);
@@ -167,7 +173,7 @@ function SajuFormFields({
     const result = checkSajuDraft(draft, todayInKorea());
     const next: Errors = {};
     if ("errors" in result) for (const error of result.errors) next[error.field] ??= error.message;
-    if (!consent && !partner) next.consent = CONSENT_ERROR;
+    if (!consent && !partner) next.consent = consentError(consentLabel);
     setErrors(next);
 
     const first = ERROR_ORDER.find((key) => next[key]);
@@ -403,7 +409,7 @@ function SajuFormFields({
       </div>
       )}
 
-      {partner ? null : (
+      {partner || !chips ? null : (
       <div className={s.group}>
         <button type="button" className={s.more} aria-expanded={moreOpen} aria-controls="saju-more" onClick={() => setMoreOpen((open) => !open)}>
           <span>
@@ -462,7 +468,7 @@ function SajuFormFields({
           describedBy={describedBy("consent")}
           required
         >
-          출생 정보를 풀이에 쓰는 데 동의해요
+          {consentLabel}
         </Checkbox>
         <FieldError id="consent-error" message={errors.consent} />
       </div>

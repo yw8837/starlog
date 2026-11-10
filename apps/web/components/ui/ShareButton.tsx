@@ -20,6 +20,8 @@ type ShareButtonProps = {
   kakao?: string;
   /** The shared thing's own page (a shared reading, /s/<id>; a card's page) and its Kakao message. Never the home. */
   target: KakaoTarget;
+  /** The button's words (공유하기 by default), e.g. 친구는 어떤 등급일까? */
+  label?: string;
 };
 
 const ShareIcon = () => (
@@ -45,7 +47,7 @@ const TalkIcon = () => (
  * image; a screen that shares an image does it from its own button (ShareImageButton). With a Kakao key, 카카오톡으로 보내기 sits beside it (the SDK loads on the first tap). Secondary style, never the
  * screen's gold primary.
  */
-export function ShareButton({ text, title = SITE.nameKo, onPaper = false, kakao = kakaoKey(), target }: ShareButtonProps) {
+export function ShareButton({ text, title = SITE.nameKo, onPaper = false, kakao = kakaoKey(), target, label = "공유하기" }: ShareButtonProps) {
   const { state, copy } = useCopy();
   const [kakaoFailed, setKakaoFailed] = useState(false);
   // The link to copy by hand, once the clipboard refused it (stays until the next try).
@@ -85,7 +87,7 @@ export function ShareButton({ text, title = SITE.nameKo, onPaper = false, kakao 
   const buttons = (
     <>
       <Button variant="secondary" size="md" onPaper={onPaper} onClick={share} trailing={<ShareIcon />}>
-        공유하기
+        {label}
       </Button>
       {kakao ? (
         <Button variant="secondary" size="md" onPaper={onPaper} onClick={sendKakao} trailing={<TalkIcon />}>

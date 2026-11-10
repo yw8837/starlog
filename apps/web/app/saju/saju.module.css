@@ -79,3 +79,22 @@
     margin-top: 12px;
   }
 }
+
+/* /saju/start: the small link to the free grade card under the topics */
+.gradeLink {
+  margin: 16px 0 0;
+  text-align: center;
+  font-size: var(--fs-sub);
+}
+
+.gradeLink a {
+  display: inline-block;
+  padding: 12px 8px;
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.gradeLink a:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}

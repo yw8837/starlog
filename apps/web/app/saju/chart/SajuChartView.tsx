@@ -491,7 +491,7 @@ export function SajuChartView({
             </div>
           </header>
         }
-        spread={<ChartPanel result={result} />}
+        spread={<ChartPanel result={result} gradeCard />}
       >
         {backToOverall}
         {content}

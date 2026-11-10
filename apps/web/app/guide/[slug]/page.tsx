@@ -93,6 +93,9 @@ function waiteQuoteAt(article: GuideArticle): number | null {
   return after >= 0 && after + 1 < article.sections.length ? after + 1 : null;
 }
 
+/** The 오행 articles end with a line on the 사주 등급's rule page (spec 2026-11-11 B, 들어오는 곳 4), within the two app links. */
+const GRADE_GUIDES: ReadonlySet<string> = new Set(["five-elements", "yongsin"]);
+
 const CTA = {
   tarot: { text: "카드 3장으로 지금을 봐요", label: "타로 보기", href: ENTRY_TAROT_HREF },
   saju: { text: "타고난 결로 나를 봐요", label: "사주 보기", href: ENTRY_SAJU_HREF },
@@ -109,7 +112,9 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
   const premium = premiumForGuide(article.slug);
   // Two app links at most besides the sources (AdSense audit 2026-11-06): the 보기 button only while the article's own
   // links to the app (in its text, its product) are fewer than two.
-  const ownAppLinks = appLinksIn(article) + (premium ? 1 : 0);
+  const ownLinks = appLinksIn(article) + (premium ? 1 : 0);
+  const gradeLine = GRADE_GUIDES.has(article.slug) && ownLinks < 2;
+  const ownAppLinks = ownLinks + (gradeLine ? 1 : 0);
   const showCta = ownAppLinks < 2;
   const tab = GUIDE_CATEGORY_LABEL[article.category];
   // The article's own picks; an article without them falls back to the first others in its tab.
@@ -220,6 +225,17 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
               <Button href={appHref(cta.href)} block trailing="→">
                 {cta.label}
               </Button>
+            </aside>
+          ) : null}
+
+          {gradeLine ? (
+            <aside className={s.cta} aria-label="올해의 사주 등급">
+              <p className={s.ctaText}>올해 들어오는 기운이 내 명식의 다섯 기운을 얼마나 고르게 채우는지, 정해진 규칙으로 계산한 등급 카드가 있어요. 규칙과 잰 분포는 모두 공개해요.</p>
+              <p className={s.sources}>
+                <Link href={appHref("/saju/grade/how")} prefetch={false} className={s.sourcesLink}>
+                  사주 등급 규칙 보기
+                </Link>
+              </p>
             </aside>
           ) : null}
 

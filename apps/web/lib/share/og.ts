@@ -93,15 +93,19 @@ export function shareOgData(share: SharePayload, origin: string, live: BondsShar
 }
 
 
-/** An image as a data URI, so the renderer needs no fetch of its own; undefined when it cannot be read. */
+/**
+ * An image as a data URI, so the renderer needs no fetch of its own; undefined when it cannot be read. JPEG (the card faces) or
+ * PNG (사주주 for the grade card, which needs its transparency); never WebP, which satori cannot decode.
+ */
 export async function inline(src: string, fetchImpl: typeof fetch): Promise<string | undefined> {
   try {
     const response = await fetchImpl(src);
-    if (!response.ok || !(response.headers.get("content-type") ?? "").startsWith("image/jpeg")) return undefined;
+    const type = (response.headers.get("content-type") ?? "").split(";")[0]!.trim();
+    if (!response.ok || (type !== "image/jpeg" && type !== "image/png")) return undefined;
     const bytes = new Uint8Array(await response.arrayBuffer());
     let binary = "";
     for (const byte of bytes) binary += String.fromCharCode(byte);
-    return `data:image/jpeg;base64,${btoa(binary)}`;
+    return `data:${type};base64,${btoa(binary)}`;
   } catch {
     return undefined;
   }
