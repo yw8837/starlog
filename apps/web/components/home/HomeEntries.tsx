@@ -40,7 +40,7 @@ export function HomeHook() {
           한 장 뽑기
         </Button>
       </div>
-      <p className={s.hookNote}>타로로가 뽑은 카드에 별명도 붙여 줘</p>
+      <p className={s.hookNote}>뽑은 카드가 고민에 한 문장으로 답해 줘</p>
     </section>
   );
 }

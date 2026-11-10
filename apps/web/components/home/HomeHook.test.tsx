@@ -17,7 +17,9 @@ describe("the home hook", () => {
     expect(go.getAttribute("href")).toBe("/now");
     // The gold primary (components/ui/Button), the first screen's only one.
     expect(go.className).toMatch(/primary/);
-    expect(screen.getByText("타로로가 뽑은 카드에 별명도 붙여 줘")).toBeTruthy();
+    // True for every draw (review 2026-11-11 #7b): a nickname is not always shown, and the visitor, not 타로로, draws.
+    expect(screen.getByText("뽑은 카드가 고민에 한 문장으로 답해 줘")).toBeTruthy();
+    expect(screen.queryByText(/별명/)).toBeNull();
     // 타로로 holds the card (the owner's picture, public/characters/cat-tarot-card).
     expect(screen.getByRole("img", { name: /타로로/ })).toBeTruthy();
   });
