@@ -404,6 +404,52 @@ describe("JoinFlow", () => {
   });
 });
 
+describe("JoinFlow leaves no join behind where there is nothing to join (review 2026-11-10)", () => {
+  const TRIP_KEY = `${DRAFT_KEY}.login`;
+  const MARKED = "/b/K7M4QX?resume=0123456789abcdef01234567&login=ok";
+  const ENDED = [
+    { status: "joined", kind: "joined", code: "K7M4QX", result: RESULT },
+    { status: "hidden", kind: "hidden", code: "K7M4QX", ownerNickname: "용우" },
+    { status: "self", kind: "self", code: "K7M4QX", ownerNickname: "용우", sign: "aries", filled: 1, slots: 4 },
+    { status: "choosing", kind: "choosing", code: "K7M4QX", ownerNickname: "용우", earlier: null, earlierHidden: false },
+    { status: "alldone", kind: "alldone", code: "K7M4QX", ownerNickname: "용우", earlier: null, earlierHidden: false },
+    { status: "bad" },
+  ] as const;
+
+  it.each(ENDED)("$status: the kept form and the login trip go, and resume/login leave the address", (state) => {
+    keepDraft("");
+    window.sessionStorage.setItem(TRIP_KEY, "0123456789abcdef01234567");
+    window.history.replaceState(null, "", MARKED);
+    render(<JoinFlow state={state} />);
+    expect(window.sessionStorage.getItem(DRAFT_KEY)).toBeNull();
+    expect(window.sessionStorage.getItem(TRIP_KEY)).toBeNull();
+    expect(window.location.search).toBe("");
+    expect(window.location.pathname).toBe("/b/K7M4QX");
+  });
+
+  it.each([{ status: "limited" }, { status: "error" }] as const)("$status (a reload may open the form again): the form, the trip and the marks stay", (state) => {
+    keepDraft("");
+    window.sessionStorage.setItem(TRIP_KEY, "0123456789abcdef01234567");
+    window.history.replaceState(null, "", MARKED);
+    render(<JoinFlow state={state} />);
+    expect(window.sessionStorage.getItem(DRAFT_KEY)).not.toBeNull();
+    expect(window.sessionStorage.getItem(TRIP_KEY)).toBe("0123456789abcdef01234567");
+    expect(window.location.search).toBe("?resume=0123456789abcdef01234567&login=ok");
+  });
+
+  it("a login without the trip's mark keeps ?login, so the see-again login still says it was cancelled (open form and after it)", async () => {
+    setAccountForTests(VISITOR);
+    window.history.replaceState(null, "", "/b/K7M4QX?login=cancel");
+    render(<JoinFlow state={{ ...OPEN, earlierHidden: true }} />);
+    expect(await screen.findByText("로그인을 취소했어요")).toBeTruthy();
+    expect(window.location.search).toBe("?login=cancel");
+    cleanup();
+    render(<JoinFlow state={{ status: "hidden", kind: "hidden", code: "K7M4QX", ownerNickname: "용우" }} />);
+    expect(await screen.findByText("로그인을 취소했어요")).toBeTruthy();
+    expect(window.location.search).toBe("?login=cancel");
+  });
+});
+
 describe("JoinFlow fills what this device already knows (owner 2026-10-23)", () => {
   it("starts the nickname with the one this device used before", () => {
     render(<JoinFlow state={{ ...OPEN, myNickname: "하늘별" }} />);
