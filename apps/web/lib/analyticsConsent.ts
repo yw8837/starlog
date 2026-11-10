@@ -64,11 +64,13 @@ function stopAnalytics(id: string): void {
   }
 }
 
-/** The Meta pixel stops on this page (fbq's consent revoke drops what it would still send) and its _fbp cookie goes. */
+/** The Meta pixel stops on this page (fbq's consent revoke drops what it would still send) and its _fbp and _fbc cookies go. */
 function stopMeta(): void {
   (window as unknown as { fbq?: (...args: unknown[]) => void }).fbq?.("consent", "revoke");
   const shared = `; domain=.${new URL(SITE.guideUrl).hostname}`;
-  for (const domain of ["", shared]) document.cookie = `_fbp=; Max-Age=0; path=/${domain}`;
+  for (const name of ["_fbp", "_fbc"]) {
+    for (const domain of ["", shared]) document.cookie = `${name}=; Max-Age=0; path=/${domain}`;
+  }
 }
 
 /** `meta`: the banner named Meta when this was chosen (a pixel id is built in and its revision is in force). */

@@ -142,6 +142,19 @@ describe("the Meta pixel's consent (sales 2026-11-10 item 7)", () => {
     expect(consent.needsChoice()).toBe(true);
   });
 
+  it("거부 deletes _fbp and _fbc on this host and on .yeolmaeapps.kr", async () => {
+    await withPixel();
+    const writes: string[] = [];
+    vi.spyOn(Document.prototype, "cookie", "set").mockImplementation((value: string) => {
+      writes.push(value);
+    });
+    consent.chooseAnalytics("denied");
+    for (const name of ["_fbp", "_fbc"]) {
+      expect(writes, name).toContain(`${name}=; Max-Age=0; path=/`);
+      expect(writes, name).toContain(`${name}=; Max-Age=0; path=/; domain=.yeolmaeapps.kr`);
+    }
+  });
+
   it("거부 stops the pixel already loaded and deletes its _fbp cookie", async () => {
     await withPixel();
     const fbq = vi.fn();

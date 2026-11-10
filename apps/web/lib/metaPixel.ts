@@ -25,11 +25,12 @@ function comparable(pathname: string): string {
 
 /**
  * The pixel sends the page's whole address and cannot be given a redacted one (as GA is), so a page view is sent only
- * where the address holds nothing personal: not an id page, not /pay, and no query but utm_* tags.
+ * where the address holds nothing personal: not an id page, not /pay, and no query but utm_* tags and Meta's own click
+ * id (fbclid, which an ad click adds: without it the ad's visits would not be counted).
  */
 export function metaPageAllowed(href: string): boolean {
   const url = new URL(href);
   const path = comparable(url.pathname);
   if (PRIVATE_PREFIXES.some((prefix) => path.startsWith(prefix))) return false;
-  return [...url.searchParams.keys()].every((name) => name.startsWith("utm_"));
+  return [...url.searchParams.keys()].every((name) => name.startsWith("utm_") || name === "fbclid");
 }

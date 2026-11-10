@@ -16,6 +16,10 @@ describe("Meta pixel (sales 2026-11-10 item 7)", () => {
     const o = "https://starlog.yeolmaeapps.kr";
     expect(metaPageAllowed(`${o}/`)).toBe(true);
     expect(metaPageAllowed(`${o}/premium/newyear-2027?utm_source=meta&utm_campaign=y`)).toBe(true);
+    // An ad click lands with Meta's own click id (fbclid): still counted, or the ad's visits are lost.
+    expect(metaPageAllowed(`${o}/premium/newyear-2027?utm_source=meta&fbclid=IwAR0abc`)).toBe(true);
+    expect(metaPageAllowed(`${o}/?fbclid=IwAR0abc`)).toBe(true);
+    expect(metaPageAllowed(`${o}/?fbclid=IwAR0abc&ref=y`)).toBe(false);
     for (const path of ["/chapter/abc123", "/s/xyz", "/b/CODE", "/invite/tok", "/pay/success", "/pay/checkout?product=match", "/tarot/new?new=1", "/%63hapter/abc"]) {
       expect(metaPageAllowed(`${o}${path}`), path).toBe(false);
     }

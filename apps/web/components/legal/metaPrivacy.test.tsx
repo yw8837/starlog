@@ -40,7 +40,7 @@ describe("the privacy policy and the Meta pixel", () => {
     const page = await privacyAt(NOV17, "123456789012345");
     expect([...page.querySelectorAll("aside")].some((aside) => aside.textContent?.includes("2026년 11월 17일 바뀐 내용"))).toBe(true);
     const section = page.querySelector("#meta-pixel")?.textContent ?? "";
-    for (const words of ["Meta Platforms, Inc.(미국)", "_fbp", "결제 금액", "허용한 경우에만", "거부"]) expect(section, words).toContain(words);
+    for (const words of ["Meta Platforms, Inc.(미국)", "_fbp", "_fbc", "fbclid", "결제 금액", "허용한 경우에만", "거부"]) expect(section, words).toContain(words);
     expect(page.textContent).not.toContain("광고 쿠키는 쓰지 않습니다");
   });
 });
