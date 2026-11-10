@@ -53,6 +53,14 @@ export const SITE = {
         opens: "", opensAt: "", closesAt: "2027-12-01T00:00:00+09:00",
       },
     ],
+    /**
+     * 2027 신년운세 + 프리미엄 궁합 (owner 2026-11-10): one payment opens one of each (22,800원 apart). On sale from `opensAt`
+     * (KST ISO; it takes the place of 오픈 기념 무료, which ends then) until 2027 신년운세 closes (lib/pay/catalog.ts). Refunded
+     * whole within REFUND_DAYS only while neither reading was opened; once either is, not at all.
+     */
+    set: {
+      id: "set-2027", name: "2027 신년운세 + 프리미엄 궁합", krw: 18900, includes: ["newyear-2027", "match"], opensAt: "2026-12-01T00:00:00+09:00",
+    },
   },
   reading: {
     /** Follow-up questions included with every opened reading. */

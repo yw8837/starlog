@@ -3,7 +3,7 @@ import type { D1Binding } from "@/lib/db/d1";
 import { isConstraintError } from "@/lib/db/sqlErrors";
 import { randomId } from "@/lib/security/sign";
 import { productById, type Product } from "./catalog";
-import { LEFT_SQL, paidLotStatements } from "./ledger";
+import { ORDER_UNTOUCHED_SQL, paidLotStatements } from "./ledger";
 import { TossError, isPendingTossError, type TossClient, type TossPayment } from "./tossTypes";
 
 /**
@@ -290,26 +290,34 @@ export interface OrderListItem {
 const NOTHING_DELIVERED_SQL = (lot: string) =>
   `NOT EXISTS (SELECT 1 FROM ledger g JOIN unlocks u ON u.id = g.unlock_id WHERE g.lot_id = ${lot}.id AND g.kind = 'reserve' AND u.status IN ('reserved', 'delivered'))`;
 
-/** 결제 내역: the user's orders that reached Toss, newest first. */
+/** An active lot of order `o` that is used up (units_left 0), with `delivered` true or false. */
+const EMPTY_LOT_SQL = (delivered: boolean) =>
+  `EXISTS (SELECT 1 FROM credit_lots e WHERE e.order_id = o.id AND e.status = 'active' AND e.units_left = 0 AND ${delivered ? "NOT " : ""}${NOTHING_DELIVERED_SQL("e")})`;
+
+/**
+ * 결제 내역: the user's orders that reached Toss, newest first, one row per order (a set holds two lots): `refundable`
+ * while every lot of it is untouched (ORDER_UNTOUCHED_SQL), `opened` once any of its readings was delivered or is being
+ * opened, `unfinished` when one was used up with nothing delivered and none was opened.
+ */
 export async function orderHistory(db: D1Binding, userId: string, limit = 50): Promise<OrderListItem[]> {
   const { results } = await db
     .prepare(
       `SELECT o.id, o.product_id, o.amount_krw, o.status, o.created_at, p.receipt_url, p.method,
-              l.units_left, l.units_total, l.status AS lot_status, ${LEFT_SQL("l")} AS left_once, ${NOTHING_DELIVERED_SQL("l")} AS undelivered
+              EXISTS (SELECT 1 FROM credit_lots l WHERE l.order_id = o.id AND l.status = 'active' AND ${ORDER_UNTOUCHED_SQL("l")}) AS untouched,
+              ${EMPTY_LOT_SQL(true)} AS opened, ${EMPTY_LOT_SQL(false)} AS undelivered
        FROM orders o
        LEFT JOIN payments p ON p.order_id = o.id
-       LEFT JOIN credit_lots l ON l.order_id = o.id
        WHERE o.user_id = ? AND o.status IN ('confirming', 'paid', 'refunding', 'refunded')
        ORDER BY o.created_at DESC LIMIT ?`,
     )
     .bind(userId, limit)
     .all<{
       id: string; product_id: string; amount_krw: number; status: OrderStatus; created_at: number; receipt_url: string | null; method: string | null;
-      units_left: number | null; units_total: number | null; lot_status: string | null; left_once: number | null; undelivered: number | null;
+      untouched: number; opened: number; undelivered: number;
     }>();
   return results.map((row) => {
-    const active = row.lot_status === "active";
-    const empty = row.status === "paid" && active && row.units_left === 0;
+    const paid = row.status === "paid";
+    const opened = paid && Boolean(row.opened);
     return {
       orderId: row.id,
       productId: row.product_id,
@@ -318,9 +326,9 @@ export async function orderHistory(db: D1Binding, userId: string, limit = 50): P
       createdAt: row.created_at,
       receiptUrl: row.receipt_url,
       method: row.method,
-      refundable: row.status === "paid" && active && row.units_left === row.units_total && !row.left_once,
-      opened: empty && !row.undelivered,
-      unfinished: empty && Boolean(row.undelivered),
+      refundable: paid && Boolean(row.untouched),
+      opened,
+      unfinished: paid && !opened && Boolean(row.undelivered),
     };
   });
 }

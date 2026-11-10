@@ -5,7 +5,7 @@ import { NEWYEAR_HEADINGS } from "@/lib/ai/prompts/newyear";
 import { SAJU_LOCKED_TOC } from "@/lib/ai/prompts/saju";
 import { tarotHeadings } from "@/lib/ai/prompts/tarot";
 import { PRODUCTS } from "./catalog";
-import { CHECKOUT_TOC } from "./toc";
+import { CHECKOUT_TOC, checkoutTocs } from "./toc";
 
 /** The headings a reading is written under, for a plain three-card question (no time chosen, not about another person). */
 const ctx = { when: null, custom: {}, cards: [{}, {}, {}], relational: false, conditions: [] } as never;
@@ -14,9 +14,20 @@ const short = (heading: string) => heading.split(" · ")[0]!;
 describe("checkout's table of contents (sales 2026-11-10 item 1)", () => {
   it("has titles for every product on sale, short ones only", () => {
     for (const product of PRODUCTS) {
-      expect(CHECKOUT_TOC[product.id].length).toBeGreaterThan(3);
-      for (const title of CHECKOUT_TOC[product.id]) expect(title.length).toBeLessThanOrEqual(24);
+      for (const { titles } of checkoutTocs(product.id)) {
+        expect(titles.length).toBeGreaterThan(3);
+        for (const title of titles) expect(title.length).toBeLessThanOrEqual(24);
+      }
     }
+  });
+
+  it("shows both readings' tables of contents for the 2027 신년운세 + 프리미엄 궁합 set, each under its name (owner 2026-11-10)", () => {
+    expect(checkoutTocs("set-2027")).toEqual([
+      { name: "2027 신년운세", titles: CHECKOUT_TOC["newyear-2027"] },
+      { name: "프리미엄 궁합", titles: CHECKOUT_TOC.match },
+    ]);
+    expect(checkoutTocs("match")).toEqual([{ name: null, titles: CHECKOUT_TOC.match }]);
+    expect(checkoutTocs("moon-30")).toEqual([]);
   });
 
   it("names only sections the reading is really written under (the generators' own headings)", () => {

@@ -139,6 +139,47 @@ describe("account deletion", () => {
     expect(await one(db, "SELECT deleted_at, erased_at FROM users")).toEqual({ deleted_at: T0, erased_at: T0 });
   });
 
+  describe("a 2027 신년운세 + 프리미엄 궁합 set (owner 2026-11-10)", () => {
+    const SET_ON_SALE = Date.parse("2026-12-01T12:00:00+09:00");
+    const setLots = (db: D1Binding, orderId: string) =>
+      db.prepare("SELECT product_id, status, units_left FROM credit_lots WHERE order_id = ? ORDER BY product_id").bind(orderId).all().then((r) => r.results);
+
+    it("refunds an unopened set once, whole", async () => {
+      vi.setSystemTime(SET_ON_SALE);
+      vi.stubEnv("STARLOG_PREMIUM", "on");
+      const db = useTestDb();
+      const b = await loggedIn("alice");
+      const orderId = await buy(b, "set-2027");
+      const cancel = vi.spyOn(mockToss, "cancel");
+      expect(await deleteAs(b, "alice")).toBe("http://localhost/me?account=deleted");
+      expect(cancel).toHaveBeenCalledTimes(1);
+      expect(await setLots(db, orderId)).toEqual([
+        { product_id: "match", status: "refunded", units_left: 0 },
+        { product_id: "newyear-2027", status: "refunded", units_left: 0 },
+      ]);
+    });
+
+    it("completes once one reading was opened: no refund, the other reading leaves use with the account", async () => {
+      vi.setSystemTime(SET_ON_SALE);
+      vi.stubEnv("STARLOG_PREMIUM", "on");
+      const db = useTestDb();
+      const b = await loggedIn("alice");
+      const orderId = await buy(b, "set-2027");
+      const opening = await reserveUnlock(db, { userId: await userIdOf(db), productId: "match", currency: "paid", now: SET_ON_SALE, payMode: "mock", earmarked: true });
+      if (!opening.ok) throw new Error("not reserved");
+      await db.prepare("UPDATE unlocks SET status = 'delivered' WHERE id = ?").bind(opening.unlockId).run();
+      const cancel = vi.spyOn(mockToss, "cancel");
+      expect(await deleteAs(b, "alice")).toBe("http://localhost/me?account=deleted");
+      expect(cancel).not.toHaveBeenCalled();
+      expect(await one(db, `SELECT status FROM orders WHERE id = '${orderId}'`)).toEqual({ status: "paid" });
+      expect(await setLots(db, orderId)).toEqual([
+        { product_id: "match", status: "active", units_left: 0 },
+        { product_id: "newyear-2027", status: "revoked", units_left: 0 },
+      ]);
+      expect(await one(db, "SELECT erased_at FROM users")).toEqual({ erased_at: SET_ON_SALE });
+    });
+  });
+
   it("still refunds an unopened purchase after the 7-day window for a buyer's 환불받기", async () => {
     const db = useTestDb();
     const b = await loggedIn("alice");

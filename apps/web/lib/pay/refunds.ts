@@ -107,12 +107,12 @@ export async function paidUnderOtherKeys(db: D1Binding, toss: TossClient, orderI
 export const OTHER_KEYS_MESSAGE = "이 결제는 바로 환불할 수 없어요. 문의해 주시면 확인하고 처리해 드릴게요.";
 
 /**
- * Account deletion, for an unopened reading paid under other keys: its lot leaves use (revoked, with
- * its ledger row), the order stays as it is for the operator, and the deletion goes on.
+ * Account deletion, for an unopened reading paid under other keys: its lots (both of a set) leave use
+ * (revoked, with their ledger rows), the order stays as it is for the operator, and the deletion goes on.
  */
 export async function setAsideForOperator(db: D1Binding, orderId: string, now: number): Promise<void> {
-  const lot = await db.prepare("SELECT * FROM credit_lots WHERE order_id = ? AND status = 'active' AND units_left > 0").bind(orderId).first<Lot>();
-  if (lot) await db.batch(forfeitStatements(db, lot, "revoked", now));
+  const { results } = await db.prepare("SELECT * FROM credit_lots WHERE order_id = ? AND status = 'active' AND units_left > 0").bind(orderId).all<Lot>();
+  if (results.length) await db.batch(results.flatMap((lot) => forfeitStatements(db, lot, "revoked", now)));
 }
 
 /** Cancels the payment of a paid reading that was never opened (the user's 환불, account deletion). */

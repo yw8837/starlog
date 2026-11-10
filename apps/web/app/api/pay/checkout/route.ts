@@ -1,10 +1,10 @@
 import { openAccountRoute, requireSession } from "@/lib/account/request";
 import { isReviewer } from "@/lib/account/review";
 import { errorResponse, json } from "@/lib/api/http";
-import { productById, sellable } from "@/lib/pay/catalog";
+import { SET_PRODUCT_ID, productById, sellable } from "@/lib/pay/catalog";
 import { payProvider, paymentsMode, salesOpen, tossClientKey } from "@/lib/pay/mode";
 import { tossClient } from "@/lib/pay/toss";
-import { premiumOpen } from "@/lib/premium/flags";
+import { premiumOpen, setOpen } from "@/lib/premium/flags";
 import { isPremiumId } from "@/lib/premium/products";
 
 /**
@@ -25,6 +25,7 @@ export async function GET(request: Request): Promise<Response> {
   if (!product || !sellable(product, ctx.now)) return errorResponse("NOT_AVAILABLE");
   // P5: like the order itself (orders/route.ts), a premium checkout also needs STARLOG_PREMIUM.
   if (isPremiumId(product.id) && !premiumOpen(product.id, ctx.owner, ctx.now)) return errorResponse("NOT_AVAILABLE");
+  if (product.id === SET_PRODUCT_ID && !setOpen(ctx.owner, ctx.now)) return errorResponse("NOT_AVAILABLE");
   const mock = payProvider() === "mock";
   return json({
     productId: product.id,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SITE } from "@/lib/config";
-import { GIFT_DAYS, GIFT_PRODUCT, PRODUCTS, productById, sellable, standardProduct } from "./catalog";
+import { GIFT_DAYS, GIFT_PRODUCT, PRODUCTS, lotProducts, productById, sellable, standardProduct } from "./catalog";
 
 const NOW = Date.parse("2026-10-01T12:00:00+09:00");
 
@@ -25,6 +25,20 @@ describe("catalog", () => {
     const year = productById("newyear-2027")!;
     expect(sellable(year, Date.parse("2026-10-20T15:00:00+09:00"))).toBe(true);
     expect(sellable(year, Date.parse("2027-12-01T00:00:00+09:00") - 1)).toBe(true);
+  });
+
+  it("sells the 2027 신년운세 + 프리미엄 궁합 set at 18,900원 from 2026-12-01 00:00 KST until 2027 신년운세 closes, opening one of each (owner 2026-11-10)", () => {
+    const set = productById("set-2027")!;
+    expect(set).toMatchObject({ name: "2027 신년운세 + 프리미엄 궁합", orderName: `${SITE.nameKo} 2027 신년운세 + 프리미엄 궁합`, krw: 18900, deliverable: true });
+    expect(lotProducts(set)).toEqual(["newyear-2027", "match"]);
+    expect(productById("newyear-2027")!.krw + productById("match")!.krw - set.krw).toBe(3900);
+    const opens = Date.parse("2026-12-01T00:00:00+09:00");
+    expect(sellable(set, opens - 1)).toBe(false);
+    expect(sellable(set, opens)).toBe(true);
+    expect(set.closesAt).toBe(productById("newyear-2027")!.closesAt);
+    expect(sellable(set, set.closesAt!)).toBe(false);
+    // Every other product opens one reading of itself.
+    for (const id of ["tarot", "saju", "tarot-deep", "match", "newyear-2027"]) expect(lotProducts(productById(id)!)).toEqual([id]);
   });
 
   it("knows no other ids", () => {

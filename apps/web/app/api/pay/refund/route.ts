@@ -26,8 +26,9 @@ export async function POST(request: Request): Promise<Response> {
   // By the order alone, whatever its lot's state now: an opening released between this read and the
   // refund lock must not let a late refund through. No lot at all: nothing to refund, nor a payment
   // time to check the window by.
-  const paid = await ctx.db.prepare("SELECT created_at FROM credit_lots WHERE order_id = ?").bind(order.id).first<{ created_at: number }>();
-  if (!paid) return errorResponse("NOT_REFUNDABLE");
+  // A set holds two lots, written in one batch: the earliest is the payment time.
+  const paid = await ctx.db.prepare("SELECT MIN(created_at) AS created_at FROM credit_lots WHERE order_id = ?").bind(order.id).first<{ created_at: number | null }>();
+  if (paid?.created_at == null) return errorResponse("NOT_REFUNDABLE");
   if (ctx.now > refundDeadline(paid.created_at)) return errorResponse("REFUND_WINDOW_CLOSED");
   const outcome = await refundUnusedOrder(ctx.db, toss, { order, reason: "구매자 요청: 열지 않은 풀이 환불", now: ctx.now });
   if (!outcome.ok) return errorResponse(outcome.code, outcome.message ? { message: outcome.message } : {});

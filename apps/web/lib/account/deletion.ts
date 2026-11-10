@@ -2,7 +2,7 @@ import "server-only";
 import { sealOpeningClaim } from "@/lib/account/openingClaim";
 import { eraseReviewStatements } from "@/lib/reviews/store";
 import type { D1Binding } from "@/lib/db/d1";
-import { LEFT_SQL, entitlements, forfeitStatements, sweepUser, type Lot } from "@/lib/pay/ledger";
+import { LEFT_SQL, ORDER_UNTOUCHED_SQL, entitlements, forfeitStatements, sweepUser, type Lot } from "@/lib/pay/ledger";
 import { orderForUser, reconcileConfirming, type OrderRow } from "@/lib/pay/orders";
 import { paidUnderOtherKeys, reconcileRefunding, refundUnusedOrder, setAsideForOperator } from "@/lib/pay/refunds";
 import type { TossClient } from "@/lib/pay/tossTypes";
@@ -65,9 +65,11 @@ export async function deleteAccount(db: D1Binding, toss: TossClient | null, inpu
 
   const { unused } = await entitlements(db, userId, now);
   let refunded = 0;
-  for (const { orderId, refundable } of unused) {
-    // Given back after its client left (SEC-02): never refunded; it leaves use with the account (eraseDeletedAccount).
-    if (!refundable) continue;
+  // A set's two readings are one order, refunded once.
+  for (const orderId of new Set(unused.map((item) => item.orderId))) {
+    // Given back after its client left (SEC-02), or the other reading of its set opened: never refunded; it leaves use
+    // with the account (eraseDeletedAccount).
+    if (unused.some((item) => item.orderId === orderId && !item.refundable)) continue;
     const order = await orderForUser(db, orderId, userId);
     if (order && toss && (await paidUnderOtherKeys(db, toss, order.id))) {
       // These keys cannot cancel it: the reading leaves use, the order stays for the operator (runbook 5).
@@ -89,7 +91,7 @@ export async function deleteAccount(db: D1Binding, toss: TossClient | null, inpu
          AND NOT EXISTS (SELECT 1 FROM unlocks WHERE user_id = ? AND status = 'reserved')
          AND NOT EXISTS (SELECT 1 FROM orders WHERE user_id = ? AND ${IN_FLIGHT})
          AND NOT EXISTS (SELECT 1 FROM credit_lots c WHERE c.user_id = ? AND c.currency = 'paid' AND c.status = 'active' AND c.units_left > 0
-           AND c.units_left = c.units_total AND NOT ${LEFT_SQL("c")})
+           AND ${ORDER_UNTOUCHED_SQL("c")})
        RETURNING id`,
     )
     .bind(now, userId, userId, userId, mode, userId)
@@ -128,7 +130,7 @@ async function eraseBondsOwner(db: D1Binding, userId: string): Promise<void> {
 /**
  * Erases a deleted account's personal data in one batch, keeping what the law keeps:
  * - an unused signup gift is forfeited (its ledger rows stay), and so is a purchase given back after
- *   its client left (SEC-02: never refunded);
+ *   its client left (SEC-02: never refunded), and the unopened reading of a set whose other one was opened;
  * - saved readings, share links, sessions and premium preview counts are deleted, and the account's reviews with their 도움돼요 and reports;
  * - its gift claim is stamped with the deletion time (purged a year later, Task 13);
  * - its 오픈 기념 무료 claim stays, marked used, until the event's purge, first (sealOpeningClaim, owner 2026-10-28);
@@ -142,7 +144,7 @@ export async function eraseDeletedAccount(db: D1Binding, userId: string, now: nu
   const { results: forfeited } = await db
     .prepare(
       `SELECT * FROM credit_lots WHERE user_id = ? AND status = 'active' AND units_left > 0
-         AND (currency = 'free' OR (currency = 'paid' AND ${LEFT_SQL("credit_lots")}))`,
+         AND (currency = 'free' OR (currency = 'paid' AND (${LEFT_SQL("credit_lots")} OR NOT ${ORDER_UNTOUCHED_SQL("credit_lots")})))`,
     )
     .bind(userId)
     .all<Lot>();

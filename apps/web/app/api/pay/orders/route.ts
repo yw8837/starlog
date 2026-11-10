@@ -4,13 +4,13 @@ import { safeReturnTo } from "@/lib/account/returnTo";
 import { isReviewAccount, isReviewer } from "@/lib/account/review";
 import { errorResponse, json, readJson } from "@/lib/api/http";
 import type { D1Binding } from "@/lib/db/d1";
-import { productById, sellable } from "@/lib/pay/catalog";
+import { SET_PRODUCT_ID, productById, sellable } from "@/lib/pay/catalog";
 import { entitlements } from "@/lib/pay/ledger";
 import { paymentsMode, salesOpen } from "@/lib/pay/mode";
 import { RECONCILE_AFTER_MS, createOrder, orderById, orderHistory, reconcileConfirming, type OrderRow } from "@/lib/pay/orders";
 import { reconcileRefunding } from "@/lib/pay/refunds";
 import { tossClient } from "@/lib/pay/toss";
-import { premiumOpen } from "@/lib/premium/flags";
+import { premiumOpen, setOpen } from "@/lib/premium/flags";
 import { isPremiumId } from "@/lib/premium/products";
 
 /** `ack: true` = the buyer ticked the 청약철회 notice on the checkout page (its time is kept on the order). */
@@ -45,6 +45,8 @@ export async function POST(request: Request): Promise<Response> {
   if (!product || !sellable(product, ctx.now)) return errorResponse("NOT_AVAILABLE");
   // P5: premium orders also need STARLOG_PREMIUM (lib/premium/flags.ts).
   if (isPremiumId(product.id) && !premiumOpen(product.id, ctx.owner, ctx.now)) return errorResponse("NOT_AVAILABLE");
+  // The set: its own window (from 2026-12-01 KST) and both of its readings open.
+  if (product.id === SET_PRODUCT_ID && !setOpen(ctx.owner, ctx.now)) return errorResponse("NOT_AVAILABLE");
   const order = await createOrder(ctx.db, { userId: session.user.id, product, returnTo: safeReturnTo(body.data.returnTo), now: ctx.now });
   const origin = new URL(request.url).origin;
   console.info(JSON.stringify({ evt: "pay.order_created", orderId: order.id, productId: product.id }));

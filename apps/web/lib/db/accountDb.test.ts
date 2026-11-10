@@ -1,3 +1,5 @@
+import { readFileSync, readdirSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import type { D1Binding } from "./d1";
 import { accountDb, setTestDb } from "./index";
@@ -8,6 +10,8 @@ const insertUser = (db: D1Binding, id: string, key: string | null) =>
   db
     .prepare("INSERT INTO users (id, kakao_key, nickname, customer_key, created_at, last_login_at) VALUES (?, ?, '별', ?, 0, 0)")
     .bind(id, key, `c_${id}`);
+
+const MIGRATIONS = fileURLToPath(new URL("../../migrations/", import.meta.url));
 
 const count = async (db: D1Binding, table: string) => (await db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).first<{ n: number }>())!.n;
 
@@ -60,6 +64,43 @@ describe("test D1 with every migration applied", () => {
       db.prepare("UPDATE users SET nickname = '별' WHERE id = 'nobody'"),
     ]);
     expect([first!.meta?.changes, second!.meta?.changes]).toEqual([1, 0]);
+  });
+
+  it("0023 lets one order hold several lots (the set), one per product, keeping every lot, index and foreign key", async () => {
+    const before = migratedTestD1({ without: "0023_" });
+    await insertUser(before, "u_1", "k1").run();
+    await before
+      .prepare(
+        `INSERT INTO orders (id, user_id, product_id, amount_krw, order_name, status, return_to, withdrawal_ack_at, created_at, updated_at)
+         VALUES ('o_1', 'u_1', 'tarot', 2900, 't', 'paid', '/', 0, 0, 0)`,
+      )
+      .run();
+    await before.batch([
+      before.prepare("INSERT INTO credit_lots (id, user_id, currency, source, order_id, product_id, units_total, units_left, status, expires_at, created_at) VALUES ('lot_o_1', 'u_1', 'paid', 'order', 'o_1', 'tarot', 1, 0, 'active', NULL, 5)"),
+      before.prepare("INSERT INTO credit_lots (id, user_id, currency, source, units_total, units_left, status, expires_at, created_at) VALUES ('lot_g', 'u_1', 'free', 'gift', 10, 10, 'expired', 99, 6)"),
+    ]);
+    // The old schema refused a second lot for one order.
+    await expect(
+      before.prepare("INSERT INTO credit_lots (id, user_id, currency, source, order_id, product_id, units_total, units_left, created_at) VALUES ('lot_2', 'u_1', 'paid', 'order', 'o_1', 'match', 1, 1, 0)").run(),
+    ).rejects.toSatisfy(isConstraintError);
+    const rows = async () => (await before.prepare("SELECT * FROM credit_lots ORDER BY id").all()).results;
+    const kept = await rows();
+    const migration = readdirSync(MIGRATIONS).find((name) => name.startsWith("0023_"))!;
+    before.exec(readFileSync(`${MIGRATIONS}${migration}`, "utf8"));
+    expect(await rows()).toEqual(kept);
+    const indexes = (await before.prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'credit_lots' AND name NOT LIKE 'sqlite_%' ORDER BY name").all<{ name: string }>()).results.map((r) => r.name);
+    expect(indexes).toEqual(["credit_lots_expiry", "credit_lots_order", "credit_lots_order_product", "credit_lots_user"]);
+    // Now a second lot of another product goes in; a second of the same product, a lot of no known order or user, or an invalid count does not.
+    await before.prepare("INSERT INTO credit_lots (id, user_id, currency, source, order_id, product_id, units_total, units_left, created_at) VALUES ('lot_2', 'u_1', 'paid', 'order', 'o_1', 'match', 1, 1, 0)").run();
+    for (const sql of [
+      "INSERT INTO credit_lots (id, user_id, currency, source, order_id, product_id, units_total, units_left, created_at) VALUES ('lot_3', 'u_1', 'paid', 'order', 'o_1', 'match', 1, 1, 0)",
+      "INSERT INTO credit_lots (id, user_id, currency, source, order_id, product_id, units_total, units_left, created_at) VALUES ('lot_4', 'u_1', 'paid', 'order', 'nope', 'match', 1, 1, 0)",
+      "INSERT INTO credit_lots (id, user_id, currency, source, units_total, units_left, created_at) VALUES ('lot_5', 'nobody', 'free', 'gift', 1, 1, 0)",
+      "INSERT INTO credit_lots (id, user_id, currency, source, units_total, units_left, created_at) VALUES ('lot_6', 'u_1', 'free', 'gift', 1, 2, 0)",
+    ]) await expect(before.prepare(sql).run(), sql).rejects.toSatisfy(isConstraintError);
+    // Gifts and admin grants name no order: any number of them.
+    await before.prepare("INSERT INTO credit_lots (id, user_id, currency, source, product_id, units_total, units_left, created_at) VALUES ('lot_7', 'u_1', 'free', 'gift', 'tarot', 1, 1, 0)").run();
+    await before.prepare("INSERT INTO credit_lots (id, user_id, currency, source, product_id, units_total, units_left, created_at) VALUES ('lot_8', 'u_1', 'free', 'gift', 'tarot', 1, 1, 0)").run();
   });
 
   it("refuses undefined like D1", async () => {

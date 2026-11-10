@@ -2,7 +2,7 @@ import "server-only";
 import type { D1Binding, D1Statement } from "@/lib/db/d1";
 import { isConstraintError } from "@/lib/db/sqlErrors";
 import { randomId } from "@/lib/security/sign";
-import { GIFT_DAYS, GIFT_PRODUCT } from "./catalog";
+import { GIFT_DAYS, GIFT_PRODUCT, lotProducts, productById } from "./catalog";
 import type { PayKeyMode } from "./mode";
 
 export { GIFT_DAYS };
@@ -82,6 +82,15 @@ const marked = (...markers: string[]) => markers.map((marker) => `idem_key LIKE 
  */
 export const LEFT_SQL = (lot: string) =>
   `EXISTS (SELECT 1 FROM ledger WHERE lot_id = ${lot}.id AND (${marked(LEFT_RESTORE, PART_RESTORE, PART_BEGAN_RESTORE)}))`;
+
+/**
+ * True for a paid lot (aliased `lot`) whose whole order is untouched: every lot of that order (two for a set) is active,
+ * holds all it was granted, and was never given back after its client left or a part was written. Only such an order
+ * is refunded, and only whole: once either reading of a set is opened or being opened, neither is (owner 2026-11-10).
+ */
+export const ORDER_UNTOUCHED_SQL = (lot: string) =>
+  `NOT EXISTS (SELECT 1 FROM credit_lots sib WHERE sib.order_id = ${lot}.order_id
+     AND (sib.status <> 'active' OR sib.units_left <> sib.units_total OR ${LEFT_SQL("sib")}))`;
 
 /** What a new lot holds: one opening. */
 const ONE_OPENING = 1;
@@ -175,24 +184,29 @@ export async function grantSignupGift(db: D1Binding, input: { userId: string; ka
 }
 
 /**
- * The paid lot an order grants (one opening of its product), written only while the order is `paid`
- * (markPaid sets it in the same batch, and leaves a deleted account's order unpaid). Its id comes
- * from the order id, so it can exist only once.
+ * The paid lots an order grants, one opening of each reading its product opens (lotProducts: the product
+ * itself, or each reading of a set), written only while the order is `paid` (markPaid sets it in the same
+ * batch, and leaves a deleted account's order unpaid). Their ids come from the order id (and the reading,
+ * for a set), and UNIQUE(order_id, product_id) holds too (0023), so each can exist only once.
  */
 export function paidLotStatements(db: D1Binding, input: { userId: string; orderId: string; productId: string; now: number }): D1Statement[] {
-  const id = `lot_${input.orderId}`;
+  const product = productById(input.productId);
+  const readings = product ? lotProducts(product) : [input.productId];
   const PAID = "EXISTS (SELECT 1 FROM orders WHERE id = ? AND status = 'paid')";
-  return [
-    db
-      .prepare(
-        `INSERT INTO credit_lots (id, user_id, currency, source, order_id, product_id, units_total, units_left, expires_at, created_at)
-         SELECT ?, ?, 'paid', 'order', ?, ?, ?, ?, NULL, ? WHERE ${PAID}`,
-      )
-      .bind(id, input.userId, input.orderId, input.productId, ONE_OPENING, ONE_OPENING, input.now, input.orderId),
-    db
-      .prepare(`INSERT INTO ledger ${COLUMNS} SELECT ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE ${PAID}`)
-      .bind(...values({ userId: input.userId, currency: "paid", kind: "grant", units: ONE_OPENING, lotId: id, orderId: input.orderId, idem: `grant:${id}`, now: input.now }), input.orderId),
-  ];
+  return readings.flatMap((productId) => {
+    const id = readings.length === 1 ? `lot_${input.orderId}` : `lot_${input.orderId}_${productId}`;
+    return [
+      db
+        .prepare(
+          `INSERT INTO credit_lots (id, user_id, currency, source, order_id, product_id, units_total, units_left, expires_at, created_at)
+           SELECT ?, ?, 'paid', 'order', ?, ?, ?, ?, NULL, ? WHERE ${PAID}`,
+        )
+        .bind(id, input.userId, input.orderId, productId, ONE_OPENING, ONE_OPENING, input.now, input.orderId),
+      db
+        .prepare(`INSERT INTO ledger ${COLUMNS} SELECT ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE ${PAID}`)
+        .bind(...values({ userId: input.userId, currency: "paid", kind: "grant", units: ONE_OPENING, lotId: id, orderId: input.orderId, idem: `grant:${id}`, now: input.now }), input.orderId),
+    ];
+  });
 }
 
 // ---- reserve, deliver, release ----
@@ -432,17 +446,18 @@ export async function sweepStale(db: D1Binding, now: number, limit = 100): Promi
 // ---- refunds ----
 
 /**
- * Marks a paid order `refunding` and takes its unused lot out of use, in one batch (M1). Each
- * statement checks the other's condition, so both change or neither does, and nobody can open the
- * reading while its payment is being cancelled. Null when the order is not paid, or its reading was
- * opened or is being opened.
+ * Marks a paid order `refunding` and takes its unused lots out of use (both of a set), in one batch (M1).
+ * Each statement checks the other's condition, so all change or none does, and nobody can open a
+ * reading while its payment is being cancelled. Null when the order is not paid, or any of its readings
+ * was opened or is being opened (ORDER_UNTOUCHED_SQL: a set is refunded whole or not at all). Returns
+ * the first lot locked.
  */
 export async function lockPaidLotForRefund(db: D1Binding, orderId: string, now: number): Promise<Lot | null> {
   const [order, lot] = await db.batch([
     db
       .prepare(
         `UPDATE orders SET status = 'refunding', updated_at = ? WHERE id = ? AND status = 'paid'
-           AND EXISTS (SELECT 1 FROM credit_lots c WHERE c.order_id = ? AND c.status = 'active' AND c.units_left = c.units_total AND NOT ${LEFT_SQL("c")})`,
+           AND EXISTS (SELECT 1 FROM credit_lots c WHERE c.order_id = ? AND ${ORDER_UNTOUCHED_SQL("c")})`,
       )
       .bind(now, orderId, orderId),
     db
@@ -454,9 +469,9 @@ export async function lockPaidLotForRefund(db: D1Binding, orderId: string, now: 
       )
       .bind(orderId, orderId, now),
   ]);
-  const changes = [order?.meta?.changes ?? 0, lot?.meta?.changes ?? 0];
-  if (changes[0] === 1 && changes[1] === 1) return (lot!.results[0] as unknown as Lot | undefined) ?? null;
-  if (changes[0] !== changes[1]) console.error(JSON.stringify({ evt: "pay.refund_lock_mismatch", orderId, changes }));
+  const changes: [number, number] = [order?.meta?.changes ?? 0, lot?.meta?.changes ?? 0];
+  if (changes[0] === 1 && changes[1] >= 1) return (lot!.results[0] as unknown as Lot | undefined) ?? null;
+  if (changes[0] !== Math.min(changes[1], 1)) console.error(JSON.stringify({ evt: "pay.refund_lock_mismatch", orderId, changes }));
   return null;
 }
 
@@ -533,7 +548,8 @@ export interface Entitlements {
    * paid readings bought and not opened yet (a reading being opened is in `opening` instead);
    * `paidAt`: when the payment was recorded (its lot's created_at), where the refund window starts;
    * `refundable`: false once it was given back after its client left, or after a part of its premium
-   * reading was written (LEFT_SQL): it can be opened again but never refunded, by 환불받기 or by account deletion
+   * reading was written (LEFT_SQL), or once the other reading of its set was opened or is being opened
+   * (ORDER_UNTOUCHED_SQL): it can be opened but never refunded, by 환불받기 or by account deletion
    */
   unused: Array<{ orderId: string; productId: string; paidAt: number; refundable: boolean }>;
   /** readings being opened, oldest first */
@@ -555,7 +571,7 @@ export async function entitlements(db: D1Binding, userId: string, now: number): 
   // Every lot that can still open something, and every gift lot (a spent one says the gift was used).
   const { results } = await db
     .prepare(
-      `SELECT currency, order_id, product_id, units_left, expires_at, created_at, ${LEFT_SQL("credit_lots")} AS left_once FROM credit_lots
+      `SELECT currency, order_id, product_id, units_left, expires_at, created_at, NOT ${ORDER_UNTOUCHED_SQL("credit_lots")} AS left_once FROM credit_lots
        WHERE user_id = ? AND status = 'active' AND (currency = 'free' OR (units_left > 0 AND (expires_at IS NULL OR expires_at > ?)))
        ORDER BY created_at`,
     )
