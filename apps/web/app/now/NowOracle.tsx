@@ -6,13 +6,16 @@ import { DEFAULT_REVERSAL_RATE, createDeck, getCard, type DeckState } from "@sta
 import { CardTable } from "@/components/tarot/CardTable";
 import { ShuffleStage } from "@/components/tarot/ShuffleStage";
 import { TarotCard } from "@/components/tarot/TarotCard";
+import { Cat } from "@/components/characters/Cat";
 import { ShareResultButton } from "@/components/share/ShareResultButton";
 import { Button } from "@/components/ui/Button";
-import { SITE } from "@/lib/config";
+import { CrisisContacts } from "@/components/ui/CrisisContacts";
 import { createNowShareLink } from "@/lib/share/client";
 import { drawNow, type NowDraw } from "@/lib/decision";
 import { backImage, useDeckPrefs } from "@/lib/deck";
 import { guideHref } from "@/lib/hosts";
+import { NOW_TYPES, nowFacts, nowShareText, nowType } from "@/lib/tarotType";
+import { nowTone } from "@/lib/voice/tone";
 import s from "./NowOracle.module.css";
 import { NEW_TAROT_HREF } from "@/lib/freshStart";
 
@@ -28,8 +31,6 @@ const QUESTION_MAX = 40;
 const HOLD_MS = 450;
 /** The card is shown face down first, so the turn is seen; the page opens as it turns. */
 const TURN_MS = 250;
-/** The 3-card reading's name, as on the pricing and help pages (no shared label in SITE yet). */
-const FULL_READING = "타로 전체 풀이";
 /** One riffle (1.2s) per draw keeps unlimited repeat draws quick. */
 const SHUFFLE_RIFFLES = 1;
 
@@ -198,6 +199,13 @@ export function NowOracle({ instant = false }: NowOracleProps) {
   const card = draw ? getCard(draw.cardId) : null;
   const reversed = draw?.orientation === "reversed";
   const cardLabel = card ? `${card.names.ko}${reversed ? " 역방향" : ""}` : undefined;
+  // 타로로 판정 (spec 3.2): the nickname by rule, unless the worry typed is heavy (facts only) or calls for care (lib/voice/tone.ts).
+  const typeSlug = draw ? nowType(draw.cardId, draw.orientation) : null;
+  const tone = nowTone(question);
+  const nickShown = tone.tone === "spicy";
+  // Crisis words of any tier, or a plain wish to end one's life or vanish (lib/voice/tone.ts STRONG_NEAR): no card line or
+  // why, only the card's plain name and the care lines (review 2026-11-11 #4, coordinator 2026-11-11).
+  const careOnly = tone.tone === "crisis" || tone.tone === "care";
 
   return (
     <div className={s.screen}>
@@ -313,7 +321,14 @@ export function NowOracle({ instant = false }: NowOracleProps) {
             <Emblem />
             {turned ? (
               <h2 ref={answerRef} tabIndex={-1} className={s.answer}>
-                {draw.answer}
+                {careOnly ? (
+                  <>
+                    {card.names.ko}
+                    {reversed ? <span className="sr-only"> 역방향</span> : null}
+                  </>
+                ) : (
+                  draw.answer
+                )}
               </h2>
             ) : null}
           </div>
@@ -321,7 +336,7 @@ export function NowOracle({ instant = false }: NowOracleProps) {
           <div className={s.drawn}>
             <TarotCard cardId={draw.cardId} orientation={draw.orientation} faceUp={turned} size="md" label={turned ? cardLabel : undefined} className={s.card} />
             <div className={s.reading} data-open={turned ? "" : undefined}>
-              {turned ? (
+              {turned && !careOnly ? (
                 <>
                   <p className={s.cardName}>
                     {card.names.ko}
@@ -333,26 +348,53 @@ export function NowOracle({ instant = false }: NowOracleProps) {
             </div>
           </div>
 
+          {turned && typeSlug ? (
+            careOnly ? (
+              <CrisisContacts compact urgent={tone.crisis === "urgent"} className={s.care} />
+            ) : nickShown ? (
+              <section className={s.verdict} aria-labelledby="now-verdict-title">
+                <p id="now-verdict-title" className={s.verdictHead}>
+                  타로로 판정
+                </p>
+                <div className={s.verdictBody}>
+                  <Cat outfit="tarot" action="glow" size={64} reactOnTap={false} />
+                  <div className={s.verdictText}>
+                    <p className={s.typeName}>{NOW_TYPES[typeSlug].name}</p>
+                    <p className={s.typeLine}>{NOW_TYPES[typeSlug].line}</p>
+                  </div>
+                </div>
+                <p className={s.typeFacts}>{nowFacts(typeSlug)}</p>
+                <p className={s.typeSource}>카드 원소와 기울기로 정해지는 별명이에요</p>
+              </section>
+            ) : (
+              <p className={s.factsOnly}>{nowFacts(typeSlug, { polite: true })}</p>
+            )
+          ) : null}
+
           {turned ? (
             <div className={s.after}>
               <div className={s.actions}>
-                <p className={s.more}>더 자세히 보고 싶다면</p>
+                {/* 타로로's casual nudge (N6) only beside the nickname: after the facts only or the care lines, the plain button alone. */}
+                {nickShown ? <p className={s.more}>이 고민, 카드 3장으로 더 볼래?</p> : null}
                 <Button href={NEW_TAROT_HREF} block trailing="→">
-                  {`${FULL_READING} 보기`}
+                  카드 3장으로 보기
                 </Button>
                 <Button variant="secondary" block onClick={again}>
                   한 번 더 뽑기
                 </Button>
               </div>
-              {/* 공유하기 (owner 2026-10-23): this draw's own link, card + line + why; a new draw starts a new sheet. */}
-              <div className={s.share}>
-                <ShareResultButton
-                  key={`${draw.cardId}-${draw.orientation}-${draw.pick}`}
-                  kind="now"
-                  text={`${SITE.nameKo} 지금의 한 장 · ${card.names.ko}${reversed ? "(역)" : ""}`}
-                  create={() => createNowShareLink(draw, front)}
-                />
-              </div>
+              {/* 공유하기 (owner 2026-10-23): this draw's own link, card + line + why; a new draw starts a new sheet. Not where the
+                  line is hidden: the link's page would show it (coordinator 2026-11-11). */}
+              {careOnly ? null : (
+                <div className={s.share}>
+                  <ShareResultButton
+                    key={`${draw.cardId}-${draw.orientation}-${draw.pick}`}
+                    kind="now"
+                    text={nowShareText({ cardName: card.names.ko, reversed, slug: nickShown ? typeSlug : null })}
+                    create={() => createNowShareLink(draw, front, nickShown)}
+                  />
+                </div>
+              )}
             </div>
           ) : null}
         </section>

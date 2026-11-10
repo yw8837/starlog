@@ -1,26 +1,34 @@
 import { expect, test } from "@playwright/test";
 
 /**
- * Home layout (design pass): the owner's reading order — hero, 타로, 사주, the two quick cards,
- * 별자리 인연, the guide, the FAQ — with both paid entries above the fold, and the navigation in the right place for
- * the width (bottom bar on phones, top-right pills from 1024px).
+ * Home layout (spec 2026-11-11 entry funnel renewal 3.1): one hook first — 타로로's question, the first screen's only gold
+ * button, to 지금의 한 장 — then the 오픈 기념 line and the 2027 line, 타로 · 사주 (both above the fold with the hook), the
+ * 2027 키워드 line, the two quick cards, 별자리 인연, the guide, the FAQ; and the navigation in the right place for the width
+ * (bottom bar on phones, top-right pills from 1024px).
  */
 
-test("home: hero, then 타로 · 사주 above the fold, quick cards, 별자리 인연, guide, FAQ, in that order", async ({ page }) => {
+test("home: the one hook, then 타로 · 사주 above the fold, the free tests, 별자리 인연, guide, FAQ, in that order", async ({ page }) => {
   await page.goto("/");
   const main = page.getByRole("main");
   const h1 = page.getByRole("heading", { level: 1 });
   await expect(h1).toHaveCount(1);
-  await expect(h1).toContainText("고민 그대로 편하게 물어보세요");
+  await expect(h1).toHaveText("연락할까 말까? 카드 한 장 뽑아 봐");
 
+  const hookCard = main.locator("section[aria-labelledby='home-hook-title']");
+  const hook = hookCard.getByRole("link", { name: /한 장 뽑기/ });
   const tarot = main.getByRole("link", { name: /타로 보기/ });
   const saju = main.getByRole("link", { name: /사주 보기/ });
-  const now = main.getByRole("link", { name: /지금의 한 장/ });
+  const keyword = main.getByRole("link", { name: /2027년 내 키워드는\?/ });
   const today = main.getByRole("link", { name: /오늘의 한 장/ });
+  const birth = main.getByRole("link", { name: /나를 닮은 타로 카드/ });
+  await expect(hook).toHaveAttribute("href", "/now");
   await expect(tarot).toHaveAttribute("href", "/tarot/new");
   await expect(saju).toHaveAttribute("href", "/saju/start");
-  await expect(now).toHaveAttribute("href", "/now");
+  await expect(keyword).toHaveAttribute("href", "/2027-keyword");
   await expect(today).toHaveAttribute("href", "/today");
+  await expect(birth).toHaveAttribute("href", "/birth-card");
+  // 지금의 한 장 is the hook now: no second way to it on the home.
+  await expect(main.locator('a[href="/now"]')).toHaveCount(1);
   // 별자리 인연 loads this device's state first; a new visitor gets the start link. Friends join through the
   // invite link (/b/<code>), so the home has no code box.
   const bondsStart = main.getByRole("link", { name: "별자리 인연 시작하기" });
@@ -28,26 +36,46 @@ test("home: hero, then 타로 · 사주 above the fold, quick cards, 별자리 �
   await expect(main.getByText("초대코드로 참여")).toHaveCount(0);
 
   const box = async (locator: typeof tarot) => (await locator.boundingBox())!;
-  const [h1Box, tarotBox, sajuBox, nowBox, todayBox] = await Promise.all([box(h1), box(tarot), box(saju), box(now), box(today)]);
+  const [hookBox, tarotBox, sajuBox, keywordBox, todayBox, birthBox] = await Promise.all([box(hookCard), box(tarot), box(saju), box(keyword), box(today), box(birth)]);
   const guide = await box(page.getByRole("heading", { level: 2, name: "알아 두면 좋은 이야기" }));
   const faq = await box(page.getByRole("heading", { level: 2, name: "자주 묻는 질문" }));
   const bonds = await box(main.locator("section[aria-labelledby='bonds-home-title']"));
 
   // Reading order top to bottom (타로 and 사주 may share a row on desktop, 타로 first).
-  expect(h1Box.y).toBeLessThan(tarotBox.y);
+  expect(hookBox.y + hookBox.height).toBeLessThanOrEqual(tarotBox.y);
   expect(tarotBox.y).toBeLessThanOrEqual(sajuBox.y);
   if (tarotBox.y === sajuBox.y) expect(tarotBox.x).toBeLessThan(sajuBox.x);
-  expect(sajuBox.y + sajuBox.height).toBeLessThanOrEqual(nowBox.y);
-  expect(bonds.y).toBeGreaterThanOrEqual(nowBox.y + nowBox.height);
+  expect(sajuBox.y + sajuBox.height).toBeLessThanOrEqual(keywordBox.y);
+  expect(keywordBox.y + keywordBox.height).toBeLessThanOrEqual(todayBox.y);
+  expect(bonds.y).toBeGreaterThanOrEqual(todayBox.y + todayBox.height);
   expect(guide.y).toBeGreaterThan(bonds.y + bonds.height);
   expect(faq.y).toBeGreaterThan(guide.y);
 
-  // Both paid entries above the fold, and visibly bigger than the quick cards.
-  expect(sajuBox.y + sajuBox.height).toBeLessThanOrEqual(page.viewportSize()!.height);
-  expect(tarotBox.width * tarotBox.height).toBeGreaterThan(1.4 * nowBox.width * nowBox.height);
-  expect(tarotBox.height).toBeGreaterThan(110);
+  // The hook and both paid entries above the fold, the entries visibly bigger than the quick cards.
+  const fold = page.viewportSize()!.height;
+  expect(hookBox.y).toBeGreaterThanOrEqual(0);
+  expect(hookBox.y + hookBox.height).toBeLessThanOrEqual(fold);
+  expect(sajuBox.y + sajuBox.height).toBeLessThanOrEqual(fold);
+  // The entries are a step shorter beside the hook (spec 3.1 wireframe: about 120px), still clearly bigger than a quick card.
+  expect(tarotBox.width * tarotBox.height).toBeGreaterThan(1.2 * todayBox.width * todayBox.height);
+  // The spec wireframe's height, as a floor (review 2026-11-11 #7c): the 1.2x above may not hide entries shrinking under it.
+  expect(tarotBox.height).toBeGreaterThanOrEqual(120);
+  expect(sajuBox.height).toBeGreaterThanOrEqual(120);
   // The quick cards are equal halves.
-  expect(Math.abs(nowBox.width - todayBox.width)).toBeLessThanOrEqual(1);
+  expect(Math.abs(birthBox.width - todayBox.width)).toBeLessThanOrEqual(1);
+
+  // One gold button on the first screen: the hook's (a gold background on any link or button in view).
+  const gold = await page.evaluate((height) => {
+    // components/ui/Button .primary (and the old gold 타로 보기 card) is --gold, #f3dca1.
+    const isGold = (el: Element) => (getComputedStyle(el).backgroundColor + getComputedStyle(el).backgroundImage).includes("243, 220, 161");
+    return [...document.querySelectorAll("main a, main button")]
+      .filter((el) => {
+        const r = el.getBoundingClientRect();
+        return r.height > 0 && r.top < height && isGold(el);
+      })
+      .map((el) => el.textContent?.trim());
+  }, fold);
+  expect(gold).toEqual([expect.stringContaining("한 장 뽑기")]);
 });
 
 test("home: guide split 타로 / 사주 and four FAQ questions that open in place", async ({ page }) => {

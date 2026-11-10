@@ -34,6 +34,7 @@ import { countFullReading, markFreeUsedUp, useRemainingFree } from "@/lib/storag
 import { historyFor, listChapters, mergeServerReadings, saveChapter, useChapters } from "@/lib/storage/chapters";
 import { LATER_CHECK_DELAYS, OPENING_WINDOW_MS, checkDelivery, heldCredit, type DeliveryCheck, type HeldCredit } from "@/lib/storage/sync";
 import s from "./FreeResult.module.css";
+import { tarotTocMeta } from "@/lib/reading/tocMeta";
 import { isTarotReadingResponse, isTarotTeaser } from "@/lib/reading/validate";
 
 const RETURN_TO = "/tarot/result";
@@ -394,7 +395,7 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null, resum
               <a href="#unlock-title" className={s.jump}>
                 전체 풀이 보러 가기<span aria-hidden="true"> ↓</span>
               </a>
-              <LockedToc items={teaser.lockedToc} meta={`소제목 ${teaser.lockedToc.length}개 · 약 ${approxCharsText(SITE.reading.approxChars.tarot)}자`} />
+              <LockedToc items={teaser.lockedToc} meta={tarotTocMeta(teaser, approxCharsText(SITE.reading.approxChars.tarot))} />
               <UnlockSheet
                 kind="tarot"
                 offer={offer}

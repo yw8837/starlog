@@ -315,3 +315,11 @@ describe("the app's manuals left the guide for /help (AdSense audit 2026-10-27)"
     for (const table of [GUIDE_SUMMARIES, GUIDE_DATES]) for (const slug of MOVED) expect(Object.keys(table)).not.toContain(slug);
   });
 });
+
+describe("the guide names the app's buttons as they read now (review 2026-11-11 #7e)", () => {
+  it("one-card-yes-no sends a long worry on through 카드 3장으로 보기, the button under 지금의 한 장 (app/now/NowOracle.tsx)", () => {
+    const text = findArticle("one-card-yes-no")!.sections.map(guideSectionText).join("\n");
+    expect(text).toContain("결과 아래의 카드 3장으로 보기로 넘어가");
+    for (const article of ALL_GUIDE_ARTICLES) expect(article.sections.map(guideSectionText).join("\n")).not.toContain("타로 전체 풀이 보기로 넘어가");
+  });
+});

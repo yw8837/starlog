@@ -76,6 +76,17 @@ describe("PremiumRows (the premium rows of the home, the reading ends and the gu
     expect(section.textContent).toContain("다른 사람과 함께 봐요");
   });
 
+  it("as one line (the home under the hook): the heading stays for screen readers only, the row is the compact one", async () => {
+    stub(true);
+    render(<PremiumRows ids={["newyear-2027"]} title="2027년 미리 보기" look="line" />);
+    const section = await screen.findByRole("region", { name: "2027년 미리 보기" });
+    expect(within(section).getByRole("heading", { level: 2 }).className).toMatch(/sr-only/);
+    const link = within(section).getByRole("link");
+    expect(link.className).toMatch(/compact/);
+    expect(link.textContent).toContain("2027 신년운세");
+    expect(link.textContent).toContain("14,900원");
+  });
+
   it("on a guide page with the hosts split, links to the app host", async () => {
     vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
     stub(true);

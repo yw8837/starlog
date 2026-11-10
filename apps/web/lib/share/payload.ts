@@ -56,6 +56,8 @@ export interface SharedNow {
   lean: Lean;
   answer: string;
   why: string;
+  /** 타로로's nickname was shown with it (spec 2026-11-11 6.2 N8): the share says it (lib/tarotType.ts, by the card alone). */
+  nick?: true;
 }
 
 /**
@@ -507,13 +509,13 @@ const isFrontDeck = (value: unknown): value is FrontDeck => value === "starlog" 
 const isSide = (value: unknown): value is Orientation => value === "upright" || value === "reversed";
 
 /** 지금의 한 장 as drawn on a device: the card, its side, which of its lines (0-2) and the design. Null for anything else. */
-export function buildNowSharePayload(draw: { cardId: unknown; orientation: unknown; pick: unknown; deck: unknown }): SharedNow | null {
+export function buildNowSharePayload(draw: { cardId: unknown; orientation: unknown; pick: unknown; deck: unknown; nick?: unknown }): SharedNow | null {
   const { cardId, orientation, pick, deck } = draw;
   if (!isCardId(cardId) || !isSide(orientation) || !isFrontDeck(deck) || typeof pick !== "number" || !Number.isInteger(pick)) return null;
   const entry = decisionFor(cardId, orientation, deck);
   const answer = entry.answers[pick];
   if (pick < 0 || answer === undefined) return null;
-  return { kind: "now", v: 1, deck, card: { cardId, orientation }, lean: entry.lean, answer, why: entry.why };
+  return { kind: "now", v: 1, deck, card: { cardId, orientation }, lean: entry.lean, answer, why: entry.why, ...(draw.nick === true ? { nick: true as const } : {}) };
 }
 
 /** The free first tarot reading's share (written by the teaser route, where the input and the draw are known). */
@@ -558,7 +560,7 @@ function parseNewKind(value: Record<string, unknown>): SharePayload | null {
   if (value.kind === "now") {
     const card = value.card;
     if (!isRecord(card) || !isCardId(card.cardId) || !isSide(card.orientation) || !isFrontDeck(value.deck)) return null;
-    return typeof value.answer === "string" && typeof value.why === "string" ? (value as unknown as SharedNow) : null;
+    return typeof value.answer === "string" && typeof value.why === "string" && (value.nick === undefined || value.nick === true) ? (value as unknown as SharedNow) : null;
   }
   if (value.kind === "tarot-free") {
     const cards = value.cards;

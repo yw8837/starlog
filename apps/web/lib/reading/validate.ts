@@ -35,6 +35,9 @@ const isString = (value: unknown): value is string => typeof value === "string";
 const isText = (value: unknown): value is string => typeof value === "string" && value.trim().length > 0;
 const isStrings = (value: unknown): value is string[] => Array.isArray(value) && value.every((item) => typeof item === "string");
 const optional = <T>(value: unknown, check: (v: unknown) => v is T) => value === undefined || check(value);
+const isCount = (value: unknown): value is number => typeof value === "number" && Number.isInteger(value) && value >= 0;
+/** The lock's counts (spec 2026-11-11 3.6), each optional: a teaser kept before them still reads. */
+const hasOptionalCounts = (value: Record<string, unknown>) => optional(value.tocTotal, isCount) && optional(value.tocOpen, isCount) && optional(value.tocPartial, isCount);
 
 const CARD_IDS = new Set(CARDS.map((card) => card.id));
 export const isCardId = (value: unknown): value is string => typeof value === "string" && CARD_IDS.has(value);
@@ -44,13 +47,13 @@ export const isSection = (value: unknown): value is Section => isRecord(value) &
 
 export function isTarotTeaser(value: unknown): value is TarotTeaserData {
   if (!isRecord(value) || !isSection(value.firstCard) || !isStrings(value.lockedToc) || !Array.isArray(value.cards)) return false;
-  if (!optional(value.secondCard, isSection) || !optional(value.seal, isString) || !optional(value.share, isString)) return false;
+  if (!optional(value.secondCard, isSection) || !optional(value.seal, isString) || !optional(value.share, isString) || !hasOptionalCounts(value)) return false;
   return value.cards.length > 0 && value.cards.every((c) => isRecord(c) && typeof c.position === "string" && isCardId(c.cardId) && typeof c.keyword === "string");
 }
 
 export function isSajuTeaser(value: unknown): value is SajuTeaserData {
   if (!isRecord(value) || !isString(value.title) || !isString(value.summary) || !isStrings(value.lockedToc)) return false;
-  return optional(value.topic, isSajuTopic) && optional(value.freshUntil, isString) && optional(value.share, isString);
+  return optional(value.topic, isSajuTopic) && optional(value.freshUntil, isString) && optional(value.share, isString) && hasOptionalCounts(value);
 }
 
 const isReadingCard = (c: unknown) => isRecord(c) && isString(c.position) && isCardId(c.cardId) && isString(c.heading) && isString(c.body);

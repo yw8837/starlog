@@ -2,6 +2,7 @@ import { getCard } from "@starlog/core";
 import { SITE } from "@/lib/config";
 import { PREMIUM, premiumShareHref } from "@/lib/premium/products";
 import { topicLabel } from "@/lib/sajuTopics";
+import { nowShareText, nowType } from "@/lib/tarotType";
 import { HIDDEN, type SharePayload } from "./payload";
 
 /**
@@ -98,7 +99,10 @@ export function sharePreview(share: SharePayload, live?: BondsPreviewData | null
       };
     case "now":
       return {
-        title: titled(`지금의 한 장 · ${cardName(share.card)}`, firstSentence(share.answer)),
+        // With 타로로's nickname where the page showed it (spec 2026-11-11 6.2 N8); the card and its line otherwise (N9).
+        title: share.nick
+          ? clip(nowShareText({ cardName: getCard(share.card.cardId).names.ko, reversed: share.card.orientation === "reversed", slug: nowType(share.card.cardId, share.card.orientation) }), TITLE_MAX)
+          : titled(`지금의 한 장 · ${cardName(share.card)}`, firstSentence(share.answer)),
         description: clip(firstSentence(share.why) || "카드가 건넨 한 문장과 그렇게 읽은 이유를 볼 수 있어요.", DESCRIPTION_MAX),
         try: { label: "나도 뽑아 보기", path: "/now" },
       };

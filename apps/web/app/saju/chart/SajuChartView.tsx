@@ -44,6 +44,7 @@ import { BACK_TO_OVERALL, TEASER_LIMIT_NOTICE, TOPIC_SECTIONS, UNLOCK_SCOPE_LINE
 import { historyFor, listChapters, mergeServerReadings, saveChapter, useChapters } from "@/lib/storage/chapters";
 import { LATER_CHECK_DELAYS, OPENING_WINDOW_MS, checkDelivery, heldCredit, type DeliveryCheck, type HeldCredit } from "@/lib/storage/sync";
 import s from "./SajuChartView.module.css";
+import { sajuTocMeta } from "@/lib/reading/tocMeta";
 import { isSajuReadingResponse, isSajuTeaser } from "@/lib/reading/validate";
 
 /** The body /api/saju/* take: birth data, 사주팔자's status chips or a 운's id, and the earlier readings that belong with it (spec §7.8). */
@@ -59,6 +60,8 @@ const RETURN_TO = "/saju/chart";
 const TEASER_LOGIN_TITLE = "맛보기 풀이는 로그인하고 볼 수 있어요";
 /** Where a login or a payment comes back to: the 운 on screen rides along as ?topic= (never birth data). */
 const returnFor = (topic: SajuTopic) => (topic === "overall" ? RETURN_TO : `${RETURN_TO}?topic=${topic}`);
+/** The lock sheet's login: marked so the login names the full reading, not the 맛보기 (app/login/LoginPanel.tsx purpose). */
+const fullLoginHref = (topic: SajuTopic) => loginHref(`${returnFor(topic)}${topic === "overall" ? "?" : "&"}for=full`);
 /** Errors after which the server may still have saved the reading (M4). */
 const UNSETTLED = new Set(["QUALITY", "UPSTREAM", "NETWORK", "TIMEOUT", "INVALID"]);
 
@@ -243,7 +246,7 @@ export function SajuChartView({
     if (!res) return;
     if (!res.ok) {
       const code = res.error.code;
-      if (code === "LOGIN_REQUIRED") router.push(loginHref(returnFor(topic)));
+      if (code === "LOGIN_REQUIRED") router.push(fullLoginHref(topic));
       if ((chosen === "paid" || chosen === "free") && UNSETTLED.has(code)) void settle(chosen, startedAt, held, form, topic, "cut");
       else if ((chosen === "paid" || chosen === "free") && code === "NO_CREDIT") void settle(chosen, since(startedAt), held, form, topic, "refused");
       else if (code === "NO_CREDIT" || code === "PAYMENT_REQUIRED") void refreshAccount();
@@ -383,14 +386,14 @@ export function SajuChartView({
           전체 풀이 보러 가기<span aria-hidden="true"> ↓</span>
         </a>
         {topicRow}
-        <LockedToc items={teaser.lockedToc} meta={`소제목 ${teaser.lockedToc.length}개 · 약 ${approxCharsText(SITE.reading.approxChars.saju)}자`} />
+        <LockedToc items={teaser.lockedToc} meta={sajuTocMeta(teaser, approxCharsText(SITE.reading.approxChars.saju))} />
         <UnlockSheet
           kind="saju"
           topicLabel={topic !== "overall" ? topicLabel(topic) : undefined}
           scopeLine={topic !== "overall" ? UNLOCK_SCOPE_LINE : undefined}
           offer={offer}
           onUnlock={(chosen) => void unlock(chosen)}
-          loginHref={loginHref(returnFor(topic))}
+          loginHref={fullLoginHref(topic)}
           payHref={checkoutHref("saju", returnFor(topic))}
           owner={account?.owner}
           signedIn={account?.user ? loginKind(account.user) : undefined}

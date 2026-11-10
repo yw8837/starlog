@@ -71,6 +71,16 @@ describe("shape checks for what the reading API hands back (QA Q-02, Q-03)", () 
     expect(isWholeSajuReading(null)).toBe(false);
   });
 
+  it("takes the lock's real counts (spec 2026-11-11 3.6), still reads a teaser kept without them, and refuses odd ones", () => {
+    const teaser = { cards: [{ position: "p", cardId: "major-17-star", keyword: "k" }], firstCard: SECTION, lockedToc: ["a"] };
+    expect(isTarotTeaser({ ...teaser, tocTotal: 12, tocOpen: 1, tocPartial: 1 })).toBe(true);
+    expect(isSajuTeaser({ title: "t", summary: "s", lockedToc: [], tocTotal: 11, tocOpen: 0, tocPartial: 0 })).toBe(true);
+    for (const bad of [{ tocTotal: -1 }, { tocOpen: 1.5 }, { tocPartial: "1" }]) {
+      expect(isTarotTeaser({ ...teaser, ...bad })).toBe(false);
+      expect(isSajuTeaser({ title: "t", summary: "s", lockedToc: [], ...bad })).toBe(false);
+    }
+  });
+
   it("takes a topic teaser's topic and freshUntil, and refuses an unknown topic", () => {
     expect(isSajuTeaser({ title: "t", summary: "s", lockedToc: [], topic: "money", freshUntil: "2026-11-01T03:00:00.000Z" })).toBe(true);
     expect(isSajuTeaser({ title: "t", summary: "s", lockedToc: [], topic: "health" })).toBe(false);

@@ -23,7 +23,13 @@ export const TarotTeaserDraftSchema = z.object({
 /** A one-card spread's teaser has no second card (code picks the schema by the spread). */
 export const OneCardTeaserDraftSchema = TarotTeaserDraftSchema.omit({ secondCard: true });
 
-export const TarotTeaserSchema = OneCardTeaserDraftSchema.extend({ secondCard: Section.optional(), lockedToc: z.array(z.string()) });
+/**
+ * The lock's real counts, written by code (spec 2026-11-11 3.6): every heading of the paid reading, those shown whole, those shown
+ * in part. Optional, as in the screen's check (lib/reading/validate.ts): the samples and teasers kept before them have none.
+ */
+const count = z.number().int().nonnegative().optional();
+const TocCounts = { tocTotal: count, tocOpen: count, tocPartial: count };
+export const TarotTeaserSchema = OneCardTeaserDraftSchema.extend({ secondCard: Section.optional(), lockedToc: z.array(z.string()), ...TocCounts });
 
 export const TarotReadingSchema = z.object({
   verdict: z.string(),
@@ -60,7 +66,7 @@ export const DailyDraftSchema = z.object({
 
 export const SajuTeaserDraftSchema = z.object({ title: z.string(), summary: z.string() });
 
-export const SajuTeaserSchema = SajuTeaserDraftSchema.extend({ lockedToc: z.array(z.string()) });
+export const SajuTeaserSchema = SajuTeaserDraftSchema.extend({ lockedToc: z.array(z.string()), ...TocCounts });
 
 /**
  * 한눈에 보기 (owner 2026-10-07): one plain sentence per item, shown on top of the reading under code-owned labels

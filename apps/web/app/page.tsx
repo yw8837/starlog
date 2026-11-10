@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { BondsHomeRow } from "@/components/bonds/BondsHomeRow";
-import { HomeFaq, HomeGuide, HomeHero, QuickCards, SajuEntry, TarotEntry } from "@/components/home/HomeEntries";
+import { HomeFaq, HomeGuide, HomeHook, HomeIntro, KeywordLine, QuickCards, SajuEntry, TarotEntry } from "@/components/home/HomeEntries";
 import { HomeTopBar } from "@/components/home/HomeTopBar";
 import { HomeYearBanner, OpeningNotice } from "@/components/home/HomeYearBanner";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -16,10 +16,11 @@ import s from "./page.module.css";
 export const metadata: Metadata = pageMetadata({ description: HOME_DESCRIPTION, path: "/" });
 
 /**
- * Home, the same for every visitor, in reading order: the hero line; 타로 보기 (gold, the one
- * primary) and 사주 보기 with their characters; the two free quick cards; 별자리 인연 (while
+ * Home, the same for every visitor, in reading order (spec 2026-11-11 entry funnel renewal 3.1): the one hook (타로로's
+ * question, the only gold button, to 지금의 한 장); the 오픈 기념 line and the 2027 line; 타로 보기 and 사주 보기 (ivory and
+ * hanji) with their characters; the 2027 키워드 line; the two free quick cards; who reads what; 별자리 인연 (while
  * SITE.features.bonds is on); the guide; four FAQ questions.
- * Desktop keeps that order: 타로 | 사주 side by side, the rest full width.
+ * Desktop keeps that order: the hook full width, 타로 | 사주 side by side, the rest full width.
  */
 export default function HomePage() {
   return (
@@ -30,8 +31,9 @@ export default function HomePage() {
         {/* The site's name for search (스타로그 / Starlog): on the home, where Google reads it. */}
         <JsonLd data={websiteJsonLd()} />
         <HomeTopBar />
-        <HomeHero />
-        {/* Sales 2026-11-10 item 5: 오픈 기념 무료 until 11월 30일 (by the browser's clock), and the 2027 신년운세 banner where it is on sale. */}
+        <HomeHook />
+        {/* Sales 2026-11-10 item 5: 오픈 기념 무료 until 11월 30일 (by the browser's clock), and the 2027 신년운세 banner where it is on
+            sale, as one line under the hook (spec 2026-11-11 Q3 default: still on the first screen). */}
         <OpeningNotice />
         <HomeYearBanner />
 
@@ -44,9 +46,15 @@ export default function HomePage() {
             <SajuEntry />
           </div>
           <div className={s.wide}>
+            <KeywordLine />
+          </div>
+          <div className={s.wide}>
             <QuickCards />
           </div>
-          {/* 지난 풀이 돌아보기 lives in 내 정보 now (owner 2026-10-20). The one premium row is the 2027 banner above (owner 2026-11-10); the rest starts from the tarot bridge and the saju list. */}
+          <div className={s.wide}>
+            <HomeIntro />
+          </div>
+          {/* 지난 풀이 돌아보기 lives in 내 정보 now (owner 2026-10-20). The one premium row is the 2027 line above (owner 2026-11-10); the rest starts from the tarot bridge and the saju list. */}
           {/* Row 4, 별자리 인연: renders nothing until this device's state is loaded (no empty gap). */}
           {SITE.features.bonds ? <BondsHomeRow className={s.wide} /> : null}
         </div>

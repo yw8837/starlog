@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { assertVoice } from "@/lib/voice/banned";
 import { LoginPanel } from "./LoginPanel";
 
 afterEach(() => {
@@ -74,10 +75,51 @@ describe("LoginPanel", () => {
     expect(screen.getByRole("status").textContent).toBe("Google 로그인은 앱 안 브라우저에서는 안 돼요. Safari·Chrome에서 열어 주세요. 카카오 로그인은 여기서도 돼요.");
   });
 
-  it("names what the login is for: a reading by default, 내 별자리 from /bonds, 내 기록 from /me", () => {
-    render(<LoginPanel next="/tarot/result?unlock=opening" status={null} navigate={() => {}} />);
-    expect(screen.getByRole("heading", { level: 1, name: "로그인하고 전체 풀이 보기" })).toBeTruthy();
+  // Spec 2026-11-11 entry funnel renewal 3.9: the title and the bubble say why the visitor came (a 맛보기, 오늘의 카드, an
+  // invite, the 오픈 기념 무료, a paid reading), in 해요체; the copy passes the banned list (spec 2.4).
+  it.each([
+    ["/tarot/result?resume=0123456789abcdef01234567", "고른 카드와 질문은 그대로 둘게요", "로그인하고 맛보기 이어 보기"],
+    ["/tarot/result?instant=1&resume=0123456789abcdef01234567", "고른 카드와 질문은 그대로 둘게요", "로그인하고 맛보기 이어 보기"],
+    ["/saju/chart", "명식과 입력한 정보는 그대로 있어요", "로그인하고 사주 맛보기 보기"],
+    ["/saju/chart?topic=love", "명식과 입력한 정보는 그대로 있어요", "로그인하고 사주 맛보기 보기"],
+    ["/today", "고른 카드는 그대로 기억해 둘게요", "로그인하고 오늘의 카드 펼치기"],
+    ["/today?pick=1", "고른 카드는 그대로 기억해 둘게요", "로그인하고 오늘의 카드 펼치기"],
+    ["/b/AbC123?resume=0123456789abcdef01234567", "적은 닉네임과 카드는 그대로 있어요", "로그인하고 별 되기"],
+    ["/saju/grade", "등급 카드는 그대로 있어요", "로그인하고 등급 풀이 열기"],
+    ["/saju/grade/s-full-moon", "등급 카드는 그대로 있어요", "로그인하고 등급 풀이 열기"],
+    // The unlock sheet's 로그인하고 전체 풀이 보기 (no ?resume=), the checkout, premium: the full reading, as before.
+    ["/tarot/result", `이 풀이를 스타로그에 적어둘게요`, "로그인하고 전체 풀이 보기"],
+    // 사주's own lock sheet marks its login ?for=full (review 2026-11-11 #7a), so it is not taken for the 맛보기's.
+    ["/saju/chart?for=full", `이 풀이를 스타로그에 적어둘게요`, "로그인하고 전체 풀이 보기"],
+    ["/saju/chart?topic=money&for=full", `이 풀이를 스타로그에 적어둘게요`, "로그인하고 전체 풀이 보기"],
+    ["/pay/checkout?product=tarot&returnTo=%2Ftarot%2Fresult", `이 풀이를 스타로그에 적어둘게요`, "로그인하고 전체 풀이 보기"],
+    ["/premium/match/preview", `이 풀이를 스타로그에 적어둘게요`, "로그인하고 전체 풀이 보기"],
+    ["/", `이 풀이를 스타로그에 적어둘게요`, "로그인하고 전체 풀이 보기"],
+  ])("names why the visitor came from %s", (next, bubble, title) => {
+    render(<LoginPanel next={next} status={null} navigate={() => {}} />);
+    expect(screen.getByRole("heading", { level: 1, name: title })).toBeTruthy();
+    expect(screen.getByText(bubble)).toBeTruthy();
+    assertVoice(bubble);
+    assertVoice(title);
+  });
+
+  it("names the 오픈 기념 무료 only while it runs (the server's clock, app/login/page.tsx), the full reading after it", () => {
+    render(<LoginPanel next="/tarot/result?unlock=opening" status={null} opening navigate={() => {}} />);
+    expect(screen.getByRole("heading", { level: 1, name: "로그인하고 오픈 기념 무료 확인하기" })).toBeTruthy();
+    // True for an account or a device that already had it too (review 2026-11-11 #6): no promise of opening it.
+    expect(screen.getByText("계정마다 한 번, 로그인하면 바로 확인해 줄게요")).toBeTruthy();
+    expect(screen.queryByText(/열어 둘게요|적어 둘게요/)).toBeNull();
+    assertVoice("계정마다 한 번, 로그인하면 바로 확인해 줄게요");
+    assertVoice("로그인하고 오픈 기념 무료 확인하기");
     cleanup();
+    render(<LoginPanel next="/tarot/result?unlock=opening&instant=1" status={null} opening navigate={() => {}} />);
+    expect(screen.getByRole("heading", { level: 1, name: "로그인하고 오픈 기념 무료 확인하기" })).toBeTruthy();
+    cleanup();
+    render(<LoginPanel next="/tarot/result?unlock=opening" status={null} opening={false} navigate={() => {}} />);
+    expect(screen.getByRole("heading", { level: 1, name: "로그인하고 전체 풀이 보기" })).toBeTruthy();
+  });
+
+  it("keeps 내 별자리 from /bonds and 내 기록 from /me", () => {
     render(<LoginPanel next="/bonds" status={null} navigate={() => {}} />);
     expect(screen.getByRole("heading", { level: 1, name: "로그인하고 내 별자리 만들기" })).toBeTruthy();
     expect(screen.getByText("내 별자리를 계정에 적어둘게요")).toBeTruthy();

@@ -3,6 +3,7 @@ import { decisionFor } from "@/lib/decision";
 import { setTestDb } from "@/lib/db";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { findShare } from "@/lib/share/store";
+import { NOW_TYPES, nowType } from "@/lib/tarotType";
 import { browser, useTestDb } from "@/lib/testing/p4";
 import { POST } from "./route";
 
@@ -29,6 +30,21 @@ describe("POST /api/share/now (지금의 한 장, owner 2026-10-23)", () => {
     const a = (await (await browser("203.0.113.1").send(POST, "/api/share/now", { body: DRAW, origin: true })).json()) as { id: string };
     const b = (await (await browser("203.0.113.2").send(POST, "/api/share/now", { body: DRAW, origin: true })).json()) as { id: string };
     expect(b.id).toBe(a.id);
+  });
+
+  it("says 타로로's nickname with the card when the page showed it (spec 2026-11-11 6.2 N8), as its own link", async () => {
+    const db = useTestDb();
+    const plain = (await (await browser().send(POST, "/api/share/now", { body: DRAW, origin: true })).json()) as { id: string };
+    const res = await browser().send(POST, "/api/share/now", { body: { ...DRAW, nick: true }, origin: true });
+    const { id, preview } = (await res.json()) as { id: string; preview: { title: string } };
+    expect(id).not.toBe(plain.id);
+    expect((await findShare(db, id))?.payload).toMatchObject({ kind: "now", nick: true });
+    const name = NOW_TYPES[nowType("major-17-star", "reversed")].name;
+    expect(preview.title).toBe(`타로로 판정: ${name} · 별(역) | 스타로그 지금의 한 장`);
+    // Anything but `true` is no nickname: the plain link, as before (N9).
+    const odd = (await (await browser().send(POST, "/api/share/now", { body: { ...DRAW, nick: "yes" }, origin: true })).json()) as { id: string; preview: { title: string } };
+    expect(odd.id).toBe(plain.id);
+    expect(odd.preview.title).not.toContain("타로로 판정");
   });
 
   it("refuses a draw the card DB does not know, and another site's page", async () => {

@@ -16,8 +16,8 @@ type PremiumRowsProps = {
   title: string;
   /** A line per product in place of its sub. */
   lines?: Partial<Record<PremiumId, string>>;
-  /** The home's ivory cards (three across on desktop); otherwise glass rows. */
-  look?: "home" | "rows";
+  /** The home's ivory cards (three across on desktop); one compact line under the home hook, its heading for screen readers only; otherwise glass rows. */
+  look?: "home" | "line" | "rows";
   /** Only products on sale now (the status's `open`, as StarList): none before its window, after it, or with sales off (a reading's end, the home's banner). */
   onlyOpen?: boolean;
   /** The host the page is served on: a guide page links to the app host. */
@@ -59,9 +59,10 @@ export function PremiumRows({ ids, title, lines = {}, look = "rows", onlyOpen = 
   const rows = ids.filter((id) => status[id].visible && !(onlyOpen && !status[id].open));
   const set = withSet && host === "app" && status.set?.open === true;
   if (rows.length === 0 && !set) return null;
+  const rowClass = look === "home" ? `${s.row} ${s.ivory}` : look === "line" ? `${s.row} ${s.compact}` : s.row;
   return (
-    <section className={[s.section, look === "home" ? s.home : "", className ?? ""].filter(Boolean).join(" ")} aria-labelledby={titleId}>
-      <h2 id={titleId} className={s.title}>
+    <section className={[s.section, look === "home" ? s.home : look === "line" ? s.line : "", className ?? ""].filter(Boolean).join(" ")} aria-labelledby={titleId}>
+      <h2 id={titleId} className={look === "line" ? "sr-only" : s.title}>
         {title}
       </h2>
       <ul className={s.list}>
@@ -70,7 +71,7 @@ export function PremiumRows({ ids, title, lines = {}, look = "rows", onlyOpen = 
           const soon = opensAt(id);
           return (
             <li key={id}>
-              <Link href={linkHref(premiumPath(id), host)} prefetch={host === "app" ? undefined : false} className={look === "home" ? `${s.row} ${s.ivory}` : s.row}>
+              <Link href={linkHref(premiumPath(id), host)} prefetch={host === "app" ? undefined : false} className={rowClass}>
                 <span className={s.head}>
                   <strong className={s.name}>{spec.name}</strong>
                   <span className={s.price}>{won(spec.krw)}</span>
@@ -86,7 +87,7 @@ export function PremiumRows({ ids, title, lines = {}, look = "rows", onlyOpen = 
         })}
         {set ? (
           <li key={SET_PRODUCT_ID}>
-            <Link href={SET_HREF} className={look === "home" ? `${s.row} ${s.ivory}` : s.row}>
+            <Link href={SET_HREF} className={rowClass}>
               <span className={s.head}>
                 <strong className={s.name}>{SITE.price.set.name}</strong>
                 <span className={s.price}>{won(SITE.price.set.krw)}</span>

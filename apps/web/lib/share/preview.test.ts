@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { decisionFor } from "@/lib/decision";
 import { TAROT_SAMPLE } from "@/lib/fixtures";
+import { NOW_TYPES, nowType } from "@/lib/tarotType";
 import type { ChapterContext } from "@/lib/security/chapterToken";
 import { buildNowSharePayload, buildSharePayload, buildTarotFreePayload } from "./payload";
 import { firstSentence, fitList, sharePreview } from "./preview";
@@ -40,6 +41,12 @@ describe("sharePreview", () => {
     const preview = sharePreview(buildNowSharePayload({ cardId: "major-17-star", orientation: "upright", pick: 0, deck: "starlog" })!);
     expect(preview.title.startsWith("지금의 한 장 · 별 · ")).toBe(true);
     expect(preview.title).toContain(firstSentence(entry.answers[0]).slice(0, 10));
+    expect(preview.try).toEqual({ label: "나도 뽑아 보기", path: "/now" });
+  });
+
+  it("지금의 한 장 with the nickname shown: 타로로 판정 first (spec 2026-11-11 6.2 N8)", () => {
+    const preview = sharePreview(buildNowSharePayload({ cardId: "major-00-fool", orientation: "reversed", pick: 0, deck: "starlog", nick: true })!);
+    expect(preview.title).toBe(`타로로 판정: ${NOW_TYPES[nowType("major-00-fool", "reversed")].name} · 바보(역) | 스타로그 지금의 한 장`);
     expect(preview.try).toEqual({ label: "나도 뽑아 보기", path: "/now" });
   });
 

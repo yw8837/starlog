@@ -56,12 +56,24 @@ export async function generateTarotTeaser(provider: ReadingProvider, ctx: TarotC
       cards: ctx.cards.map((card, i) => ({ position: card.position, cardId: card.cardId, keyword: data.cards[i]!.keyword.trim() })),
       firstCard: { heading: cardLabel(ctx.cards[0]!), body: data.firstCard.body.trim() },
       ...(second && data.secondCard ? { secondCard: { heading: cardLabel(second), body: data.secondCard.body.trim() } } : {}),
-      // 감질맛: with a second card the first is shown in full and the paid reading keeps it, so it is not listed as locked.
-      lockedToc: second && data.secondCard ? tarotLockedToc(ctx).filter((heading) => heading !== cardLabel(ctx.cards[0]!)) : tarotLockedToc(ctx),
+      ...tarotToc(ctx, Boolean(second && data.secondCard)),
     },
     usage,
   };
 }
+
+/**
+ * The locked headings and the lock's real counts (spec 2026-11-11 3.6). 감질맛: with a second card the first is shown in full
+ * and the paid reading keeps it, so it is not listed as locked (1 open), and the second shows its first part (1 partial).
+ */
+function tarotToc(ctx: TarotContext, cut: boolean) {
+  const all = tarotLockedToc(ctx);
+  const lockedToc = cut ? all.filter((heading) => heading !== cardLabel(ctx.cards[0]!)) : all;
+  return { lockedToc, tocTotal: all.length, tocOpen: all.length - lockedToc.length, tocPartial: cut ? 1 : 0 };
+}
+
+/** A saju 맛보기 is a name and a summary: every heading of the paid reading stays locked (spec 2026-11-11 3.6). */
+const sajuToc = (headings: readonly string[]) => ({ lockedToc: [...headings], tocTotal: headings.length, tocOpen: 0, tocPartial: 0 });
 
 /** The reading with the teaser's written cards (감질맛) as its leading card bodies; the model's headings stay. */
 export const withWrittenCards = (reading: TarotReading, written: readonly Section[]): TarotReading => ({
@@ -140,7 +152,7 @@ export async function generateSajuTeaser(provider: ReadingProvider, facts: SajuF
     ...generationSetting("saju-teaser"),
     mock: () => mockSajuTeaser(facts),
   }, (draft) => validateSajuTeaser(draft, facts), hooks);
-  return { data: { title: data.title.trim(), summary: data.summary.trim(), lockedToc: [...SAJU_LOCKED_TOC] }, usage };
+  return { data: { title: data.title.trim(), summary: data.summary.trim(), ...sajuToc(SAJU_LOCKED_TOC) }, usage };
 }
 
 /** 7절·8절's own call: cut at this budget and replaced by the code-built text (review 2026-10-08, B). */
@@ -393,7 +405,7 @@ export async function generateSajuTopicTeaser(provider: ReadingProvider, facts: 
     mock: () => mockSajuTopicTeaser(facts),
   }, (draft) => validateSajuTopicTeaser(draft, facts), hooks);
   return {
-    data: { title: data.title.trim(), summary: data.summary.trim(), lockedToc: topicLockedToc(facts.topic), topic: facts.topic, freshUntil: facts.freshUntil },
+    data: { title: data.title.trim(), summary: data.summary.trim(), ...sajuToc(topicLockedToc(facts.topic)), topic: facts.topic, freshUntil: facts.freshUntil },
     usage,
   };
 }
