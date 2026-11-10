@@ -10,6 +10,7 @@ import { loginHref } from "@/lib/account/client";
 import { SITE, sajuTopicsMode, won } from "@/lib/config";
 import { approxCharsText } from "@/lib/pricing";
 import { REFUND_DAYS } from "@/lib/pay/catalog";
+import { CHECKOUT_TOC } from "@/lib/pay/toc";
 import { isPaymentWindowClosed, loadTossSdk, type TossWidgets } from "@/lib/pay/tossSdk";
 import { PREMIUM, isPremiumId } from "@/lib/premium/products";
 import { getJson, postJson } from "@/lib/reading/api";
@@ -47,6 +48,12 @@ const scopeLines = (productId: string): string[] => {
     // 주제별 사주: one payment opens the one reading chosen when it is opened (saju-topics spec §9.2).
     ...(productId === "saju" && sajuTopicsMode() === "on" ? [UNLOCK_SCOPE_LINE] : []),
   ];
+};
+
+/** The sections, titles only; none for a saju topic reading (its sections follow the 운 chosen when it is opened). */
+const toc = (productId: string): readonly string[] => {
+  if (productId === "saju" && sajuTopicsMode() === "on") return [];
+  return (CHECKOUT_TOC as Record<string, readonly string[] | undefined>)[productId] ?? [];
 };
 
 /** The details could not be loaded (a server error or a lost connection): payment words, never a reading's (F-03). */
@@ -170,6 +177,20 @@ export function CheckoutView({ productId, returnTo, navigate = (url) => window.l
               <li key={line}>{line}</li>
             ))}
           </ul>
+          {/* Sales 2026-11-10 item 1: what the reading holds (titles only) and the one line a buyer hesitates on. */}
+          <p className={s.trust}>{`한 번 결제로 풀이 하나가 열려요. 자동결제는 없어요. 열기 전에는 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있어요.`}</p>
+          {toc(info.productId).length ? (
+            <section className={s.toc} aria-labelledby="toc-title">
+              <h2 id="toc-title" className={s.noticeTitle}>
+                풀이 목차
+              </h2>
+              <ol>
+                {toc(info.productId).map((title) => (
+                  <li key={title}>{title}</li>
+                ))}
+              </ol>
+            </section>
+          ) : null}
           <section className={s.notice} aria-labelledby="withdrawal-title">
             <h2 id="withdrawal-title" className={s.noticeTitle}>
               결제 전에 확인해 주세요

@@ -46,6 +46,33 @@
   color: var(--gold);
 }
 
+/* Sales 2026-11-10: no automatic payment and the refund, in one line a buyer sees under the price. */
+.trust {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--fs-body);
+  font-weight: 700;
+  line-height: 1.6;
+  text-align: center;
+}
+
+/* The reading's sections, titles only. */
+.toc {
+  display: grid;
+  gap: 8px;
+  padding: 16px 18px;
+  border: 1px solid var(--glass-line);
+  border-radius: 20px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+}
+
+.toc ol {
+  margin: 0;
+  padding-left: 1.4em;
+}
+
 /* The 청약철회 and minors' notice, read before the box is ticked. */
 .notice {
   display: grid;

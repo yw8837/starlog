@@ -106,6 +106,16 @@ describe("CheckoutView", () => {
     expect(pay.disabled).toBe(false);
   });
 
+  it("shows what the reading holds before paying: its sections, titles only, and one line on no automatic payment and the refund (sales 2026-11-10)", async () => {
+    stubFetch(Response.json({ productId: "newyear-2027", name: "2027 신년운세", amount: 14900, customerKey: "c_x", provider: "mock", clientKey: null }));
+    render(<CheckoutView productId="newyear-2027" returnTo="/premium/newyear-2027/preview" navigate={vi.fn()} />);
+    const toc = await screen.findByRole("region", { name: "풀이 목차" });
+    const items = within(toc).getAllByRole("listitem").map((li) => li.textContent);
+    expect(items[0]).toBe("2027 정미년과 나의 명식");
+    expect(items).toContain("1월부터 12월까지 달마다");
+    expect(screen.getByText("한 번 결제로 풀이 하나가 열려요. 자동결제는 없어요. 열기 전에는 결제일로부터 7일 안에 전액 환불받을 수 있어요.")).toBeTruthy();
+  });
+
   it("keeps the standard readings' check as it is: no premium clause", async () => {
     render(<CheckoutView productId="tarot" returnTo="/tarot/result" navigate={vi.fn()} />);
     expect(await screen.findByRole("checkbox", { name: "위 내용을 확인했어요" })).toBeTruthy();
