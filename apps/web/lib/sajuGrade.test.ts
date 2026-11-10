@@ -6,8 +6,8 @@ import { describe, expect, it } from "vitest";
 import { maskGanzhiReadings } from "./ai/ganzhi";
 import { GLANCE_GRADE, GLANCE_REMEDY, GLANCE_SCHOOL, SAJU_BLOCKLIST, blocklistViolations, nonHaeyoSentences, sentences } from "./ai/validate";
 import {
-  GRADE_FIXED_LINE, GRADE_NICKNAME, GRADE_NOTICE, GRADE_SLUGS, balanceLine, boundaryNotice, compareLine, currentGradeYear, flowLine, gradeChips,
-  gradeForYear, gradeLine, gradeObservations, gradePercentile, gradeSlug, nextBrightLine, nextBrightYear, parseGradeSlug, yearLine,
+  GRADE_FIXED_LINE, GRADE_NICKNAME, GRADE_NOTICE, GRADE_SLUGS, GRADE_YEARS, balanceLine, boundaryNotice, compareLine, currentGradeYear, flowLine, gradeChips,
+  gradeForYear, gradeLine, gradeObservations, gradePercentile, gradeSlug, gradeStaticSlugs, nextBrightLine, nextBrightYear, parseGradeSlug, yearLine,
 } from "./sajuGrade";
 import cutsJson from "./sajuGradeCuts.generated.json";
 import ranksJson from "./sajuGradeRanks.generated.json";
@@ -197,13 +197,29 @@ describe("card copy and the share address (A1, A4, B, C, E)", () => {
     expect(GRADE_NOTICE).toBe("재미로 보는 계산이에요. 사람이나 사주의 좋고 나쁨, 앞으로 일어날 일을 정하지 않아요. 규칙은 '등급은 어떻게 나와요?'에 다 적어 두었어요.");
   });
 
-  it("puts only a year and a grade in the share address: 2026–2035 × S·A·B·C, nothing else", () => {
+  it("puts only a year and a grade in the share address: 2026–2085 × S·A·B·C, nothing else", () => {
     expect(gradeSlug(2026, "S")).toBe("2026-s");
-    expect(GRADE_SLUGS).toHaveLength(40);
-    expect(GRADE_SLUGS[0]).toBe("2026-s");
-    expect(GRADE_SLUGS.at(-1)).toBe("2035-c");
+    expect(GRADE_YEARS).toEqual({ first: 2026, last: 2085 });
     expect(parseGradeSlug("2028-a")).toEqual({ year: 2028, gz: "戊申", ko: "무신", grade: "A", nickname: "차오르는 달 사주주" });
-    for (const bad of ["2025-s", "2036-a", "2026-d", "2026-S", "2026s", "1990-05-15", "2026-s-1990", "", "constructor"]) expect(parseGradeSlug(bad), bad).toBeNull();
+    expect(parseGradeSlug("2036-b")).toEqual({ year: 2036, gz: "丙辰", ko: "병진", grade: "B", nickname: "초승달 사주주" });
+    expect(parseGradeSlug("2085-c")).toMatchObject({ year: 2085, grade: "C" });
+    for (const bad of [
+      "2025-s", "2086-a", "9999-s", "0000-s", "2026-d", "2026-S", "2026s", "02036-a", "2036-ab", " 2036-a", "2036-a ", "2036-a\n", "1990-05-15", "2026-s-1990", "", "constructor",
+    ]) expect(parseGradeSlug(bad), bad).toBeNull();
+  });
+
+  it("builds ahead only the ten chips' years from the year in force; from 입춘 2027 the last chip (2036) still has its address", () => {
+    const before = Date.parse("2027-01-20T12:00:00+09:00");
+    const after = Date.parse("2027-02-05T12:00:00+09:00");
+    expect(gradeStaticSlugs(before)).toHaveLength(40);
+    expect([gradeStaticSlugs(before)[0], gradeStaticSlugs(before).at(-1)]).toEqual(["2026-s", "2035-c"]);
+    expect([gradeStaticSlugs(after)[0], gradeStaticSlugs(after).at(-1)]).toEqual(["2027-s", "2036-c"]);
+    const last = gradeChips(C, currentGradeYear(after)).at(-1)!;
+    expect(last.year).toBe(2036);
+    expect(parseGradeSlug(gradeSlug(last.year, last.grade))).toMatchObject({ year: 2036, grade: last.grade });
+    // the built set never leaves the range
+    expect(gradeStaticSlugs(Date.parse("2080-03-01T12:00:00+09:00")).at(-1)).toBe("2085-c");
+    expect(GRADE_SLUGS).toEqual(gradeStaticSlugs());
   });
 
   it("names the next S·A year, or says truthfully when there is none in 60 years", () => {

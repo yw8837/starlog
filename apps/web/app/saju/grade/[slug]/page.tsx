@@ -6,18 +6,19 @@ import { Footer } from "@/components/layout/Footer";
 import { NightSky } from "@/components/sky/NightSky";
 import { SITE } from "@/lib/config";
 import { NOINDEX_FOLLOW, NOT_FOUND_METADATA, pageMetadata } from "@/lib/seo";
-import { GRADE_FIXED_LINE, GRADE_NOTICE, GRADE_SLUGS, gradeSlug, parseGradeSlug, yearName } from "@/lib/sajuGrade";
+import { GRADE_FIXED_LINE, GRADE_NOTICE, gradeSlug, gradeStaticSlugs, parseGradeSlug, yearName } from "@/lib/sajuGrade";
 import { GradeVisitor, SharedGradeCard } from "./GradeVisitor";
 import s from "../grade.module.css";
 
 /**
- * Built ahead (generateStaticParams), and rendered on demand when the built copy cannot be read (a location missing the new
- * static assets right after a deploy, as /birth-card/[card]); any address but the 40 slugs is still a 404.
+ * The ten chips' years from the build are built ahead (generateStaticParams); any other year of GRADE_YEARS (2026–2085), and a
+ * built copy that cannot be read (a location missing the new static assets right after a deploy, as /birth-card/[card]), renders
+ * on demand. Anything parseGradeSlug refuses is a 404.
  */
 export const dynamicParams = true;
 
 export function generateStaticParams() {
-  return GRADE_SLUGS.map((slug) => ({ slug }));
+  return gradeStaticSlugs().map((slug) => ({ slug }));
 }
 
 const ogPath = (slug: string) => `/api/og/saju-grade/${slug}`;

@@ -9,7 +9,8 @@ import { inline } from "@/lib/share/og";
 /**
  * GET → the picture of a shared 사주 등급 card (/saju/grade/<year>-<grade>, spec 2026-11-11 C): 1200×630 for link previews, or
  * 1080×1920 with ?size=story (the story image button). It knows the slug alone (no birth, no observation, no share); anything
- * but the 40 slugs is a 404 before anything is fetched. Kept at the edge a day under the slug's address and size.
+ * parseGradeSlug refuses (a year outside 2026–2085, any other shape) is a 404 before anything is fetched. Kept at the edge a day
+ * under the slug's address and size.
  */
 
 const TTL = 24 * 60 * 60;

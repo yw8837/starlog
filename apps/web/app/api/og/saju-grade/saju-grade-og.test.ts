@@ -103,9 +103,24 @@ describe("/api/og/saju-grade/[slug]", () => {
     expect(drawnParts(drawn[0] as ReactElement).images).toEqual([]);
   });
 
+  it("from 입춘 2027 draws the last chip's card (2036-b), the year after the ten built ahead (fixed clock)", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2027-02-05T12:00:00+09:00"));
+    try {
+      stubArt(true);
+      const res = await get("2036-b");
+      expect(res.status).toBe(200);
+      const { text } = drawnParts(drawn[0] as ReactElement);
+      expect(text).toContain("2036 병진년");
+      expect(text).toContain("초승달 사주주");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("is a 404 for anything else, before anything is fetched or drawn", async () => {
     const asked = stubArt(true);
-    for (const slug of ["2025-s", "2036-a", "2026-d", "2026-S", "1995-06-01", "2026-s-1995", "constructor"]) expect((await get(slug)).status, slug).toBe(404);
+    for (const slug of ["2025-s", "2086-a", "2026-d", "2026-S", "1995-06-01", "2026-s-1995", "constructor"]) expect((await get(slug)).status, slug).toBe(404);
     expect(asked).toEqual([]);
     expect(drawn).toEqual([]);
   });

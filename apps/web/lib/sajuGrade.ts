@@ -79,15 +79,24 @@ export const GRADE_NOTICE = "재미로 보는 계산이에요. 사람이나 사�
 
 // ---- the share address (C): a year and a grade, nothing about the person ----
 
-/** The years a shared card may name. */
-export const GRADE_YEARS = { first: 2026, last: 2035 } as const;
+/**
+ * The years a shared card may name (its page and its OG picture): 2026, the first card, through one whole 60-year round, so the
+ * last of the ten chips keeps an address after every 입춘 (2036 from 입춘 2027).
+ */
+export const GRADE_YEARS = { first: 2026, last: 2085 } as const;
 
 export const gradeSlug = (year: number, grade: GradeLetter) => `${year}-${grade.toLowerCase()}`;
 
-/** 2026-s … 2035-c, the 40 shared cards. */
-export const GRADE_SLUGS: readonly string[] = Array.from({ length: GRADE_YEARS.last - GRADE_YEARS.first + 1 }, (_, i) => GRADE_YEARS.first + i).flatMap(
-  (year) => GRADE_LETTERS.map((grade) => gradeSlug(year, grade)),
-);
+/** The cards built ahead: the ten chips' years from the year in force at `now`, × S·A·B·C; the rest of GRADE_YEARS render on demand. */
+export function gradeStaticSlugs(now = Date.now()): string[] {
+  const from = currentGradeYear(now);
+  return Array.from({ length: 10 }, (_, i) => from + i)
+    .filter((year) => year >= GRADE_YEARS.first && year <= GRADE_YEARS.last)
+    .flatMap((year) => GRADE_LETTERS.map((grade) => gradeSlug(year, grade)));
+}
+
+/** The 40 cards built ahead, from the year in force when this module loads (the build). */
+export const GRADE_SLUGS: readonly string[] = gradeStaticSlugs();
 
 /** A shared card's year and grade, or null for any other address. */
 export function parseGradeSlug(slug: string): GradeYear | null {

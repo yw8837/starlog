@@ -41,7 +41,26 @@ describe("the shared card's page", () => {
   it("is built for the 40 slugs, still rendered on demand, and 404s anything else", async () => {
     expect(generateStaticParams()).toEqual(GRADE_SLUGS.map((slug) => ({ slug })));
     expect(dynamicParams).toBe(true);
-    for (const slug of ["2025-s", "2026-d", "1995-06-01", "2026-s-1995"]) await expect(SharedGradePage(params(slug))).rejects.toThrow(/NEXT_HTTP_ERROR_FALLBACK;404|NEXT_NOT_FOUND/);
+    for (const slug of ["2025-s", "2086-a", "2026-d", "1995-06-01", "2026-s-1995"]) await expect(SharedGradePage(params(slug))).rejects.toThrow(/NEXT_HTTP_ERROR_FALLBACK;404|NEXT_NOT_FOUND/);
+  });
+
+  it("from 입춘 2027 the last chip's address (2036-b) is a page with its own picture, on demand for a 2026 build (fixed clock)", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-11T12:00:00+09:00"));
+    try {
+      // built in 2026: 2026–2035 ahead, 2036 not
+      expect(generateStaticParams()).not.toContainEqual({ slug: "2036-b" });
+      vi.setSystemTime(new Date("2027-02-05T12:00:00+09:00"));
+      // a build after 입춘 2027 would include it
+      expect(generateStaticParams()).toContainEqual({ slug: "2036-b" });
+      const meta = await generateMetadata(params("2036-b"));
+      expect(meta.openGraph?.images).toEqual([expect.objectContaining({ url: "/api/og/saju-grade/2036-b" })]);
+      expect(String(meta.title)).toContain("2036 병진년 B");
+      render(await SharedGradePage(params("2036-b")));
+      expect(screen.getAllByRole("figure")[0]!.textContent).toContain("2036 병진년");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("previews with its own picture, stays out of search, and says only the year and the grade", async () => {
