@@ -1,12 +1,13 @@
 import "server-only";
 import { sealOpeningClaim } from "@/lib/account/openingClaim";
+import { accountFriendKey } from "@/lib/bonds/identity";
 import { eraseReviewStatements } from "@/lib/reviews/store";
 import type { D1Binding } from "@/lib/db/d1";
 import { LOT_UNTOUCHED_SQL, entitlements, forfeitStatements, sweepUser, type Lot } from "@/lib/pay/ledger";
 import { orderForUser, reconcileConfirming, type OrderRow } from "@/lib/pay/orders";
 import { paidUnderOtherKeys, reconcileRefunding, refundUnusedOrder, setAsideForOperator } from "@/lib/pay/refunds";
 import type { TossClient } from "@/lib/pay/tossTypes";
-import { signToken, verifyToken, type SignedPayload } from "@/lib/security/sign";
+import { signToken, signingSecret, verifyToken, type SignedPayload } from "@/lib/security/sign";
 
 /** How long the deletion intent from 내 정보 is good for. */
 export const DELETE_INTENT_TTL_MS = 5 * 60 * 1000;
@@ -138,6 +139,31 @@ async function eraseBondsOwner(db: D1Binding, userId: string): Promise<void> {
 }
 
 /**
+ * 별자리 인연 (review 2026-11-10): the stars a deleted account joined as a friend (under accountFriendKey since a friend logs
+ * in to join, owner 2026-11-10) go with it, with their `bond:` share links and the owners' blocks of that key, and each
+ * constellation they were in is recounted (its total; a completed one stays completed, as a tally never un-completes). Stars a
+ * device joined before 2026-11-10 belong to the device and stay. Run before the account's erase, as eraseBondsOwner is.
+ */
+async function eraseFriendStars(db: D1Binding, userId: string): Promise<void> {
+  const secret = signingSecret();
+  if (!secret) return; // no key without it, and no join either (every /api/bonds route answers NOT_CONFIGURED)
+  const key = await accountFriendKey(userId, secret);
+  const joined = `SELECT id FROM stars WHERE friend_key = ? AND ${DELETED}`;
+  const { results } = await db
+    .prepare(`SELECT DISTINCT constellation_id AS id FROM stars WHERE friend_key = ? AND ${DELETED}`)
+    .bind(key, userId)
+    .all<{ id: string }>();
+  await db.batch([
+    db.prepare(`DELETE FROM shares WHERE chapter_key IN (SELECT 'bond:' || id FROM (${joined}))`).bind(key, userId),
+    db.prepare(`DELETE FROM stars WHERE id IN (${joined})`).bind(key, userId),
+    db.prepare(`DELETE FROM star_blocks WHERE friend_key = ? AND ${DELETED}`).bind(key, userId),
+    ...results.map(({ id }) =>
+      db.prepare("UPDATE constellations SET total = (SELECT COALESCE(SUM(score), 0) FROM stars WHERE constellation_id = ?1) WHERE id = ?1").bind(id),
+    ),
+  ]);
+}
+
+/**
  * Erases a deleted account's personal data in one batch, keeping what the law keeps:
  * - an unused signup gift is forfeited (its ledger rows stay), and so is a purchase given back after
  *   its client left (SEC-02: never refunded), or any other paid lot not untouched (deleteAccount refunded every untouched one);
@@ -159,6 +185,7 @@ export async function eraseDeletedAccount(db: D1Binding, userId: string, now: nu
     .bind(userId)
     .all<Lot>();
   await eraseBondsOwner(db, userId);
+  await eraseFriendStars(db, userId);
   const results = await db.batch([
     ...forfeited.flatMap((lot) => forfeitStatements(db, lot, "revoked", now)),
     ...eraseReviewStatements(db, userId),
