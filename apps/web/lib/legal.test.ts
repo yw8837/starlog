@@ -62,10 +62,10 @@ describe("legal helpers", () => {
   });
 
   it("says that a friend logs in to join 별자리 인연 (owner 2026-11-10) on top of the terms and the privacy policy for 30 days from its deploy day", () => {
-    expect(BOND_LOGIN_DATE).toBe("2026-11-10");
-    expect(bondLoginNoticeShown(Date.parse("2026-11-10T09:00:00+09:00"))).toBe(true);
-    expect(bondLoginNoticeShown(Date.parse("2026-12-10T00:00:00+09:00") - 1)).toBe(true);
-    expect(bondLoginNoticeShown(Date.parse("2026-12-10T00:00:00+09:00"))).toBe(false);
+    expect(BOND_LOGIN_DATE).toBe("2026-11-11");
+    expect(bondLoginNoticeShown(Date.parse("2026-11-11T09:00:00+09:00"))).toBe(true);
+    expect(bondLoginNoticeShown(Date.parse("2026-12-11T00:00:00+09:00") - 1)).toBe(true);
+    expect(bondLoginNoticeShown(Date.parse("2026-12-11T00:00:00+09:00"))).toBe(false);
   });
 
   it("shows the terms' own 시행일: 2026-10-20 until the 2026-10-31 00:00 KST revision, 2026-10-31 from it (the refund policy keeps legalEffectiveDate)", () => {

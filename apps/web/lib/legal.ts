@@ -110,7 +110,7 @@ export const keptRuleNoticeShown = (now: number = Date.now()): boolean => now < 
  * what changed, dated, at their top for 30 days from this day. The day this goes live: move it (and the end with it) if the
  * deploy goes out on another day.
  */
-export const BOND_LOGIN_DATE = "2026-11-10";
+export const BOND_LOGIN_DATE = "2026-11-11";
 const BOND_LOGIN_NOTICE_UNTIL_AT = Date.parse(`${BOND_LOGIN_DATE}T00:00:00+09:00`) + 30 * 24 * 60 * 60 * 1000;
 
 export const bondLoginNoticeShown = (now: number = Date.now()): boolean => now < BOND_LOGIN_NOTICE_UNTIL_AT;

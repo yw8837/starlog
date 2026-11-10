@@ -161,7 +161,7 @@ describe("a friend logs in to join 별자리 인연, in the policies", () => {
   const BOND_NOTICE = `${koreanDate(BOND_LOGIN_DATE)} 바뀐 내용`;
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(Date.parse("2026-11-10T12:00:00+09:00"));
+    vi.setSystemTime(Date.parse("2026-11-11T12:00:00+09:00"));
   });
   afterEach(() => {
     cleanup();
@@ -179,7 +179,7 @@ describe("a friend logs in to join 별자리 인연, in the policies", () => {
     expect(notice!.textContent).toContain("초대받은 친구도 이제 카카오나 Google로 로그인해야 별자리 인연에 참여할 수 있습니다.");
     expect(notice!.textContent).toContain("초대 링크를 열어 누가 어떤 별자리에 초대했는지 보는 것은 지금처럼 로그인 없이 할 수 있습니다(제8조의2 1호).");
     cleanup();
-    vi.setSystemTime(Date.parse("2026-12-10T00:00:00+09:00"));
+    vi.setSystemTime(Date.parse("2026-12-11T00:00:00+09:00"));
     container = render(<TermsPage />).container;
     expect(container.textContent).not.toContain(`${BOND_NOTICE} · 별자리 인연 참여`);
     expect(container.querySelector("#bonds")?.textContent).toContain("친구는 회원으로 로그인해야 참여할 수 있고");
@@ -195,7 +195,7 @@ describe("a friend logs in to join 별자리 인연, in the policies", () => {
     expect(notice!.textContent).toContain("초대받은 친구도 카카오나 Google로 로그인해야 별자리 인연에 참여할 수 있어요.");
     expect(notice!.textContent).toContain("기기 식별값의 해시 대신 계정 식별값을 되돌릴 수 없게 바꾼 값");
     cleanup();
-    vi.setSystemTime(Date.parse("2026-12-10T00:00:00+09:00"));
+    vi.setSystemTime(Date.parse("2026-12-11T00:00:00+09:00"));
     container = render(<PrivacyPage />).container;
     expect([...container.querySelectorAll("aside")].some((aside) => aside.querySelector("h2")?.textContent === BOND_NOTICE)).toBe(false);
   });
