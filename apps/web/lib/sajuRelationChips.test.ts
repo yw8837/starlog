@@ -1,6 +1,6 @@
-import type { SajuChart } from "@starlog/core";
+import { relationsWithin, type SajuChart } from "@starlog/core";
 import { describe, expect, it } from "vitest";
-import { RELATION_NOT_EVENT, relationChips } from "./sajuRelationChips";
+import { RELATION_NONE, RELATION_NOT_EVENT, relationChips } from "./sajuRelationChips";
 
 /** 글자끼리 맺은 관계 (spec 2026-11-11, 정통 사주에 충·합 … 안, C13): 합과 충만, 쉬운 이름과 자리, 사건으로 읽지 않음. */
 
@@ -39,6 +39,21 @@ describe("relationChips", () => {
 
   it("is empty when no pair joins or faces another", () => {
     expect(relationChips(chart("甲寅", "丙辰", "戊午"))).toEqual([]);
+  });
+
+  it("when only held-back pairs stand (반합, 천간충), its empty line stays true: it names what the chips cover (review 7)", () => {
+    // 甲子 庚辰 丙寅: 甲庚 천간충, 子辰 반합, nothing the chips show
+    const c = chart("甲子", "庚辰", "丙寅");
+    const p = c.pillars as unknown as Record<string, P>;
+    const keys = ["year", "month", "day"];
+    const found = relationsWithin(
+      keys.map((k) => ({ glyph: p[k]!.stem, at: k })),
+      keys.map((k) => ({ glyph: p[k]!.branch, at: k })),
+    ).map((r) => r.type.split("(")[0]);
+    expect(found.sort()).toEqual(["반합", "천간충"]);
+    expect(relationChips(c)).toEqual([]);
+    expect(RELATION_NONE).toBe("육합·삼합·방합·천간합·충으로 맺은 글자 짝은 없어요.");
+    expect(RELATION_NONE).not.toMatch(/합이나 충/);
   });
 
   it("says what a chip is not", () => {

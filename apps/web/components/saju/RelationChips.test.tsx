@@ -35,7 +35,7 @@ describe("RelationChips (C13)", () => {
   it("says so in one line when there is none", () => {
     // 甲寅 丙辰 戊午 (no 합·충): the line, no chip
     render(<RelationChips chart={{ pillars: { year: { stem: "甲", branch: "寅" }, month: { stem: "丙", branch: "辰" }, day: { stem: "戊", branch: "午" }, hour: null } } as never} />);
-    expect(screen.getByText("합이나 충으로 맺은 글자 짝이 없어요.")).toBeTruthy();
+    expect(screen.getByText("육합·삼합·방합·천간합·충으로 맺은 글자 짝은 없어요.")).toBeTruthy();
     expect(screen.queryAllByRole("button")).toEqual([]);
   });
 

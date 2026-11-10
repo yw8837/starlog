@@ -9,7 +9,8 @@ import { relationsWithin, type PillarKey, type Placed, type SajuChart } from "@s
  */
 
 export const RELATION_TITLE = "글자끼리 맺은 관계";
-export const RELATION_NONE = "합이나 충으로 맺은 글자 짝이 없어요.";
+/** Names what the chips cover (SHOWN), so it stays true when only a held-back pair (반합, 천간충, 형·파·해) stands (review 7). */
+export const RELATION_NONE = "육합·삼합·방합·천간합·충으로 맺은 글자 짝은 없어요.";
 export const RELATION_NOT_EVENT = "사건으로 읽지 않아요. 이런 배치가 있다는 것만 보여 줘요.";
 
 export interface RelationChip {
