@@ -132,15 +132,15 @@ function yearFits(chart: GradeChart): number[] {
 
 /** r(Y): (years with a smaller m + (years with the same m − 1)/2) / 59, among the chart's own 60 세운. */
 function ranksOf(fits: readonly number[]): number[] {
-  return fits.map((m) => {
-    let below = 0;
-    let same = 0;
-    for (const other of fits) {
-      if (other < m) below++;
-      else if (other === m) same++;
-    }
-    return (below + (same - 1) / 2) / 59;
-  });
+  const sorted = [...fits].sort((a, b) => a - b);
+  const rankOf = new Map<number, number>();
+  for (let below = 0; below < sorted.length; ) {
+    let end = below;
+    while (end < sorted.length && sorted[end] === sorted[below]) end++;
+    rankOf.set(sorted[below]!, (below + (end - below - 1) / 2) / 59);
+    below = end;
+  }
+  return fits.map((m) => rankOf.get(m)!);
 }
 
 const scoreOf = (balance: number, flow: number, rank: number) => Math.round(18 * balance + 12 * flow + 70 * rank);
@@ -219,6 +219,33 @@ export function forEachGradeChart(hourKnown: boolean, visit: (chart: GradeChart)
       }
     }
   }
+}
+
+/** The whole population scored: chart i's score for 세운 y at `scores[60·i + y]`, and `counts[y][score]`. */
+export interface GradePopulation {
+  size: number;
+  scores: Uint8Array;
+  /** day master element of chart i, 0–4 in 목화토금수 order */
+  dayMasters: Uint8Array;
+  counts: number[][];
+}
+
+export function scoreGradePopulation(hourKnown: boolean): GradePopulation {
+  const size = hourKnown ? GRADE_POPULATION.hourKnown : GRADE_POPULATION.hourUnknown;
+  const scores = new Uint8Array(size * 60);
+  const dayMasters = new Uint8Array(size);
+  const counts = SIXTY_GANZHI.map(() => Array<number>(101).fill(0));
+  let i = 0;
+  forEachGradeChart(hourKnown, (chart) => {
+    const row = yearScores(chart);
+    for (let y = 0; y < 60; y++) {
+      scores[60 * i + y] = row[y]!;
+      counts[y]![row[y]!]!++;
+    }
+    dayMasters[i] = stemEl(chart.stems[2]!);
+    i++;
+  });
+  return { size, scores, dayMasters, counts };
 }
 
 const KST_MS = 9 * 3_600_000;
