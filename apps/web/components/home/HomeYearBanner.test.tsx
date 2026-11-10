@@ -2,6 +2,7 @@
 import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetPremiumStatusForTests } from "@/lib/premium/status";
+import { assertVoice } from "@/lib/voice/banned";
 import { HomeYearBanner, OpeningNotice } from "./HomeYearBanner";
 
 const NOV = Date.parse("2026-11-10T12:00:00+09:00");
@@ -33,6 +34,10 @@ describe("the home's 2027 banner (sales 2026-11-10 item 5)", () => {
     expect(link.getAttribute("href")).toBe("/premium/newyear-2027");
     expect(link.textContent).toContain("14,900원");
     expect(link.textContent).not.toMatch(/지금만|마감|할인|첫 풀이/);
+    // One line under the hook (spec 2026-11-11 3.1, Q3 default), 사주주's line (H6).
+    expect(link.textContent).toContain("사주주가 2027년 한 해와 열두 달을 미리 봐 드려요");
+    expect(link.className).toMatch(/compact/);
+    assertVoice(link.textContent ?? "");
   });
 
   it("adds the 2027 신년운세 + 프리미엄 궁합 set where the server sells it (from 12월 1일), to its checkout, with the real saving only", async () => {

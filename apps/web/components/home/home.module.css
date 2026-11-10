@@ -29,45 +29,215 @@
   }
 }
 
-/* ---- hero: what the site is, in one line ---- */
+/*
+ * ---- the hook: 타로로's one question and the first screen's only gold button (spec 2026-11-11 entry funnel renewal 3.1) ----
+ * The question beside 타로로 (holding a card, three face-down cards behind), the line, the button, the small note.
+ */
 
-.hero {
+.hook {
   display: grid;
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "title art"
+    "sub sub"
+    "go go"
+    "note note";
+  align-items: center;
+  column-gap: 8px;
   margin-top: 4px;
+  padding: 14px 16px 12px;
+  border: 1px solid rgba(243, 220, 161, 0.5);
+  border-radius: 24px;
+  background:
+    radial-gradient(110% 90% at 100% 0%, rgba(243, 220, 161, 0.16), transparent 60%),
+    var(--glass);
+  box-shadow: 0 14px 34px rgba(5, 3, 15, 0.45);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
 }
 
-/* Each half of the sentence on its own line; the size follows the phone so the longer half fits. */
-.heroTitle {
-  font-size: clamp(21px, 6.2vw, 26px);
-  line-height: 1.38;
+/* Each half of the question on its own line; the size follows the phone so the longer half fits beside 타로로. */
+.hookTitle {
+  grid-area: title;
+  font-size: clamp(22px, 6.2vw, 27px);
+  line-height: 1.32;
   letter-spacing: -0.01em;
+  word-break: keep-all;
 }
 
-.heroLine {
+.hookLine {
   display: block;
 }
 
-.heroSub {
+.hookArt {
+  position: relative;
+  grid-area: art;
+  display: block;
+  width: 92px;
+  height: 80px;
+}
+
+.hookBacks {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 64px;
+  height: 56px;
+}
+
+.hookBack {
+  position: absolute;
+  top: 4px;
+  width: 26px;
+  height: 45px;
+  border-radius: 4px;
+  object-fit: cover;
+  box-shadow: 0 6px 14px rgba(5, 3, 15, 0.5);
+}
+
+.hookBack:nth-child(1) {
+  right: 33px;
+  transform: rotate(-14deg);
+}
+
+.hookBack:nth-child(2) {
+  top: 0;
+  right: 18px;
+}
+
+.hookBack:nth-child(3) {
+  right: 3px;
+  transform: rotate(14deg);
+}
+
+.hookCat {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+  display: flex;
+}
+
+.hookSub {
+  grid-area: sub;
+  margin-top: 4px;
   color: var(--ink-sub);
   font-size: 14px;
   line-height: 1.6;
+  word-break: keep-all;
 }
 
+.hookGo {
+  grid-area: go;
+  margin-top: 10px;
+}
+
+.hookNote {
+  grid-area: note;
+  margin-top: 6px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* Desktop: the hook full width, the words and the button on the left, 타로로 larger on the right. */
 @media (min-width: 1024px) {
-  .hero {
-    gap: 14px;
-    margin-top: 36px;
+  .hook {
+    grid-template-areas:
+      "title art"
+      "sub art"
+      "go art"
+      "note art";
+    column-gap: 32px;
+    margin-top: 32px;
+    padding: 32px 48px 28px;
+    border-radius: 28px;
   }
 
-  .heroTitle {
+  .hookTitle {
     font-size: 44px;
     line-height: 1.26;
     letter-spacing: -0.015em;
   }
 
-  .heroSub {
+  /* One line each on desktop: the question, then the line under it (the entries stay above the fold at 800px). */
+  .hookLine {
+    display: inline;
+  }
+
+  .hookArt {
+    zoom: 1.6;
+  }
+
+  .hookSub {
+    margin-top: 12px;
     font-size: 17px;
+  }
+
+  .hookGo {
+    width: 360px;
+    margin-top: 20px;
+  }
+
+  .hookNote {
+    font-size: 15px;
+    text-align: left;
+  }
+}
+
+/* ---- below the entries: the 2027 키워드 line, who reads what ---- */
+
+.thinLine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 48px;
+  padding: 10px 14px 10px 18px;
+  border: 1px solid var(--glass-line);
+  border-radius: 16px;
+  background: var(--glass);
+  color: var(--ink-sub);
+  font-size: 14px;
+  line-height: 1.45;
+  text-decoration: none;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  transition: border-color 140ms ease;
+}
+
+.thinLine:hover {
+  border-color: var(--line-strong);
+}
+
+.thinLine:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.thinLineTitle {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.intro {
+  color: var(--ink-sub);
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: center;
+  word-break: keep-all;
+}
+
+@media (min-width: 1024px) {
+  .thinLine {
+    min-height: 56px;
+    padding: 12px 20px 12px 24px;
+    font-size: 15px;
+  }
+
+  .intro {
+    font-size: 15px;
   }
 }
 
@@ -77,13 +247,14 @@
   position: relative;
 }
 
+/* Phones: a step shorter than before the hook (spec 2026-11-11 3.1), so the hook, 타로 and 사주 share the first screen. */
 .entry {
   position: relative;
   display: flex;
   align-items: center;
   min-width: 0;
-  min-height: 148px;
-  padding: 20px;
+  min-height: 128px;
+  padding: 14px 20px;
   border-radius: 24px;
   text-decoration: none;
   isolation: isolate;
@@ -95,21 +266,21 @@
 
 /* The character's column: cat on the left of 타로, rabbit on the right of 사주 (the zig-zag). */
 .entryRowStart .entry {
-  padding-left: 138px;
+  padding-left: 124px;
 }
 
 .entryRowEnd .entry {
-  padding-right: 138px;
+  padding-right: 124px;
 }
 
 /* A soft halo where the character stands, so it reads as part of the card. */
 .entry::before {
   content: "";
   position: absolute;
-  bottom: 10px;
+  bottom: 8px;
   z-index: -1;
-  width: 120px;
-  height: 120px;
+  width: 104px;
+  height: 104px;
   border-radius: 50%;
 }
 
@@ -130,12 +301,13 @@
   outline-offset: 3px;
 }
 
-/* Laid over the card, outside the link: a tap makes the character react. */
+/* Laid over the card, outside the link: a tap makes the character react. 104px on phones (zoom keeps the art crisp). */
 .entryCharacter {
   position: absolute;
-  bottom: 14px;
+  bottom: 12px;
   z-index: 1;
   display: flex;
+  zoom: 0.87;
 }
 
 .entryRowStart .entryCharacter {
@@ -146,28 +318,25 @@
   right: 12px;
 }
 
-/* 타로 보기: gold, glowing: the screen's one primary. */
-.entryPrimary {
+/* 타로 보기: ivory paper, no glow (the hook above is the screen's one gold button, spec 2026-11-11 3.1). */
+.entryIvory {
+  border: 1px solid rgba(122, 90, 18, 0.22);
   background:
-    radial-gradient(120% 120% at 0% 0%, rgba(255, 255, 255, 0.5), transparent 55%),
-    linear-gradient(135deg, #f7e5b6 0%, #f3dca1 55%, #ebcb82 100%);
+    radial-gradient(120% 120% at 0% 0%, rgba(255, 255, 255, 0.45), transparent 55%),
+    linear-gradient(160deg, #f8f3e8 0%, #eee5d2 100%);
   color: #2a1b4d;
-  box-shadow:
-    0 14px 34px rgba(5, 3, 15, 0.45),
-    0 0 30px rgba(243, 220, 161, 0.24);
+  box-shadow: 0 12px 30px rgba(5, 3, 15, 0.38);
 }
 
-.entryPrimary::before {
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0) 70%);
+.entryIvory::before {
+  background: radial-gradient(circle, rgba(42, 27, 77, 0.1) 0%, rgba(42, 27, 77, 0) 70%);
 }
 
-.entryPrimary:hover {
+.entryIvory:hover {
   background:
-    radial-gradient(120% 120% at 0% 0%, rgba(255, 255, 255, 0.6), transparent 55%),
-    linear-gradient(135deg, #f9ebc6 0%, #f7e5b6 55%, #efd394 100%);
-  box-shadow:
-    0 16px 38px rgba(5, 3, 15, 0.5),
-    0 0 40px rgba(243, 220, 161, 0.34);
+    radial-gradient(120% 120% at 0% 0%, rgba(255, 255, 255, 0.55), transparent 55%),
+    linear-gradient(160deg, #faf6ee 0%, #f1e9d8 100%);
+  box-shadow: 0 14px 34px rgba(5, 3, 15, 0.45);
 }
 
 /* 사주 보기: hanji — matte cream paper with a faint fibre, no glow. */
@@ -211,7 +380,7 @@
   line-height: 1.45;
 }
 
-.entryPrimary .entrySub {
+.entryIvory .entrySub {
   color: #4a3a63;
 }
 
@@ -225,7 +394,7 @@
   align-items: center;
   gap: 2px;
   min-height: 34px;
-  margin-top: 10px;
+  margin-top: 8px;
   padding: 0 10px 0 14px;
   border-radius: 999px;
   font-size: 14px;
@@ -241,9 +410,9 @@
   transform: translateX(2px);
 }
 
-.entryPrimary .entryCta {
+.entryIvory .entryCta {
   background: #2a1b4d;
-  color: var(--gold);
+  color: #f8f3e8;
 }
 
 .entryHanji .entryCta {
@@ -314,7 +483,7 @@
   }
 }
 
-/* ---- quick cards: 지금의 한 장 · 오늘의 한 장, equal halves, quieter than the entries ---- */
+/* ---- quick cards: 오늘의 한 장 · 나를 닮은 타로 카드, equal halves, quieter than the entries ---- */
 
 .quick {
   display: grid;
@@ -394,8 +563,8 @@
   box-shadow: 0 6px 14px rgba(5, 3, 15, 0.45);
 }
 
-/* 지금의 한 장: a card back (navy) with a big question mark. */
-.nowIcon {
+/* 나를 닮은 타로 카드: a card back (navy) with a big question mark. */
+.findIcon {
   background:
     radial-gradient(circle at 50% 40%, rgba(243, 220, 161, 0.18), transparent 60%),
     linear-gradient(160deg, #3a3290 0%, #1d1850 100%);

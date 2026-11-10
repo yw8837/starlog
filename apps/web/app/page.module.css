@@ -10,7 +10,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 14px;
-  margin-top: 22px;
+  margin-top: 14px;
 }
 
 .tarot,

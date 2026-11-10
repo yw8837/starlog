@@ -38,6 +38,17 @@ describe("the home's 타로 보기", () => {
   });
 });
 
+// Spec 2026-11-11 entry funnel renewal 3.1: the hook is the first screen's one gold button; 타로 보기 turns ivory.
+describe("the home's 타로 보기 beside the hook", () => {
+  it("is ivory, not gold, and says the 3 cards look deeper (H7)", () => {
+    vi.stubGlobal("fetch", answer(false));
+    render(<TarotEntry />);
+    expect(entry().className).not.toMatch(/entryPrimary/);
+    expect(entry().className).toMatch(/entryIvory/);
+    expect(entry().textContent).toContain("카드 3장으로 고민 깊게 보기");
+  });
+});
+
 // SEO audit 2026-10-27 (LOW): the home links the plain addresses. Coming from the home, a flow starts clean without
 // ?new=1 (lib/useFlowVisit.ts keeps answers only on a move inside the flow).
 describe("the home's 사주 보기", () => {

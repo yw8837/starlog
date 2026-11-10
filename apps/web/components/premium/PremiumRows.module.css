@@ -92,6 +92,30 @@
   font-size: var(--fs-body);
 }
 
+/* One compact line under the home hook (spec 2026-11-11 3.1): the heading is for screen readers only, the row is short. */
+.line {
+  gap: 0;
+  margin-top: 10px;
+}
+
+.compact {
+  min-height: 0;
+  gap: 2px;
+  padding: 8px 16px;
+  border-radius: 16px;
+}
+
+/* The arrow sits beside the name and the price, so the line below runs the full width (one line at 360px). */
+.compact .head {
+  padding-right: 26px;
+}
+
+.compact .arrow {
+  top: 8px;
+  line-height: 26px;
+  transform: none;
+}
+
 /* The home's 더 깊게 보기: a section heading like the home's, ivory paper cards (dark ink), three across on desktop. */
 .home {
   gap: 14px;

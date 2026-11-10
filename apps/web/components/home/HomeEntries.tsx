@@ -3,40 +3,77 @@ import { GuideThumb } from "@/app/guide/GuideThumb";
 import { Cat } from "@/components/characters/Cat";
 import { Rabbit } from "@/components/characters/Rabbit";
 import { AccordionItem } from "@/components/info/InfoPage";
+import { Button } from "@/components/ui/Button";
 import info from "@/components/info/info.module.css";
 import { faqGroups, type FaqEntry } from "@/lib/faq";
 import { GUIDE_CATEGORIES, GUIDE_CATEGORY_LABEL, articlesIn, guideIndexPath } from "@/lib/guide";
 import { guideHref } from "@/lib/hosts";
 import { INFO_PAGES } from "@/lib/infoPages";
+import { HookBacks } from "./HookBacks";
 import { ArrowIcon, ChevronIcon } from "./icons";
 import { TarotEntryLink } from "./TarotEntryLink";
 import s from "./home.module.css";
 import { ENTRY_SAJU_HREF } from "@/lib/freshStart";
 
-/** What the site is, in one line, then who reads what. The page's one <h1>. */
-export function HomeHero() {
+/**
+ * The home's one hook (spec 2026-11-11 entry funnel renewal 3.1, 6.1 H1-H5): 타로로's question as the page's one <h1>, and
+ * the first screen's only gold button, to 지금의 한 장 (no login, free, at once). 타로로 holds a card in front of three
+ * face-down cards in the visitor's chosen back.
+ */
+export function HomeHook() {
   return (
-    <div className={s.hero}>
-      <h1 className={s.heroTitle}>
-        <span className={s.heroLine}>연애도 일도 사람 사이도</span> <span className={s.heroLine}>고민 그대로 편하게 물어보세요</span>
+    <section className={s.hook} aria-labelledby="home-hook-title">
+      <h1 id="home-hook-title" className={s.hookTitle}>
+        <span className={s.hookLine}>연락할까 말까?</span> <span className={s.hookLine}>카드 한 장 뽑아 봐</span>
       </h1>
-      <p className={s.heroSub}>타로는 고양이 타로로가, 사주는 토끼 사주주가 내 상황에 맞춰 읽어 드려요.</p>
-    </div>
+      <span className={s.hookArt}>
+        <HookBacks />
+        <span className={s.hookCat}>
+          <Cat outfit="tarot" action="glow" size={76} reactOnTap={false} />
+        </span>
+      </span>
+      <p className={s.hookSub}>
+        <span className={s.hookLine}>고민 하나 떠올리고 78장 중 한 장.</span> <span className={s.hookLine}>로그인 없이 무료, 바로 나와.</span>
+      </p>
+      <div className={s.hookGo}>
+        <Button href="/now" block trailing="→">
+          한 장 뽑기
+        </Button>
+      </div>
+      <p className={s.hookNote}>타로로가 뽑은 카드에 별명도 붙여 줘</p>
+    </section>
+  );
+}
+
+/** Who reads what (H11): under the entries now that the hook leads. */
+export function HomeIntro() {
+  return <p className={s.intro}>타로는 고양이 타로로가, 사주는 토끼 사주주가 내 상황에 맞춰 읽어 드려요.</p>;
+}
+
+/** 2027 키워드 in one thin line (H9): free, no login, a birth date only. */
+export function KeywordLine() {
+  return (
+    <Link href="/2027-keyword" className={s.thinLine}>
+      <span>
+        <strong className={s.thinLineTitle}>2027년 내 키워드는?</strong> · 생일만 넣으면 무료
+      </span>
+      <ChevronIcon size={16} />
+    </Link>
   );
 }
 
 /**
- * Row 1: the gold 타로 보기 card, the screen's one primary, with the cat astrologer standing inside
- * it on the left. The cat is a sibling laid over the card, not part of the link: tapping it only
- * makes it react. The link is the builder, or the 다리 화면 where premium is visible (TarotEntryLink).
+ * Row 1: the ivory 타로 보기 card (the hook above is the screen's one gold button, spec 2026-11-11 3.1), with the cat
+ * astrologer standing inside it on the left. The cat is a sibling laid over the card, not part of the link: tapping it
+ * only makes it react. The link is the builder, or the 다리 화면 where premium is visible (TarotEntryLink).
  */
 export function TarotEntry() {
   return (
     <div className={`${s.entryRow} ${s.entryRowStart}`}>
-      <TarotEntryLink className={`${s.entry} ${s.entryPrimary}`}>
+      <TarotEntryLink className={`${s.entry} ${s.entryIvory}`}>
         <span className={s.entryText}>
           <span className={s.entryTitle}>타로 보기</span>
-          <span className={s.entrySub}>카드 3장으로 지금을 봐요</span>
+          <span className={s.entrySub}>카드 3장으로 고민 깊게 보기</span>
           <span className={s.entryCta}>
             카드 세 장 뽑기
             <ChevronIcon size={16} />
@@ -71,10 +108,10 @@ export function SajuEntry() {
   );
 }
 
-/** A face-down card with a big question mark: one card for whatever is on your mind now. */
-function NowIcon() {
+/** A face-down card with a big question mark: which card is mine (나를 닮은 타로 카드)? */
+function FindIcon() {
   return (
-    <span className={`${s.miniCard} ${s.nowIcon}`} aria-hidden="true">
+    <span className={`${s.miniCard} ${s.findIcon}`} aria-hidden="true">
       ?
     </span>
   );
@@ -83,7 +120,7 @@ function NowIcon() {
 /**
  * The day's card face up, no words: a sun rising over the hills under a lucky sparkle — "today"
  * and "fortune" in one picture. No date, so a prerendered home never shows a stale one. Pairs with
- * 지금의 한 장's card back.
+ * 나를 닮은 타로 카드's card back.
  */
 function TodayIcon() {
   return (
@@ -113,24 +150,27 @@ function TodayIcon() {
   );
 }
 
-/** Row 3: the two quick, free cards, equal halves, quieter than the two entries above. */
+/**
+ * Row 3: the two quick, free cards, equal halves, quieter than the two entries above: 오늘의 한 장 and 나를 닮은 타로
+ * 카드 (H8; 지금의 한 장 is the hook now).
+ */
 export function QuickCards() {
   return (
     <div className={s.quick}>
-      <Link href="/now" className={s.quickCard}>
-        <NowIcon />
-        <span className={s.quickText}>
-          <span className={s.quickTitle}>지금의 한 장</span>
-          <span className={s.quickSub}>고민 한 줄, 카드 한 장</span>
-          <span className={s.quickTag}>무제한 무료</span>
-        </span>
-      </Link>
       <Link href="/today" className={s.quickCard}>
         <TodayIcon />
         <span className={s.quickText}>
           <span className={s.quickTitle}>오늘의 한 장</span>
           <span className={s.quickSub}>카드로 보는 오늘의 운세</span>
           <span className={s.quickTag}>로그인하면 매일 무료</span>
+        </span>
+      </Link>
+      <Link href="/birth-card" className={s.quickCard}>
+        <FindIcon />
+        <span className={s.quickText}>
+          <span className={s.quickTitle}>나를 닮은 타로 카드</span>
+          <span className={s.quickSub}>생일로 찾는 내 카드</span>
+          <span className={s.quickTag}>로그인 없이 무료</span>
         </span>
       </Link>
     </div>
