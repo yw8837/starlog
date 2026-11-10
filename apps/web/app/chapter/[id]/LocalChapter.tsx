@@ -46,6 +46,8 @@ import { isDeepTarotReading, isFollowUpData, isNewYearReading, isStoredMatchRead
 /** Chapter tokens expire 7 days after the reading, 30 for a premium one (the server's rule): no follow-ups after that. */
 export const FOLLOW_UP_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
+/** A tarot question about love: the catalog's 연애·결혼·그 사람 questions and the same words typed (the record keeps no topic). */
+const LOVE_QUESTION = /연애|결혼|그 사람|썸|고백|재회|짝사랑|연인|애인|남친|여친|남자친구|여자친구|헤어진/;
 
 /**
  * Follow-ups on their way, per reading. Leaving the page does not stop one (the answer is still
@@ -232,8 +234,21 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
 
   // The next step after a finished standard reading (plan-reconciled §4.3), never gold and only where premium is
   // visible (PremiumRows draws nothing otherwise). A premium reading offers no other product.
+  // A tarot question about love goes on to 프리미엄 궁합 first (sales 2026-11-10 item 2); a premium reading to its partner
+  // product (신년 ↔ 궁합). Plain links at the normal price.
   const next = !whole ? undefined : chapter.kind === "tarot" ? (
-    <PremiumRows ids={["tarot-deep"]} title="더 깊게 보고 싶다면" lines={{ "tarot-deep": "한 가지 고민을 카드 10장으로, 자리마다 나눠 더 깊게 봐요" }} />
+    <PremiumRows
+      ids={LOVE_QUESTION.test(chapter.question) ? ["match", "tarot-deep"] : ["tarot-deep"]}
+      title="더 깊게 보고 싶다면"
+      lines={{ "tarot-deep": "한 가지 고민을 카드 10장으로, 자리마다 나눠 더 깊게 봐요", match: "같은 고민을 두 사람의 사주로, 앞으로 1년까지 봐요" }}
+    />
+  ) : chapter.kind === "newyear-2027" || chapter.kind === "match" ? (
+    <PremiumRows
+      ids={[chapter.kind === "match" ? "newyear-2027" : "match"]}
+      onlyOpen
+      title="이어서 보면 좋은 풀이"
+      lines={{ "newyear-2027": "내 2027년 한 해를 달마다 미리 봐요", match: "가까운 사람과 두 사람의 사주로 앞으로 1년을 봐요" }}
+    />
   ) : chapter.kind === "saju" ? (
     <PremiumRows
       ids={["newyear-2027", "match"]}
@@ -247,7 +262,7 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
     return (
       <>
         {unsaved}
-        <PremiumChapterView chapter={chapter} followUp={followUp} checkin={checkin} rating={rating} shareable={whole} share={share} kept={kept} />
+        <PremiumChapterView chapter={chapter} followUp={followUp} checkin={checkin} rating={rating} shareable={whole} share={share} kept={kept} next={next} />
       </>
     );
   }

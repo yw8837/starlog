@@ -27,6 +27,26 @@ const SAJU = {
   reading: { sections: [{ heading: "타고난 바탕 · 태어난 계절이 나에게 주는 힘", body: "첫 절 본문" }], observation: { heading: "앞으로 몇 주 · 확인해 볼 신호", body: "신호" }, followUps: [] },
 };
 
+const section = (heading: string) => ({ heading, body: `${heading} 본문이에요.` });
+const YEAR = {
+  id: "year0001", createdAt: OCT, chapterToken: "t", turns: [], followUpsLeft: 3, kind: "newyear-2027", birth: SAJU.birth, title: "차근차근 쌓아 가는 해",
+  reading: {
+    title: "차근차근 쌓아 가는 해", overview: section("2027 정미년과 나의 명식"), luck: section("지금의 10년 속 2027년"),
+    areas: { heading: "영역별로 보면", work: section("일"), money: section("돈"), relations: section("관계"), health: section("몸과 생활 리듬") },
+    lucky: section("2027년을 가볍게 돕는 것"), months: [{ month: 1, heading: "1월 · 신축월", body: "1월 본문이에요." }],
+    closing: section("한 해를 보내는 방법"), observation: section("첫 달에 확인해 볼 신호"), followUps: [],
+  },
+};
+const MATCH = {
+  id: "pair0001", createdAt: OCT, chapterToken: "t", turns: [], followUpsLeft: 3, kind: "match", relation: "friend", relationLabel: "친구",
+  me: { birth: SAJU.birth },
+  reading: {
+    verdict: "결론", saju: { dayMasters: section("두 사람의 일간"), elements: section("오행"), pillars: section("두 일지"), luck: section("10년") },
+    periods: ["2026년 10월~12월", "2027년 1월~3월", "2027년 4월~6월", "2027년 7월~9월"].map(section), together: section("서로에게 맞는 말과 행동"),
+    avoid: section("서로 피하면 좋은 말과 행동"), action: section("오늘 해 볼 일"), observation: section("몇 주 안에 확인해 볼 신호"), followUps: [],
+  },
+};
+
 function stub(visible: boolean | "fail") {
   const fetchMock = vi.fn(async (url: string) => {
     if (url !== "/api/premium/status") return new Response(null, { status: 404 });
@@ -88,6 +108,27 @@ describe("the next step at a reading's end", () => {
     expect(document.getElementById("chapter-follow-up")!.compareDocumentPosition(section) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(section.querySelector('[class*="primary"]')).toBeNull();
   });
+
+  it("offers 프리미엄 궁합 first after a tarot reading about love, then 켈틱 크로스 10장, at their normal prices (sales 2026-11-10 item 2)", async () => {
+    stub(true);
+    seed([{ ...TAROT, question: "이번 달 그 사람과의 연애는 순탄할까?" }]);
+    render(<LocalChapter id="tarot0001" />);
+    const section = await screen.findByRole("region", { name: "더 깊게 보고 싶다면" });
+    expect(within(section).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(["/premium/match", "/premium/deep-tarot"]);
+    expect(section.textContent).toContain("7,900원");
+    expect(section.textContent).not.toMatch(/지금만|오늘만|마감|할인/);
+  });
+
+  for (const [kind, other] of [["newyear-2027", "/premium/match"], ["match", "/premium/newyear-2027"]] as const) {
+    it(`offers the other one after a ${kind} reading: ${other} (sales 2026-11-10 item 2)`, async () => {
+      stub(true);
+      seed([kind === "match" ? MATCH : YEAR]);
+      render(<LocalChapter id={kind === "match" ? "pair0001" : "year0001"} />);
+      const section = await screen.findByRole("region", { name: "이어서 보면 좋은 풀이" });
+      expect(within(section).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual([other]);
+      expect(section.querySelector('[class*="primary"]')).toBeNull();
+    });
+  }
 
   it("offers 2027 신년운세 and 프리미엄 궁합 after a saju reading, both on sale now (owner 2026-10-20)", async () => {
     stub(true);

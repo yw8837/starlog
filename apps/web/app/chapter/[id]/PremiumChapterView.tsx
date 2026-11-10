@@ -38,6 +38,8 @@ type PremiumChapterViewProps = {
   share?: ShareActions;
   /** PDF로 저장: the day it was read and where it is kept. */
   kept: KeptReading;
+  /** The related reading after the rating (sales 2026-11-10 item 2: 신년 ↔ 궁합). */
+  next?: ReactNode;
 };
 
 /** The year titles /api/og/premium draws (plain Korean, 2–14 characters); any other title gets no share button. */
@@ -64,9 +66,9 @@ function YearChart({ chapter }: { chapter: NewYearChapter }) {
 /**
  * An opened premium reading (P5) in one scroll, in the records' design: the product and date, the
  * question or theme, the cards or the chart beside the paid body, its three follow-ups, 돌아보기 and the
- * rating. No other product is offered here.
+ * rating, then the related reading (`next`).
  */
-export function PremiumChapterView({ chapter, followUp, checkin, rating, shareable = false, share, kept }: PremiumChapterViewProps) {
+export function PremiumChapterView({ chapter, followUp, checkin, rating, shareable = false, share, kept, next }: PremiumChapterViewProps) {
   // A 궁합's title carries the product's name already ("프리미엄 궁합 · 친구"): its line above says the date only.
   const eyebrow = chapter.kind === "match" ? kstMonthDay(chapter.createdAt) : `${PREMIUM[chapter.kind].name} · ${kstMonthDay(chapter.createdAt)}`;
   // The design the reading was written for; one saved before readings kept their deck was written for the 1909 scans.
@@ -146,6 +148,7 @@ export function PremiumChapterView({ chapter, followUp, checkin, rating, shareab
           <FollowUp {...followUp} reader={chapter.kind === "tarot-deep" ? "cat" : "rabbit"} />
         </div>
         {rating ?? <Feedback />}
+        {next}
       </ReadingLayout>
       <PrintFoot />
     </>
