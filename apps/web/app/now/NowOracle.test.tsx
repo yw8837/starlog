@@ -5,8 +5,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import source from "@content/kb/decision.ko.json";
 import { SITE, won } from "@/lib/config";
 import { drawNow } from "@/lib/decision";
+import { CRISIS_LEAD } from "@/lib/crisis";
 import { NEW_TAROT_HREF } from "@/lib/freshStart";
 import { GUIDE_MOVED_TO_HELP } from "@/lib/hostRoutes";
+import { NOW_TYPES, nowFacts, nowType } from "@/lib/tarotType";
+import { assertVoice } from "@/lib/voice/banned";
 import { HOWTO_SEEN_KEY, NowOracle } from "./NowOracle";
 
 /** The face-down cards on the table. */
@@ -89,12 +92,12 @@ describe("지금의 한 장", () => {
     expect(screen.getByText("오늘 먼저 연락해도 될까?")).toBeTruthy();
     expect(screen.getByRole("region", { name: "지금의 한 장 결과" }).dataset.lean).toBe(expected.lean);
 
-    const upsell = screen.getByRole("link", { name: /타로 전체 풀이 보기/ });
+    // The button says where it goes (spec 6.2 N6, N7): the 3-card question builder, not a paid product's name. No price
+    // here (it shows later, in the unlock sheet and at checkout).
+    const upsell = screen.getByRole("link", { name: /카드 3장으로 보기/ });
     expect(upsell.getAttribute("href")).toBe(NEW_TAROT_HREF);
-    // The line only leads into the button: the name is not said twice and there is no price here (it
-    // shows later, in the unlock sheet and at checkout).
-    expect(screen.getByText("더 자세히 보고 싶다면")).toBeTruthy();
-    expect(screen.getAllByText(/타로 전체 풀이/)).toHaveLength(1);
+    expect(screen.getByText("이 고민, 카드 3장으로 더 볼래?")).toBeTruthy();
+    expect(screen.queryByText(/타로 전체 풀이/)).toBeNull();
     expect(screen.queryByText(new RegExp(won(SITE.price.tarotStandardKrw)))).toBeNull();
     expect(screen.queryByText(/기본 타로 3장/)).toBeNull();
     expect(screen.getByRole("button", { name: "한 번 더 뽑기" })).toBeTruthy();
@@ -132,6 +135,60 @@ describe("지금의 한 장", () => {
     expect(tableCards()).toHaveLength(78);
     const expected = pickSlot(5, "now-seed-first");
     expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(expected.answer);
+  });
+});
+
+describe("타로로 판정 (spec 3.2, 6.2)", () => {
+  const verdict = () => screen.queryByRole("region", { name: "타로로 판정" });
+
+  it("names the turned card by rule, with 타로로's line, the facts and where the name comes from", () => {
+    render(<NowOracle instant />);
+    fireEvent.change(screen.getByLabelText("고민 한 줄"), { target: { value: "오늘 먼저 연락해도 될까?" } });
+    const expected = pickSlot(6, "now-seed-first");
+    const slug = nowType(expected.cardId, expected.orientation);
+    const block = verdict()!;
+    expect(block).toBeTruthy();
+    const text = block.textContent ?? "";
+    expect(text).toContain(NOW_TYPES[slug].name);
+    expect(text).toContain(NOW_TYPES[slug].line);
+    expect(text).toContain(nowFacts(slug));
+    expect(text).toContain("카드 원소와 기울기로 정해지는 별명이에요");
+    // 타로로 says it, as on the home's hook: the cat is the owner's picture (public/characters).
+    expect(within(block).getByRole("img", { name: /타로로/ })).toBeTruthy();
+    // It comes after the card and its why, before the way on.
+    const why = screen.getByText(expected.why);
+    expect(why.compareDocumentPosition(block) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(block.compareDocumentPosition(screen.getByRole("link", { name: /카드 3장으로 보기/ })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    for (const line of [text, "이 고민, 카드 3장으로 더 볼래?", "카드 3장으로 보기"]) assertVoice(line);
+  });
+
+  it("names it for a worry kept in mind too (nothing typed)", () => {
+    render(<NowOracle instant />);
+    const expected = pickSlot(2, "now-seed-first");
+    expect(verdict()?.textContent).toContain(NOW_TYPES[nowType(expected.cardId, expected.orientation)].name);
+  });
+
+  it("shows the facts only, no nickname, for a heavy worry (spec 2.5)", () => {
+    render(<NowOracle instant />);
+    fireEvent.change(screen.getByLabelText("고민 한 줄"), { target: { value: "수술 받아도 될까" } });
+    const expected = pickSlot(6, "now-seed-first");
+    const slug = nowType(expected.cardId, expected.orientation);
+    expect(verdict()).toBeNull();
+    expect(screen.queryByText(NOW_TYPES[slug].name)).toBeNull();
+    expect(screen.queryByText(NOW_TYPES[slug].line)).toBeNull();
+    expect(screen.getByText(nowFacts(slug, { polite: true }))).toBeTruthy();
+  });
+
+  it("shows the care line and the helplines in its place for crisis words: no nickname, no facts", () => {
+    render(<NowOracle instant />);
+    fireEvent.change(screen.getByLabelText("고민 한 줄"), { target: { value: "요즘 살고 싶지 않아요" } });
+    const expected = pickSlot(6, "now-seed-first");
+    const slug = nowType(expected.cardId, expected.orientation);
+    expect(verdict()).toBeNull();
+    expect(screen.queryByText(NOW_TYPES[slug].name)).toBeNull();
+    expect(screen.queryByText(nowFacts(slug, { polite: true }))).toBeNull();
+    expect(screen.getByText(CRISIS_LEAD)).toBeTruthy();
+    expect(screen.getByRole("link", { name: /109/ }).getAttribute("href")).toBe("tel:109");
   });
 });
 
@@ -260,10 +317,27 @@ describe("지금의 한 장 공유하기 (owner 2026-10-23)", () => {
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("/api/share/now");
     // Math.random() is 0.5 here: the second of the three lines.
-    expect(JSON.parse(String(init.body))).toEqual({ cardId: expected.cardId, orientation: expected.orientation, pick: 1, deck: "starlog" });
+    // The nickname was shown, so the link carries it (spec 6.2 N8); still nothing typed.
+    expect(JSON.parse(String(init.body))).toEqual({ cardId: expected.cardId, orientation: expected.orientation, pick: 1, deck: "starlog", nick: true });
     expect(String(init.body)).not.toContain("이직");
     expect(sheet.textContent).toContain("/s/abcdefghijkl");
     expect(within(sheet).queryByRole("button", { name: "공유 그만하기", hidden: true })).toBeNull();
+    vi.unstubAllGlobals();
+  });
+
+  it("leaves the nickname out of the link when none was shown (spec 6.2 N9)", async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ id: "abcdefghijkl", path: "/s/abcdefghijkl" }), { status: 200, headers: { "content-type": "application/json" } }));
+    vi.stubGlobal("fetch", fetchMock);
+    render(<NowOracle instant />);
+    fireEvent.change(screen.getByLabelText("고민 한 줄"), { target: { value: "대출 갈아탈까" } });
+    const expected = pickSlot(6, "now-seed-first");
+    fireEvent.click(screen.getByRole("button", { name: "공유하기" }));
+    const sheet = screen.getByRole("dialog", { name: "결과 공유하기", hidden: true });
+    await act(async () => {
+      fireEvent.click(within(sheet).getByRole("button", { name: "공유 링크 만들기", hidden: true }));
+    });
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(JSON.parse(String(init.body))).toEqual({ cardId: expected.cardId, orientation: expected.orientation, pick: 1, deck: "starlog" });
     vi.unstubAllGlobals();
   });
 });

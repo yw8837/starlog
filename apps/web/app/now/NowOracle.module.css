@@ -429,6 +429,83 @@
   line-height: 1.7;
 }
 
+/*
+ * 타로로 판정 (spec 2026-11-11 3.2): the nickname by rule, under the card and its why, as the card turns. A gold-edged card
+ * like the home's hook; the cat is the owner's picture.
+ */
+.verdict {
+  margin-top: 22px;
+  padding: 14px 16px 14px;
+  border: 1px solid rgba(243, 220, 161, 0.5);
+  border-radius: 18px;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  animation: rise 600ms 250ms ease-out both;
+}
+
+.verdictHead {
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.verdictBody {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.verdictText {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.typeName {
+  color: var(--ink);
+  font-family: var(--font-display), serif;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.3;
+  word-break: keep-all;
+}
+
+.typeLine {
+  color: var(--ink);
+  font-size: var(--fs-body);
+  line-height: 1.6;
+  word-break: keep-all;
+}
+
+.typeFacts {
+  margin-top: 10px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.5;
+}
+
+.typeSource {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.5;
+}
+
+/* A heavy worry: the card's facts only, quietly (spec 2.5). */
+.factsOnly {
+  margin-top: 18px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  text-align: center;
+}
+
+/* Crisis words: the care line and the helplines in the nickname's place. */
+.care {
+  margin-top: 22px;
+}
+
 .after {
   animation: rise 600ms 350ms ease-out both;
 }
@@ -490,6 +567,7 @@
   }
 
   .reading[data-open],
+  .verdict,
   .after {
     animation: fade 400ms ease-out both !important;
   }

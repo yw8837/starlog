@@ -66,7 +66,15 @@ test("지금의 한 장: how-to, a question, a short shuffle, one card, an answe
   // 오늘 해 볼 일 belongs to 오늘의 한 장; the answer here is the card's reading only.
   await expect(page.getByText("오늘 해 볼 일")).toHaveCount(0);
 
-  const upsell = page.getByRole("link", { name: /타로 전체 풀이 보기/ });
+  // 타로로 판정 (spec 2026-11-11 3.2): the card's nickname by rule, its line, the facts and where the name comes from.
+  const verdict = page.getByRole("region", { name: "타로로 판정" });
+  await expect(verdict).toBeVisible();
+  await expect(verdict).toContainText("카드 원소와 기울기로 정해지는 별명이에요");
+  await expect(verdict).toContainText(/(불|물|바람|흙) 카드 · (가 보기|조금 더 지켜보기|다른 길도 살펴보기) 쪽/);
+
+  // The way on says where it goes: the 3-card question builder (N6, N7).
+  await expect(page.getByText("이 고민, 카드 3장으로 더 볼래?")).toBeVisible();
+  const upsell = page.getByRole("link", { name: /카드 3장으로 보기/ });
   await expect(upsell).toBeVisible();
   await expect(upsell).toHaveAttribute("href", "/tarot/new?new=1");
 

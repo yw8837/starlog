@@ -134,8 +134,9 @@ async function stopRemembered(route: string, body: unknown, key: string): Promis
 }
 
 /** 지금의 한 장 (owner 2026-10-23): the server writes the copy from the card DB; only the draw goes, never the worry typed. */
-export const createNowShareLink = (draw: { cardId: string; orientation: string; pick: number }, deck: string): Promise<ShareLinkResult> =>
-  makeShare("/api/share/now", { cardId: draw.cardId, orientation: draw.orientation, pick: draw.pick, deck });
+export const createNowShareLink = (draw: { cardId: string; orientation: string; pick: number }, deck: string, nick = false): Promise<ShareLinkResult> =>
+  // `nick`: 타로로's nickname was shown with the card (spec 2026-11-11 6.2 N8), so the share says it too; never the worry typed.
+  makeShare("/api/share/now", { cardId: draw.cardId, orientation: draw.orientation, pick: draw.pick, deck, ...(nick ? { nick: true } : {}) });
 
 /** Stops a share made by a route that takes the same body to stop it. False when it could not be stopped. */
 async function stopShare(route: string, body: unknown): Promise<boolean> {

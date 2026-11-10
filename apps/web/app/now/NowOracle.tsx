@@ -6,13 +6,16 @@ import { DEFAULT_REVERSAL_RATE, createDeck, getCard, type DeckState } from "@sta
 import { CardTable } from "@/components/tarot/CardTable";
 import { ShuffleStage } from "@/components/tarot/ShuffleStage";
 import { TarotCard } from "@/components/tarot/TarotCard";
+import { Cat } from "@/components/characters/Cat";
 import { ShareResultButton } from "@/components/share/ShareResultButton";
 import { Button } from "@/components/ui/Button";
-import { SITE } from "@/lib/config";
+import { CrisisContacts } from "@/components/ui/CrisisContacts";
 import { createNowShareLink } from "@/lib/share/client";
 import { drawNow, type NowDraw } from "@/lib/decision";
 import { backImage, useDeckPrefs } from "@/lib/deck";
 import { guideHref } from "@/lib/hosts";
+import { NOW_TYPES, nowFacts, nowShareText, nowType } from "@/lib/tarotType";
+import { nowTone } from "@/lib/voice/tone";
 import s from "./NowOracle.module.css";
 import { NEW_TAROT_HREF } from "@/lib/freshStart";
 
@@ -28,8 +31,6 @@ const QUESTION_MAX = 40;
 const HOLD_MS = 450;
 /** The card is shown face down first, so the turn is seen; the page opens as it turns. */
 const TURN_MS = 250;
-/** The 3-card reading's name, as on the pricing and help pages (no shared label in SITE yet). */
-const FULL_READING = "타로 전체 풀이";
 /** One riffle (1.2s) per draw keeps unlimited repeat draws quick. */
 const SHUFFLE_RIFFLES = 1;
 
@@ -198,6 +199,10 @@ export function NowOracle({ instant = false }: NowOracleProps) {
   const card = draw ? getCard(draw.cardId) : null;
   const reversed = draw?.orientation === "reversed";
   const cardLabel = card ? `${card.names.ko}${reversed ? " 역방향" : ""}` : undefined;
+  // 타로로 판정 (spec 3.2): the nickname by rule, unless the worry typed is heavy (facts only) or calls for care (lib/voice/tone.ts).
+  const typeSlug = draw ? nowType(draw.cardId, draw.orientation) : null;
+  const tone = nowTone(question);
+  const nickShown = tone.tone === "spicy";
 
   return (
     <div className={s.screen}>
@@ -333,12 +338,35 @@ export function NowOracle({ instant = false }: NowOracleProps) {
             </div>
           </div>
 
+          {turned && typeSlug ? (
+            tone.tone === "crisis" ? (
+              <CrisisContacts compact urgent={tone.crisis === "urgent"} className={s.care} />
+            ) : nickShown ? (
+              <section className={s.verdict} aria-labelledby="now-verdict-title">
+                <p id="now-verdict-title" className={s.verdictHead}>
+                  타로로 판정
+                </p>
+                <div className={s.verdictBody}>
+                  <Cat outfit="tarot" action="glow" size={64} reactOnTap={false} />
+                  <div className={s.verdictText}>
+                    <p className={s.typeName}>{NOW_TYPES[typeSlug].name}</p>
+                    <p className={s.typeLine}>{NOW_TYPES[typeSlug].line}</p>
+                  </div>
+                </div>
+                <p className={s.typeFacts}>{nowFacts(typeSlug)}</p>
+                <p className={s.typeSource}>카드 원소와 기울기로 정해지는 별명이에요</p>
+              </section>
+            ) : (
+              <p className={s.factsOnly}>{nowFacts(typeSlug, { polite: true })}</p>
+            )
+          ) : null}
+
           {turned ? (
             <div className={s.after}>
               <div className={s.actions}>
-                <p className={s.more}>더 자세히 보고 싶다면</p>
+                <p className={s.more}>이 고민, 카드 3장으로 더 볼래?</p>
                 <Button href={NEW_TAROT_HREF} block trailing="→">
-                  {`${FULL_READING} 보기`}
+                  카드 3장으로 보기
                 </Button>
                 <Button variant="secondary" block onClick={again}>
                   한 번 더 뽑기
@@ -349,8 +377,8 @@ export function NowOracle({ instant = false }: NowOracleProps) {
                 <ShareResultButton
                   key={`${draw.cardId}-${draw.orientation}-${draw.pick}`}
                   kind="now"
-                  text={`${SITE.nameKo} 지금의 한 장 · ${card.names.ko}${reversed ? "(역)" : ""}`}
-                  create={() => createNowShareLink(draw, front)}
+                  text={nowShareText({ cardName: card.names.ko, reversed, slug: nickShown ? typeSlug : null })}
+                  create={() => createNowShareLink(draw, front, nickShown)}
                 />
               </div>
             </div>
