@@ -19,7 +19,7 @@ afterEach(cleanup);
 /** Title and sentence of each step, as the approved copy reads them (with 생년월일 where the screens ask for it). */
 const STEPS = [
   ["별자리 고르기", "로그인하고 닉네임과 생년월일을 넣은 뒤 채울 별자리를 골라요 (내 별자리는 로그인해서 만들어요)"],
-  ["친구에게 보내기", "카톡으로 초대 링크를 보내면 친구가 닉네임과 생년월일을 넣고 카드를 한 장 골라 내 별이 돼요 (참여는 로그인 없이, 결과를 다시 보려면 로그인해요. 생년월일은 저장 안 해요)"],
+  ["친구에게 보내기", "카톡으로 초대 링크를 보내면 친구가 닉네임과 생년월일을 넣고 카드를 한 장 골라 내 별이 돼요 (친구도 로그인하고 참여해요. 생년월일은 저장 안 해요)"],
   ["다 채우면 완성", "도감 카드가 생기고, 인연 점수 합계로 랭킹에 올라요"],
 ] as const;
 
@@ -47,9 +47,10 @@ describe("HowToCard (the start screen)", () => {
     expectThreeSteps(card);
   });
 
-  it("says what is true of the screens: no login for a friend, birth dates not stored; the medals speak for themselves", () => {
+  it("says what is true of the screens: a friend logs in to join too (owner 2026-11-10), birth dates not stored; the medals speak for themselves", () => {
     const { container } = render(<HowToCard />);
-    expect(container.textContent).toContain("로그인 없이");
+    expect(container.textContent).toContain("친구도 로그인하고 참여해요");
+    expect(container.textContent).not.toContain("로그인 없이");
     expect(container.textContent).toContain("생년월일은 저장 안 해요");
     // one word for it: the steps ask for the 생년월일, so the note says 생년월일 too
     expect(container.textContent).not.toContain("생일");

@@ -104,6 +104,18 @@ const KEPT_RULE_NOTICE_UNTIL_AT = Date.parse(`${KEPT_RULE_DATE}T00:00:00+09:00`)
 export const keptRuleNoticeShown = (now: number = Date.now()): boolean => now < KEPT_RULE_NOTICE_UNTIL_AT;
 
 /**
+ * A friend logs in to join 별자리 인연 (owner 2026-11-10): an invited friend joined without one until now. The star is then
+ * kept under a value made from the account, not the device. Less favourable to a visitor and in force from the deploy, before
+ * the 30 days' notice the terms promise and the 7 days the privacy policy promises, so, as with LOGIN_RULE_DATE, both say
+ * what changed, dated, at their top for 30 days from this day. The day this goes live: move it (and the end with it) if the
+ * deploy goes out on another day.
+ */
+export const BOND_LOGIN_DATE = "2026-11-10";
+const BOND_LOGIN_NOTICE_UNTIL_AT = Date.parse(`${BOND_LOGIN_DATE}T00:00:00+09:00`) + 30 * 24 * 60 * 60 * 1000;
+
+export const bondLoginNoticeShown = (now: number = Date.now()): boolean => now < BOND_LOGIN_NOTICE_UNTIL_AT;
+
+/**
  * The 개인정보처리방침 revision that adds the Meta pixel (owner 2026-11-10 "동의한 방문자만"): the consent banner names Meta
  * and the pixel loads for a visitor who allowed it from this KST midnight, 7 days after the notice the policy promises
  * (as GA_REVISION_DATE). Before it the policy shows it as 바뀌는 내용; from it, as 바뀐 내용 for 30 days. Only where a pixel

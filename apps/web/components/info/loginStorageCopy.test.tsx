@@ -84,8 +84,10 @@ describe("login and storage wording (SEO-03)", () => {
     const entry = entries.find((e) => e.id === "login");
     const login = entry?.a.join(" ") ?? "";
     // owner 2026-11-04: every AI reading needs a login; what stays open without one is listed, nothing more.
-    expect(login).toContain("타로와 사주의 맛보기, 오늘의 한 장, 결제, 별자리 인연의 내 별자리 만들기는 카카오나 Google로 로그인하고 써요");
-    expect(login).toContain("질문 만들기와 카드 뽑기, 무료 사주 명식, 지금의 한 장, 탄생 카드, 2027 키워드, 이번 주 행운 번호, 친구의 별자리 인연 초대, 공유받은 링크는 로그인 없이 쓸 수 있어요");
+    // owner 2026-11-10: a friend logs in to join 별자리 인연 too; it is no longer among what stays open
+    expect(login).toContain("타로와 사주의 맛보기, 오늘의 한 장, 결제, 별자리 인연의 내 별자리 만들기와 초대받아 별 되기는 카카오나 Google로 로그인하고 써요");
+    expect(login).toContain("질문 만들기와 카드 뽑기, 무료 사주 명식, 지금의 한 장, 탄생 카드, 2027 키워드, 이번 주 행운 번호, 공유받은 링크는 로그인 없이 쓸 수 있어요");
+    expect(login).not.toContain("별자리 인연 초대");
     expect(login).not.toContain("첫 풀이");
     expect(login).not.toContain("가입 선물");
     // 오픈 기념 무료 is per logged-in account (owner 2026-10-27), said while it runs

@@ -8,6 +8,7 @@ import { adsConfig } from "@/lib/ads";
 import { GA_MEASUREMENT_ID } from "@/lib/analytics";
 import { OPENING_LAST_DATE, SITE, openingFreeOn } from "@/lib/config";
 import {
+  BOND_LOGIN_DATE,
   GA_REVISION_DATE,
   KEPT_RULE_DATE,
   LOGIN_RULE_DATE,
@@ -16,6 +17,7 @@ import {
   OPENING_RETENTION_DATE,
   PRIVACY_REVISION_DATE,
   SYNC_REVISION_DATE,
+  bondLoginNoticeShown,
   contactChannels,
   gaRevisionInForce,
   keptRuleNoticeShown,
@@ -166,7 +168,7 @@ const COOKIES: Rows = [
   ...(BONDS
     ? ([
         ["sl_uid", "별자리 인연에서 계정에 연결하지 않고 이 기기에서 만든 별자리 주인을 알아보는 무작위 식별값입니다. 1년 뒤 만료됩니다."],
-        ["sl_fid", "친구로 참여한 기기를 알아보는 무작위 식별값으로, 같은 별자리 한 회차에 한 번만 참여하게 합니다. 저장소에는 이 값의 해시만 남습니다. 1년 뒤 만료됩니다."],
+        ["sl_fid", `친구로 참여한 기기를 알아보는 무작위 식별값으로, ${koreanDate(BOND_LOGIN_DATE)} 전에 로그인 없이 참여한 별을 이 기기에서 다시 찾고 그 회차에 다시 참여하지 않게 합니다. 저장소에는 이 값의 해시만 남습니다. 1년 뒤 만료됩니다.`],
       ] as const)
     : []),
 ];
@@ -225,12 +227,21 @@ export default function PrivacyPage() {
           <p>전에 방문 통계만 허용하셨다면 한 번 더 여쭤봐요. 거부해도 이용에 제한은 없어요.</p>
         </aside>
       ) : null}
+      {/* A friend logs in to join 별자리 인연 (owner 2026-11-10): in force from this deploy, said on top for 30 days (lib/legal.ts BOND_LOGIN_DATE). */}
+      {BONDS && bondLoginNoticeShown(now) ? (
+        <aside className={s.note} aria-labelledby="bond-login-privacy-title">
+          <h2 id="bond-login-privacy-title" className={s.noteTitle}>{`${koreanDate(BOND_LOGIN_DATE)} 바뀐 내용`}</h2>
+          <p>초대받은 친구도 카카오나 Google로 로그인해야 별자리 인연에 참여할 수 있어요.</p>
+          <p>새로 참여한 별에는 기기 식별값의 해시 대신 계정 식별값을 되돌릴 수 없게 바꾼 값을 함께 두어요. 같은 계정이면 어느 기기에서든 결과를 다시 보여 드리고, 같은 별자리 한 회차에 한 번만 참여하게 해요.</p>
+          <p>이전에 로그인 없이 참여한 별은 지금처럼 기기 식별값의 해시로 찾아, 참여한 기기에서 로그인하면 보여 드려요.</p>
+        </aside>
+      ) : null}
       {/* What a device keeps shows only with a session (owner 2026-11-05): said on top for 30 days (lib/legal.ts KEPT_RULE_DATE). */}
       {keptRuleNoticeShown(now) ? (
         <aside className={s.note} aria-labelledby="kept-rule-privacy-title">
           <h2 id="kept-rule-privacy-title" className={s.noteTitle}>{`${koreanDate(KEPT_RULE_DATE)} 바뀐 내용`}</h2>
           <p>이 기기에 저장된 풀이 기록과 맛보기, 오늘의 한 장은 로그인하지 않으면 화면에 보여 드리지 않아요. 지우는 것은 아니어서 로그인하면 다시 보이고, 내 정보에서 로그인 없이도 지울 수 있어요.</p>
-          {BONDS ? <p>초대받은 친구의 결과는 참여한 화면에서 보여 드리고, 다시 볼 때는 로그인을 요청해요. 별을 계정에 연결하지는 않아요.</p> : null}
+          {BONDS ? <p>초대받은 친구의 결과도 다시 볼 때는 로그인을 요청해요.</p> : null}
           {BONDS ? <p>계정에 연결하지 않고 이 기기에서 만든 내 별자리도 로그인하지 않으면 보여 드리지 않아요. 로그인하면 다시 보이고 계정에 연결할 수 있어요.</p> : null}
         </aside>
       ) : null}
@@ -371,10 +382,10 @@ export default function PrivacyPage() {
             <h3 className={s.sub}>별자리 인연을 쓸 때</h3>
             <ul className={s.list}>
               <li>별자리 주인: 닉네임, 랭킹에 이름을 올릴지 여부, 생년월일로 계산한 궁합 기준값(일간, 띠, 일지, 오행 개수), 채우는 별자리와 완성한 별자리, 초대코드</li>
-              <li>별이 된 친구: 닉네임, 한 줄(남긴 경우), 고른 카드, 인연 점수와 점수 근거, 같은 기기의 중복 참여를 막는 기기 식별값의 해시, 같은 사람이 같은 닉네임으로 한 별자리에 두 번 들어오지 않게 하는 궁합 기준값의 해시(별자리마다 다른 값)</li>
-              <li>주인이 지운 별: 그 별자리에 같은 기기로 다시 들어오지 않게 하는 기기 식별값의 해시</li>
+              <li>{`별이 된 친구: 닉네임, 한 줄(남긴 경우), 고른 카드, 인연 점수와 점수 근거, 같은 사람의 중복 참여를 막는 계정 식별값을 되돌릴 수 없게 바꾼 값(${koreanDate(BOND_LOGIN_DATE)} 전에 로그인 없이 참여한 별은 기기 식별값의 해시), 같은 사람이 같은 닉네임으로 한 별자리에 두 번 들어오지 않게 하는 궁합 기준값의 해시(별자리마다 다른 값)`}</li>
+              <li>주인이 지운 별: 그 별자리에 같은 계정으로(이전에 로그인 없이 참여한 별은 같은 기기로) 다시 들어오지 않게 하는 위의 바꾼 값이나 해시</li>
               <li>주인과 친구 모두 생년월일은 점수를 계산하는 데만 쓰고 저장하지 않습니다. 태어난 시간은 받지 않습니다.</li>
-              <li>친구의 결과는 참여한 화면에서 보여 드리고, 다시 볼 때는 로그인을 요청합니다. 로그인해도 별을 계정에 연결하지는 않고, 같은 기기의 기기 식별값으로 찾아 보여 드립니다.</li>
+              <li>{`친구는 회원으로 로그인해 참여하고, 참여한 별은 그 계정에 연결해 같은 계정으로 로그인하면 어느 기기에서든 보여 드립니다. ${koreanDate(BOND_LOGIN_DATE)} 전에 로그인 없이 참여한 별은 계정에 연결하지 않고, 참여한 기기에서 로그인하면 그 기기의 기기 식별값으로 찾아 보여 드립니다.`}</li>
               <li>별자리 주인 정보는 로그인한 계정에 연결해 보관합니다. 새 별자리는 만들 때 로그인한 계정에 연결하고, 계정 없이 이 기기에서 만들었던 별자리는 이용자가 연결하기를 누른 경우에만 계정에 연결합니다. 계정에 연결하지 않은 별자리는 로그인하지 않으면 화면에 보여 드리지 않습니다.</li>
             </ul>
             <h3 className={s.sub}>이번 주 행운 번호를 볼 때</h3>
@@ -421,7 +432,7 @@ export default function PrivacyPage() {
           {BONDS ? (
             <li>
               별자리 인연 정보는 Cloudflare D1에 저장합니다. 별자리를 새로 채우거나 바꾸면 이전 별은 삭제하고, 주인이 별을 지우면 그 별도 바로 삭제합니다. 지운 별의
-              기기 식별값 해시는 그 별자리가 지워질 때 함께 삭제합니다.
+              계정 식별값을 바꾼 값이나 기기 식별값 해시는 그 별자리가 지워질 때 함께 삭제합니다.
               나머지는 별자리 주인이 삭제를 요청할 때까지 보관하며, 요청하시면 그 주인의 별자리와 별을 전부 지체 없이 삭제합니다. 계정에 연결된 별자리 주인 정보는
               회원 탈퇴 때 그 주인의 별자리, 별, 초대코드와 함께 바로 삭제하고, 계정에 별자리가 둘일 때 하나를 남기기로 고르면 남기지 않은 쪽도 바로 삭제합니다. 오늘의 인연 카드의 한두
               줄은 같은 날 다시 보여 드리기 위해 36시간 보관한 뒤 자동으로 지웁니다.
@@ -606,7 +617,7 @@ export default function PrivacyPage() {
                 : `로그인하지 않고 연 풀이와 오픈 기념 무료로 연 풀이의 입력은 서버에 저장하지 않고, ${KEPT}는`
             } AES-256-GCM으로 암호화해 저장하며, 카카오 회원번호, Google 계정 식별값, IP 주소는 비밀 키로 변환한 값으로만 다루는 등 꼭 필요한 정보만 처리합니다.`}
           </li>
-          {BONDS ? <li>별자리 인연 저장소에는 생년월일을 남기지 않고, 친구의 기기 식별값은 해시로만 둡니다. 초대코드는 새로 만들면 예전 코드가 바로 막힙니다.</li> : null}
+          {BONDS ? <li>별자리 인연 저장소에는 생년월일을 남기지 않고, 친구의 계정 식별값과 기기 식별값은 되돌릴 수 없게 바꾼 값으로만 둡니다. 초대코드는 새로 만들면 예전 코드가 바로 막힙니다.</li> : null}
           <li>운영자의 쿠키와 풀이 확인값은 서명해 위조를 막습니다.</li>
           <li>AI 사업자 API 키 같은 비밀 정보는 코드와 분리해 서버에만 두고, 접근 권한을 운영자로 한정합니다.</li>
           <li>보안 헤더로 다른 사이트에 이 서비스를 몰래 끼워 넣는 공격 등을 막습니다.</li>
