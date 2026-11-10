@@ -175,6 +175,16 @@
   --card-w: 100%;
 }
 
+/* A whole suit: rows of small scans that wrap, centred. */
+.cardGrid {
+  flex-wrap: wrap;
+  gap: 12px 10px;
+}
+
+.cardGridItem {
+  flex: 0 0 72px;
+}
+
 .cardName {
   font-size: 14px;
   font-weight: 700;

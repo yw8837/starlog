@@ -136,6 +136,20 @@ function Block({ block, id }: { block: GuideBlock; id: string }) {
           {block.caption ? <figcaption className={s.caption}>{block.caption}</figcaption> : null}
         </figure>
       );
+    case "cardGrid":
+      return (
+        <figure className={`${s.block} ${s.cardRow}`}>
+          <ul className={`${s.cards} ${s.cardGrid}`}>
+            {block.cards.map((cardId) => (
+              <li key={cardId} className={`${s.cardItem} ${s.cardGridItem}`}>
+                <TarotCard cardId={cardId} faceUp size="sm" className={s.card} imageSizes="72px" loading="lazy" deck="rws1909" alt={getCard(cardId).names.ko} />
+                <span className={s.cardName}>{getCard(cardId).names.ko}</span>
+              </li>
+            ))}
+          </ul>
+          {block.caption ? <figcaption className={s.caption}>{block.caption}</figcaption> : null}
+        </figure>
+      );
     case "diagram":
       return <GuideDiagram block={block} id={id} />;
   }

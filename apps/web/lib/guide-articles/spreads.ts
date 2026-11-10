@@ -537,6 +537,17 @@ export const SPREAD_ARTICLES: readonly GuideArticle[] = [
         ],
       },
       {
+        heading: "56장을 벌마다 열네 장씩, 1909년 원판 그림으로",
+        body: "벌마다 에이스부터 10까지 숫자 카드 열 장과 시종, 기사, 여왕, 왕 네 장이 있어요. 아래는 스타로그 가이드가 그림 설명의 기준으로 삼는 1909년 원판 스캔을 벌마다 순서대로 늘어놓은 거예요.",
+        blocks: [
+          { kind: "cardGrid", cards: ["wands-01", "wands-02", "wands-03", "wands-04", "wands-05", "wands-06", "wands-07", "wands-08", "wands-09", "wands-10", "wands-11", "wands-12", "wands-13", "wands-14"], caption: "완드 14장, 에이스부터 왕까지" },
+          { kind: "cardGrid", cards: ["cups-01", "cups-02", "cups-03", "cups-04", "cups-05", "cups-06", "cups-07", "cups-08", "cups-09", "cups-10", "cups-11", "cups-12", "cups-13", "cups-14"], caption: "컵 14장, 에이스부터 왕까지" },
+          { kind: "cardGrid", cards: ["swords-01", "swords-02", "swords-03", "swords-04", "swords-05", "swords-06", "swords-07", "swords-08", "swords-09", "swords-10", "swords-11", "swords-12", "swords-13", "swords-14"], caption: "검 14장, 에이스부터 왕까지" },
+          { kind: "cardGrid", cards: ["pentacles-01", "pentacles-02", "pentacles-03", "pentacles-04", "pentacles-05", "pentacles-06", "pentacles-07", "pentacles-08", "pentacles-09", "pentacles-10", "pentacles-11", "pentacles-12", "pentacles-13", "pentacles-14"], caption: "펜타클 14장, 에이스부터 왕까지" },
+          { kind: "p", text: "같은 숫자끼리 위아래로 견주면 벌의 성격이 그림에서 먼저 드러나요. 장면 하나하나를 어떻게 읽는지는 [완드 14장](/guide/wands-suit), [컵 14장](/guide/cups-suit), [검 14장](/guide/swords-suit), [펜타클 14장](/guide/pentacles-suit) 글에서 이어 볼 수 있어요." },
+        ],
+      },
+      {
         heading: "네 벌은 어디서 왔을까, 카드놀이의 네 무늬",
         body: "마이너 아르카나의 네 벌은 타로보다 오래된 카드놀이에서 왔어요. 15세기 이탈리아에서 타로가 처음 만들어질 때, 이미 쓰이던 놀이용 카드 네 벌에 그림 카드 묶음을 더한 것이 출발이었거든요. 이탈리아와 스페인의 옛 카드놀이는 지금도 몽둥이, 잔, 칼, 동전 네 가지 무늬를 쓰는데, 그대로 완드, 컵, 검, 펜타클과 겹쳐요. 프랑스에서 퍼진 카드놀이는 무늬를 클로버, 하트, 스페이드, 다이아몬드로 바꿨고, 흔히 클로버를 완드에, 하트를 컵에, 스페이드를 검에, 다이아몬드를 펜타클에 짝지어요. 스페이드라는 이름도 칼을 뜻하는 이탈리아어 '스파다'와 뿌리가 같다고 알려져 있어요. 펜타클은 본래 동전이었는데, 웨이트가 속했던 황금여명회와 웨이트 덱이 별 모양 오각형을 새긴 원반으로 그리면서 펜타클이라는 이름이 널리 퍼졌어요. 시종, 기사, 여왕, 왕의 인물 카드도 놀이 카드의 그림 카드에서 이어진 것이고, 이 넷을 읽는 방법은 [인물 카드](/guide/court-cards) 글에 따로 정리해 두었어요.",
       },

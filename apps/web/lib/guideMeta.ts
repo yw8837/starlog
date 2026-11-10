@@ -46,6 +46,8 @@ export type GuideBlock =
   | { kind: "steps"; items: ReadonlyArray<{ title: string; text: string }> }
   /** 2-5 card ids (content/kb/cards), shown small with their names. */
   | { kind: "cardRow"; cards: readonly string[]; caption?: string }
+  /** A whole suit at a glance: 6-14 card ids, small scans that wrap, with their names. */
+  | { kind: "cardGrid"; cards: readonly string[]; caption?: string }
   | { kind: "diagram"; name: "five-elements" | "celtic-cross" | "daewoon"; caption?: string }
   | { kind: "diagram"; name: "three-card"; spread: GuideThreeCardSpread; caption?: string };
 

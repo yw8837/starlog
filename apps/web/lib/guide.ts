@@ -817,6 +817,7 @@ function blockLines(block: GuideBlock): string[] {
     case "table":
       return [block.caption, ...block.rows.map((row) => row.map((cell, i) => `${block.head[i]}: ${cell}`).join(", "))];
     case "cardRow":
+    case "cardGrid":
       return [...(block.caption ? [block.caption] : []), block.cards.map((id) => getCard(id).names.ko).join(" · ")];
     case "figure":
     case "diagram":

@@ -92,6 +92,14 @@ describe("guide blocks: authoring rules", () => {
           expect(block.cards.length).toBeLessThanOrEqual(5);
           for (const id of block.cards) expect(() => getCard(id), id).not.toThrow();
           break;
+        case "cardGrid":
+          // A whole suit at a glance: up to fourteen small scans that wrap, on a tarot page.
+          expect(article.category).toBe("tarot");
+          expect(block.cards.length).toBeGreaterThanOrEqual(6);
+          expect(block.cards.length).toBeLessThanOrEqual(14);
+          expect(new Set(block.cards).size).toBe(block.cards.length);
+          for (const id of block.cards) expect(() => getCard(id), id).not.toThrow();
+          break;
         case "diagram":
           if (block.name === "three-card") expect(TEMPLATES[block.spread].positions).toHaveLength(3);
           break;
