@@ -9,7 +9,7 @@ LOG="${OPS_LOG:-$HOME/starlog-ops}/deploy-run"
 mkdir -p "$LOG"; rm -f "$LOG"/*.log
 step() { echo "[$(date +%H:%M:%S)] $*" | tee -a "$LOG/summary.log"; }
 source "$(dirname "$0")/preclean.sh"; preclean
-for port in 8787 3100; do for p in $(netstat -ano | grep -E "[:.]$port[[:space:]].*LISTENING" | awk '{print $NF}' | sort -u); do [ "$p" != "0" ] && taskkill //F //T //PID $p > /dev/null 2>&1; done; done
+for port in ${PREVIEW_PORT:-8787} 3100; do for p in $(netstat -ano | grep -E "[:.]$port[[:space:]].*LISTENING" | awk '{print $NF}' | sort -u); do [ "$p" != "0" ] && taskkill //F //T //PID $p > /dev/null 2>&1; done; done
 
 cd "$D" || exit 1
 git checkout -q -- . && { git fetch -q /d/Money/apps/saju-tarot feat/p1-foundation || git -c fetch.negotiationAlgorithm=noop fetch -q /d/Money/apps/saju-tarot feat/p1-foundation; } && git checkout -q --detach "$SHA" || { step "checkout $SHA failed"; exit 1; }

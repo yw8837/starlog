@@ -4,8 +4,8 @@ SP="${DEPLOY_SP:-/c/starlog-ops}"   # folder holding the isolated clone ./deploy
 D="$SP/deploy"; LOG="${OPS_LOG:-$HOME/starlog-ops}/gate3"; mkdir -p "$LOG"; rm -f "$LOG"/*.log
 step() { echo "[$(date +%H:%M:%S)] $*" | tee -a "$LOG/summary.log"; }
 source "$(dirname "$0")/preclean.sh"; preclean
-# stale previews/dev servers from earlier gates would answer on 8787/3100 with an old build
-for port in 8787 3100; do for p in $(netstat -ano | grep -E "[:.]$port[[:space:]].*LISTENING" | awk '{print $NF}' | sort -u); do [ "$p" != "0" ] && taskkill //F //T //PID $p > /dev/null 2>&1; done; done
+# stale previews/dev servers from earlier gates would answer on ${PREVIEW_PORT:-8787}/3100 with an old build
+for port in ${PREVIEW_PORT:-8787} 3100; do for p in $(netstat -ano | grep -E "[:.]$port[[:space:]].*LISTENING" | awk '{print $NF}' | sort -u); do [ "$p" != "0" ] && taskkill //F //T //PID $p > /dev/null 2>&1; done; done
 # A failed fetch used to leave the clone on its old commit and the gate tested that (10/14): stop instead.
 cd "$D" && git checkout -q -- . && { git fetch -q /d/Money/apps/saju-tarot feat/p1-foundation || git -c fetch.negotiationAlgorithm=noop fetch -q /d/Money/apps/saju-tarot feat/p1-foundation; } && git checkout -q --detach FETCH_HEAD   || { step "STOP: could not move the clone to feat/p1-foundation (if objects are missing: git -c fetch.negotiationAlgorithm=noop fetch)"; exit 8; }
 [ "$(git rev-parse HEAD)" = "$(git -C /d/Money/apps/saju-tarot rev-parse feat/p1-foundation)" ] || { step "STOP: clone HEAD is not feat/p1-foundation"; exit 8; }
@@ -25,24 +25,24 @@ node -e 'const r=require("./.next/prerender-manifest.json").routes;const p=["dee
 (cd ../.. && node scripts/check-client-bundle.mjs > "$LOG/bundle.log" 2>&1); step "bundle exit=$? $(tail -1 "$LOG/bundle.log")"
 if [ -f ../../scripts/check-worker-env.mjs ]; then (cd ../.. && node scripts/check-worker-env.mjs > "$LOG/worker-env.log" 2>&1); step "worker env exit=$? $(tail -1 "$LOG/worker-env.log")"; fi
 if grep -q '"check:worker"' package.json ../../package.json 2>/dev/null; then (cd ../.. && node scripts/check-worker-size.mjs > "$LOG/worker.log" 2>&1); step "worker size exit=$? $(tail -2 "$LOG/worker.log" | tr '\n' ' ')"; fi
-npx opennextjs-cloudflare preview --port 8787 > "$LOG/preview.log" 2>&1 &
+npx opennextjs-cloudflare preview --port ${PREVIEW_PORT:-8787} > "$LOG/preview.log" 2>&1 &
 PREV=$!
-# A 200 is not enough: another app on 8787 answered one, and the e2e ran against that app (11/06: 209 false failures in an hour).
+# A 200 is not enough: another app on ${PREVIEW_PORT:-8787} answered one, and the e2e ran against that app (11/06: 209 false failures in an hour).
 WANT="\"build\":\"$NEXT_PUBLIC_BUILD_ID\""
-for i in $(seq 1 90); do v=$(curl -s --max-time 5 http://localhost:8787/api/version); echo "$v" | grep -qF "$WANT" && break; sleep 2; done
-echo "$v" | grep -qF "$WANT" || { step "STOP: :8787 is not this build (want $NEXT_PUBLIC_BUILD_ID, /api/version answered: $(echo "$v" | head -c 200 | tr -d '\r\n')). If another app holds the port, free it and run the gate again."; kill $PREV 2>/dev/null; taskkill //F //T //PID $PREV > /dev/null 2>&1; exit 7; }
+for i in $(seq 1 90); do v=$(curl -s --max-time 5 http://localhost:${PREVIEW_PORT:-8787}/api/version); echo "$v" | grep -qF "$WANT" && break; sleep 2; done
+echo "$v" | grep -qF "$WANT" || { step "STOP: :${PREVIEW_PORT:-8787} is not this build (want $NEXT_PUBLIC_BUILD_ID, /api/version answered: $(echo "$v" | head -c 200 | tr -d '\r\n')). If another app holds the port, free it and run the gate again."; kill $PREV 2>/dev/null; taskkill //F //T //PID $PREV > /dev/null 2>&1; exit 7; }
 step "preview build=$NEXT_PUBLIC_BUILD_ID"
 SPECS=$(ls e2e/*.spec.ts | grep -v pay-flow | grep -v saju-topics | tr '\n' ' ')
 # Saju has no free full reading (owner 10/14): the specs open it with the preview's owner pass (.dev.vars, never printed).
 # Tests tagged @login log in with the mock Kakao, which the preview refuses (production settings): the dev run below has them.
-E2E_OWNER_CODE="$(grep -E '^STARLOG_OWNER_CODE=' .dev.vars | cut -d= -f2- | tr -d '\r\"')" E2E_BASE_URL=http://localhost:8787 E2E_ALLOW_LIVE=1 npx playwright test $SPECS --workers=2 --grep-invert "saju-chart-topic|@login" --output=test-results/preview --reporter=line > "$LOG/e2e-preview.log" 2>&1; step "e2e preview exit=$? $(grep -E '[0-9]+ (passed|failed|skipped|flaky)' "$LOG/e2e-preview.log" | tr '\n' ' ')"
+E2E_OWNER_CODE="$(grep -E '^STARLOG_OWNER_CODE=' .dev.vars | cut -d= -f2- | tr -d '\r\"')" E2E_BASE_URL=http://localhost:${PREVIEW_PORT:-8787} E2E_ALLOW_LIVE=1 npx playwright test $SPECS --workers=2 --grep-invert "saju-chart-topic|@login" --output=test-results/preview --reporter=line > "$LOG/e2e-preview.log" 2>&1; step "e2e preview exit=$? $(grep -E '[0-9]+ (passed|failed|skipped|flaky)' "$LOG/e2e-preview.log" | tr '\n' ' ')"
 kill $PREV 2>/dev/null; taskkill //F //T //PID $PREV > /dev/null 2>&1
 # -like, not -match: the old regex 'scratchpad\deploy\' (trailing backslash) failed to parse, so the preview's workerd/node
-# processes outlived the gate and a later preview on 8787 answered from a dead one (2026-10-16).
+# processes outlived the gate and a later preview on ${PREVIEW_PORT:-8787} answered from a dead one (2026-10-16).
 # Killed one pass at a time, wrangler restarted the runtime it lost ("runtime crashed ... being restarted") and the new
-# workerd kept 8787 and ~1 GB (2026-10-16): stop the whole set in PowerShell, again until none is left.
+# workerd kept ${PREVIEW_PORT:-8787} and ~1 GB (2026-10-16): stop the whole set in PowerShell, again until none is left.
 powershell -NoProfile -Command "for (\$i = 0; \$i -lt 6; \$i++) { \$ps = Get-CimInstance Win32_Process -Filter \"Name='workerd.exe' or Name='node.exe' or Name='esbuild.exe'\" | Where-Object { \$_.CommandLine -and (\$_.CommandLine -like '*starlog-ops\deploy*' -or \$_.CommandLine -like '*starlog-ops/deploy*') }; if (-not \$ps) { break }; \$ps | ForEach-Object { Stop-Process -Id \$_.ProcessId -Force -ErrorAction SilentlyContinue }; Start-Sleep -Seconds 1 }"
-for port in 8787 3100; do for p in $(netstat -ano | grep -E "[:.]$port[[:space:]].*LISTENING" | awk '{print $NF}' | sort -u); do [ "$p" != "0" ] && taskkill //F //T //PID $p > /dev/null 2>&1; done; done
+for port in ${PREVIEW_PORT:-8787} 3100; do for p in $(netstat -ano | grep -E "[:.]$port[[:space:]].*LISTENING" | awk '{print $NF}' | sort -u); do [ "$p" != "0" ] && taskkill //F //T //PID $p > /dev/null 2>&1; done; done
 sleep 3
 # Each e2e run has its own results folder: Playwright empties its folder when a run starts, and the dev run used to take the
 # preview run's traces with it (the [narrow] @screens "Target page ... closed" failure, twice with no trace).
