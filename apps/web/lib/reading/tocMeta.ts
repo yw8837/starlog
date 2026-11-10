@@ -14,16 +14,18 @@ export interface TocCounts {
 }
 
 const headings = (total: number, open: number) => (open > 0 ? `소제목 ${total}개 중 ${open}개 공개` : `소제목 ${total}개`);
+/** "전체 약 2,000자", 약 held to its number by a no-break space (at 375px the line broke between them). */
+const length = (chars: string) => `전체 약\u00a0${chars}자`;
 
 /** Tarot (T13): "소제목 12개 중 1개 공개 · 1개는 앞부분만 · 전체 약 2,000자". `chars`: the length as approxCharsText writes it. */
 export function tarotTocMeta(teaser: TocCounts, chars: string): string {
   if (teaser.tocTotal === undefined) return `소제목 ${teaser.lockedToc.length}개 · 약 ${chars}자`;
   const partial = teaser.tocPartial ?? 0;
-  return [headings(teaser.tocTotal, teaser.tocOpen ?? 0), ...(partial > 0 ? [`${partial}개는 앞부분만`] : []), `전체 약 ${chars}자`].join(" · ");
+  return [headings(teaser.tocTotal, teaser.tocOpen ?? 0), ...(partial > 0 ? [`${partial}개는 앞부분만`] : []), length(chars)].join(" · ");
 }
 
 /** Saju (S27): no heading is shown, so the line names what was (the name and the summary) rather than "0개 공개". */
 export function sajuTocMeta(teaser: TocCounts, chars: string): string {
   if (teaser.tocTotal === undefined) return `소제목 ${teaser.lockedToc.length}개 · 약 ${chars}자`;
-  return [headings(teaser.tocTotal, teaser.tocOpen ?? 0), "맛보기에서는 이름과 요약을 먼저 보여 드렸어요", `전체 약 ${chars}자`].join(" · ");
+  return [headings(teaser.tocTotal, teaser.tocOpen ?? 0), "맛보기에서는 이름과 요약을 먼저 보여 드렸어요", length(chars)].join(" · ");
 }

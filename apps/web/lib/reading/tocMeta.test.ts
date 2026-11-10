@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { assertVoice } from "@/lib/voice/banned";
-import { sajuTocMeta, tarotTocMeta } from "./tocMeta";
+import { sajuTocMeta as sajuRaw, tarotTocMeta as tarotRaw, type TocCounts } from "./tocMeta";
+
+/** As read: the no-break space that holds 약 to its number reads as a space. */
+const tarotTocMeta = (t: TocCounts, chars: string) => tarotRaw(t, chars).replace(/\u00a0/g, " ");
+const sajuTocMeta = (t: TocCounts, chars: string) => sajuRaw(t, chars).replace(/\u00a0/g, " ");
 
 /** Spec 2026-11-11 entry funnel renewal 3.6: the lock says what was given and what is left, from the server's real counts. */
 
@@ -27,6 +31,11 @@ describe("the lock's line", () => {
   it("a teaser kept before the counts reads as it did (its locked headings counted)", () => {
     expect(tarotTocMeta({ lockedToc: ["흐름", "조언"] }, "2,000")).toBe("소제목 2개 · 약 2,000자");
     expect(sajuTocMeta({ lockedToc: ELEVEN.slice(0, 8) }, "2,500~3,000")).toBe("소제목 8개 · 약 2,500~3,000자");
+  });
+
+  it("holds 약 to its number, so a wrapped line never ends in 약", () => {
+    expect(tarotRaw({ lockedToc: ELEVEN, tocTotal: 12, tocOpen: 1, tocPartial: 1 }, "2,000")).toContain("전체 약\u00a02,000자");
+    expect(sajuRaw({ lockedToc: ELEVEN, tocTotal: 11, tocOpen: 0, tocPartial: 0 }, "2,500~3,000")).toContain("전체 약\u00a02,500~3,000자");
   });
 
   it("passes the banned list (spec 2.4)", () => {
