@@ -660,6 +660,26 @@ export const SAJU_BLOCKLIST: Array<[RegExp, string, boolean]> = [
   [/(좋은|나쁜|최고의|최악의)\s?(해|달|날|시기|운)|(조심|주의)해야 할 (해|달|시기)/, "시기 등급", false],
 ];
 
+/**
+ * 합·충·형·파·해 read as an event (spec 2026-11-11, 정통 사주에 충·합 … 안, 검증기 추가): a relation named as the cause or the sign of
+ * an event ("충이 있어서 이별수가 있어요", "합이 들어오면 결혼할 수 있어요"). Until now only the prompt forbade it (prompts/saju.ts).
+ * A sentence fails with a relation's name, an event, and a cause or a prediction tying them, unless it declines the reading.
+ * 형·파·해 count with their hanja or as a compound only (해 is also a year, 파 and 형 everyday words); 충분·합격 are not 충·합.
+ */
+const RELATION_NAME = /(?<![가-힣])(?:육합|삼합|방합|반합|천간합|천간충|삼형|자형|상형|육해|육파|합|충|[형파해]\((?:刑|破|害)\))(?:\([^)]{0,12}\))?(?=[\s,·)]|이|가|은|는|을|를|으로|로|의|과|와|도|만|이라|라|이니|탓|때문|$)/;
+const RELATION_EVENT_WORD = /이별|헤어지|헤어질|헤어져|결별|이혼|파혼|이사|이직|퇴사|사고|다툼|다투|싸움|싸우|부상|다치|수술|입원|손재|송사|소송|구설|관재|이동수|변동수|파탄|파산|불화|갈라서|결혼(?:하|할|이|을|운)|재회|사별|재앙|액운|흉(?:사|운|한)/;
+const RELATION_CAUSE = /(?:있|들어오|들어와|이루|맺|만나|부딪치|부딪히|겹치|생기|오)(?:어서|아서|으니|니|으면|면|기\s?때문)|때문|탓|(?:으로|로)\s?인해|이라서|(?<![가-힣])라서|충이라|합이라/;
+const RELATION_PREDICT = /수가?\s?있|생길|생겨요|생깁|일어나|일어날|하게\s?(?:돼|될)|할\s?(?:거|것)|겪|닥치|조심하세요|주의하세요|올\s?수/;
+/** A sentence that declines the event reading ("사건으로 읽지 않아요", "이별을 뜻하지는 않아요", "예고하지 않아요"). */
+const RELATION_DECLINED = /(?:읽|뜻하|가리키|예고하|정하|말하|단정하)지(?:는|도)?\s?않|(?:뜻|예고|신호|사건)(?:은|는|이|가)?\s?아니|단정할\s?수(?:는)?\s?없/;
+
+/** The sentences of `text` that read a relation as an event. */
+export function relationEventSentences(text: string): string[] {
+  return sentences(text).filter(
+    (s) => RELATION_NAME.test(s) && RELATION_EVENT_WORD.test(s) && (RELATION_CAUSE.test(s) || RELATION_PREDICT.test(s)) && !RELATION_DECLINED.test(s),
+  );
+}
+
 /** School-dependent labels: allowed only in a sentence that says they were not applied. */
 const SCHOOL_LABELS = /신강|신약|용신|희신|기신|격국|종격/;
 /** A sentence that declines or says something was not applied ("말하기 어려워요", "쓰지 않았어요"). */
@@ -720,6 +740,10 @@ export function allowedFactViolations(
         ? `쓰지 않는 주제가 있어요: ${label}(${words}). 이 풀이로는 말하기 어렵다고 짧게 밝히는 문장에서만 쓰세요.`
         : `쓰지 않는 표현이 있어요: ${label}(${words}). 부정문으로도 쓰지 마세요.`);
     }
+  }
+  const events = cardText ? [] : relationEventSentences(text);
+  if (events.length) {
+    out.push(`합·충 같은 관계를 사건으로 읽은 문장이 있어요(${events.slice(0, 2).map((e) => `"${e}"`).join(", ")}). 관계는 '정면으로 맞서는 배치', '묶이려는 짝'처럼 배치로만 말하고 이별·이사·사고 같은 일과 잇지 마세요.`);
   }
   const named = !cardText && names ? sinsalNameHits(text, userText) : [];
   if (named.length) out.push(`쓰지 않는 주제가 있어요: 살·귀인 이름(${named.join(", ")}). 이 풀이로는 말하기 어렵다고 짧게 밝히는 문장에서만 쓰세요.`);
