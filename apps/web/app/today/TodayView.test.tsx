@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { refreshAccount, resetAccountForTests } from "@/lib/account/client";
 import { DECK_KEY } from "@/lib/deck";
 import type { DailyData } from "@/lib/reading/types";
 import { DAILY_KEY, saveDaily } from "@/lib/storage/daily";
@@ -61,6 +62,7 @@ async function toThreeCards() {
 
 afterEach(() => {
   cleanup();
+  resetAccountForTests();
   vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
@@ -106,7 +108,7 @@ describe("오늘의 한 장 다시 섞기", () => {
     expect(document.querySelector('[data-face="up"]')).toBeNull();
     expect(screen.queryByText(READING.summary)).toBeNull();
     // Only the first GET (the deal's three slots) ever reached the server.
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls.filter(([url]) => url !== "/api/me")).toHaveLength(1);
   });
 
   it.each([
@@ -323,6 +325,7 @@ describe("sharing 오늘의 한 장 (owner 2026-10-20)", () => {
     const calls: Array<{ url: string; method: string; body: unknown }> = [];
     vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
       if (url === "/api/tarot/daily") return respond({ ...DEAL, account: ACCOUNT });
+      if (url === "/api/me") return respond({});
       calls.push({ url: String(url), method: init?.method ?? "GET", body: init?.body ? JSON.parse(String(init.body)) : undefined });
       return respond({ id: "dailyshare01", path: "/s/dailyshare01" });
     }));
@@ -452,5 +455,45 @@ describe("a limit answer to the pick (code review 2026-11-04, 2026-11-05)", () =
     fireEvent.click(screen.getByRole("button", { name: POSITIONS[0] }));
     await screen.findByRole("heading", { name: "오늘의 운세를 더 적을 수 없어요" });
     expect([...document.querySelectorAll("img")].map((img) => img.getAttribute("src") ?? "").filter((src) => src.includes(card.cardId))).toEqual([]);
+  });
+});
+
+describe("오늘의 한 장 once the viewer is confirmed a visitor (code review 2026-11-06)", () => {
+  const MEMBER = { payments: true, login: true, owner: false, user: { nickname: "별", gift: null, unused: [], opening: [] } };
+  const opened = async () => {
+    let me: () => Response = () => respond(MEMBER);
+    const daily = vi.fn(async () => respond({ ...READING, account: ACCOUNT }));
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => (url === "/api/me" ? me() : url === "/api/tarot/daily" ? daily() : respond({}))));
+    render(<TodayView />);
+    await screen.findByText(READING.summary);
+    return { daily, answer: (next: () => Response) => (me = next) };
+  };
+
+  it("a logout seen on return hides the card behind the login and asks nothing again; a login brings the same one back", async () => {
+    const { daily, answer } = await opened();
+    const kept = window.localStorage.getItem(DAILY_KEY);
+    answer(() => respond({ ...MEMBER, user: null }));
+    await act(async () => {
+      await refreshAccount();
+    });
+    await screen.findByRole("region", { name: "오늘의 한 장은 로그인하고 볼 수 있어요" });
+    expect(document.body.textContent).not.toContain(READING.summary);
+    expect(window.localStorage.getItem(DAILY_KEY)).toBe(kept);
+    answer(() => respond(MEMBER));
+    await act(async () => {
+      await refreshAccount();
+    });
+    await screen.findByText(READING.summary);
+    expect(daily).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the card when /api/me failed: only a real answer changes what shows", async () => {
+    const { daily, answer } = await opened();
+    answer(() => new Response("", { status: 503 }));
+    await act(async () => {
+      await refreshAccount();
+    });
+    expect(document.body.textContent).toContain(READING.summary);
+    expect(daily).toHaveBeenCalledTimes(1);
   });
 });

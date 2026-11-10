@@ -10,7 +10,7 @@ import { Stepper } from "@/components/tarot/Stepper";
 import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
 import { ShareResultButton } from "@/components/share/ShareResultButton";
-import { loginHref, loginMessage } from "@/lib/account/client";
+import { loginHref, loginMessage, useAccount, useShown } from "@/lib/account/client";
 import { commitQuota, getJson } from "@/lib/reading/api";
 import { describeApiError, type ErrorView } from "@/lib/reading/errors";
 import { BOT_CHECK_LINE, progressPlan, timeFraction, waitLine } from "@/lib/reading/progress";
@@ -140,7 +140,7 @@ export function TodayView() {
   const reshuffleRef = useRef<HTMLDivElement>(null);
 
   const kept = saved && typeof viewer === "string" && saved.account === viewer ? saved.reading : null;
-  const reading = fresh ?? kept;
+  const { shown: reading, loggedOut } = useShown(useAccount(), fresh ?? kept, null);
 
   /** The slot picked before the login, once (null when none). */
   const takeResume = () => {
@@ -274,6 +274,19 @@ export function TodayView() {
     );
   } else if (reading) {
     content = <Opened reading={reading} revisit={!justPicked} flip={justPicked} lineRef={lineRef} />;
+  } else if (loggedOut) {
+    content = (
+      <div className={s.errorWrap}>
+        <h1 className="sr-only">오늘의 한 장</h1>
+        <LoginFirst
+          title={LOGIN_TITLE}
+          body="오늘 고른 카드는 그대로 있어요. 카카오나 Google로 로그인하면 다시 보여 드려요."
+          href={loginHref("/today")}
+          action="로그인하고 카드 보기"
+          note={loginNote}
+        />
+      </div>
+    );
   } else if (checkError) {
     content = (
       <div className={s.errorWrap}>

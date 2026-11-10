@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { resetAccountForTests } from "@/lib/account/client";
+import { refreshAccount, resetAccountForTests } from "@/lib/account/client";
 import { FLOW_KEY, FLOW_LOGIN_BACKUP_KEY, saveFlow, summarizeFlow, tarotInput, type FlowState } from "@/lib/flowState";
 import { saveTeaser } from "@/lib/reading/teaserCache";
 import { TAROT_TIPS } from "@/lib/reading/waitingTips";
@@ -65,7 +65,7 @@ function stub(routes: Routes) {
     if (url === "/api/me") return (routes.me.length > 1 ? routes.me.shift()! : routes.me[0]!)();
     if (url === "/api/tarot/reading") return routes.reading ? routes.reading() : Promise.reject(new TypeError("offline"));
     if (url.startsWith("/api/readings")) return routes.readings ? routes.readings() : Response.json({ readings: [], next: null });
-    // A kept 맛보기 shows only with a session (owner 2026-11-05): a guest's screen below has the one the server just gave.
+    // Asked for when nothing is kept, or for a guest; a guest's is hidden behind the login whatever comes back (owner 2026-11-05).
     if (url === "/api/tarot/teaser") return Response.json(seededTeaser);
     return Response.json({});
   }));
@@ -258,11 +258,11 @@ describe("FreeResult after a paid opening was cut off", () => {
 });
 
 describe("FreeResult and a signup gift held from before its removal", () => {
-  it("asks a guest to log in to pay, promising no signup gift (removed, owner 2026-10-14 evening)", async () => {
+  it("asks a guest to log in, promising no signup gift (removed, owner 2026-10-14 evening)", async () => {
     seed();
     stub({ me: [() => Response.json({ payments: true, login: true, owner: false, user: null })] });
     const { container } = render(<FreeResult instant />);
-    expect(await screen.findByRole("link", { name: "로그인하고 전체 풀이 보기" })).toBeTruthy();
+    expect(await screen.findByRole("link", { name: "로그인하고 맛보기 보기" })).toBeTruthy();
     expect(container.textContent).not.toMatch(/가입 선물|무료로 드려요/);
   });
 
@@ -331,22 +331,21 @@ describe("FreeResult and 오픈 기념 무료 (the free first tarot reading)", (
     expect(screen.getByText("이 기기에서는 오픈 기념 무료 풀이를 이미 열었어요")).toBeTruthy();
   });
 
-  it("offers nothing free from 12월 1일 0시 KST: a guest with sales closed has nothing to open, one with sales open logs in to pay", async () => {
+  it("offers nothing free from 12월 1일 0시 KST: with sales closed there is nothing to open, with sales open it is paying", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(Date.parse("2026-11-30T15:00:00Z"));
     try {
       seed();
-      stub({ me: [GUEST] });
+      stub({ me: [MEMBER] });
       let { container } = render(<FreeResult instant />);
       expect(((await screen.findByRole("button", { name: "전체 풀이 보기" })) as HTMLButtonElement).disabled).toBe(true);
       expect(screen.getByText("전체 풀이는 결제하고 열 수 있어요")).toBeTruthy();
       expect(container.textContent).not.toMatch(/오픈 기념|무료로 열 수 있어요/);
       cleanup();
       resetAccountForTests();
-      stub({ me: [() => Response.json({ payments: true, login: true, owner: false, user: null })] });
+      stub({ me: [() => Response.json(meBody())] });
       ({ container } = render(<FreeResult instant />));
-      expect((await screen.findByRole("link", { name: "로그인하고 전체 풀이 보기" })).className).toMatch(/primary/);
-      expect(screen.getByText("로그인하면 바로 결제하고 열 수 있어요")).toBeTruthy();
+      expect((await screen.findByRole("link", { name: "2,900원 결제하고 보기" })).className).toMatch(/primary/);
       expect(container.textContent).not.toMatch(/오픈 기념|무료로 열 수 있어요/);
     } finally {
       vi.useRealTimers();
@@ -409,13 +408,12 @@ describe("FreeResult and 오픈 기념 무료 (the free first tarot reading)", (
     expect(screen.queryByText("이 계정으로는 오픈 기념 무료 풀이를 이미 받았어요")).toBeNull();
   });
 
-  it("sends a visitor to log in first, and back here to open it (owner 2026-10-27); nothing is asked of the server", async () => {
+  it("gives a visitor the login in place of the offer (owner 2026-11-05); nothing is asked of the reading", async () => {
     seed();
     stub({ me: [GUEST], reading: () => Response.json({ reading: TAROT_SAMPLE.paid, chapterToken: "t1" }) });
     render(<FreeResult instant />);
-    const button = await screen.findByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료\s*·\s*로그인하고 받기$/ });
-    fireEvent.click(button);
-    expect(router.push).toHaveBeenCalledWith("/login?next=%2Ftarot%2Fresult%3Funlock%3Dopening%26instant%3D1");
+    await screen.findByRole("link", { name: "로그인하고 맛보기 보기" });
+    expect(screen.queryByRole("button", { name: /오픈 기념 무료/ })).toBeNull();
     expect(vi.mocked(fetch).mock.calls.some(([url]) => url === "/api/tarot/reading")).toBe(false);
   });
 
@@ -453,7 +451,7 @@ describe("FreeResult and 오픈 기념 무료 (the free first tarot reading)", (
     seed();
     stub({ me: [GUEST], reading: () => Response.json({ reading: TAROT_SAMPLE.paid, chapterToken: "t1" }) });
     render(<FreeResult instant autoUnlock="opening" loginFlag="cancel" />);
-    await screen.findByRole("region", { name: "전체 풀이에 담긴 것" });
+    await screen.findByRole("link", { name: "로그인하고 맛보기 보기" });
     expect(vi.mocked(fetch).mock.calls.some(([url]) => url === "/api/tarot/reading")).toBe(false);
     cleanup();
     resetAccountForTests();
@@ -468,13 +466,11 @@ describe("FreeResult and 오픈 기념 무료 (the free first tarot reading)", (
 describe("FreeResult and 오픈 기념 무료 once sales are open (owner 2026-10-14)", () => {
   afterEach(() => clearBetaUsage());
 
-  it("puts it first for a guest, logging in next to it; logged in, it opens as 오픈 기념 무료 (no unlock sent)", async () => {
+  it("asks a guest to log in first; logged in, it opens as 오픈 기념 무료 (no unlock sent)", async () => {
     seed();
     stub({ me: [() => Response.json({ payments: true, login: true, owner: false, user: null })] });
     render(<FreeResult instant />);
-    const login = await screen.findByRole("link", { name: "로그인하고 전체 풀이 보기" });
-    expect(login.className).toMatch(/secondary/);
-    expect(screen.getByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료\s*·\s*로그인하고 받기$/ }).className).toMatch(/primary/);
+    await screen.findByRole("link", { name: "로그인하고 맛보기 보기" });
     cleanup();
     resetAccountForTests();
     stub({ me: [() => Response.json(meBody())], reading: () => Response.json({ reading: TAROT_SAMPLE.paid, chapterToken: "t1" }) });
@@ -506,7 +502,7 @@ describe("FreeResult and 오픈 기념 무료 once sales are open (owner 2026-10
 describe("FreeResult after the free teaser", () => {
   it("puts a small way to the unlock sheet right after the first card, before the locked contents (QA-05)", async () => {
     seed();
-    stub({ me: [() => Response.json({ payments: false, login: false, owner: false, user: null })] });
+    stub({ me: [() => Response.json(meBody())] });
     render(<FreeResult instant />);
     const jump = await screen.findByRole("link", { name: "전체 풀이 보러 가기" });
     expect(jump.getAttribute("href")).toBe("#unlock-title");
@@ -523,7 +519,7 @@ describe("FreeResult and the 감질맛 teaser (owner 2026-10-14)", () => {
 
   it("shows the second card's first part as real text ending in a decorative …, the nudge, then the way down and the locked contents", async () => {
     seed({ secondCard: SECOND, seal: "SEALED_teaser-1" });
-    stub({ me: [() => Response.json({ payments: false, login: false, owner: false, user: null })] });
+    stub({ me: [() => Response.json(meBody())] });
     render(<FreeResult instant />);
     const second = await screen.findByRole("article", { name: "흐름 · 바보" });
     expect(second.textContent).toContain("둘째 카드 앞부분이에요.");
@@ -570,7 +566,7 @@ describe("FreeResult and the 감질맛 teaser (owner 2026-10-14)", () => {
 
   it("shows no second card for a teaser kept before it", async () => {
     seed();
-    stub({ me: [() => Response.json({ payments: false, login: false, owner: false, user: null })] });
+    stub({ me: [() => Response.json(meBody())] });
     render(<FreeResult instant />);
     await screen.findByRole("link", { name: "전체 풀이 보러 가기" });
     expect(screen.queryByText("이어지는 이야기는 전체 풀이에서 열려요")).toBeNull();
@@ -815,5 +811,48 @@ describe("FreeResult when the session could not be checked and a 맛보기 is ke
     fireEvent.click(retry);
     await screen.findByText("첫 카드 풀이");
     expect(asked).not.toHaveBeenCalled();
+  });
+});
+
+describe("FreeResult once the viewer is confirmed a visitor, after a 맛보기 was written here (code review 2026-11-06)", () => {
+  const written = async () => {
+    seed();
+    sessionStorage.removeItem("starlog.teaser.tarot");
+    let me: () => Response = () => Response.json(meBody());
+    const asked = vi.fn(() => Response.json(seededTeaser));
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url === "/api/me") return me();
+      if (url === "/api/tarot/teaser") return asked();
+      return Response.json({ readings: [], next: null });
+    }));
+    render(<FreeResult instant />);
+    await screen.findByText("첫 카드 풀이");
+    return { asked, answer: (next: () => Response) => (me = next) };
+  };
+
+  it("a logout seen on return hides it behind the login and asks nothing again; a login brings the same one back", async () => {
+    const { asked, answer } = await written();
+    answer(() => Response.json({ ...meBody(), user: null }));
+    await act(async () => {
+      await refreshAccount();
+    });
+    await screen.findByRole("region", { name: "맛보기 풀이는 로그인하고 볼 수 있어요" });
+    expect(document.body.textContent).not.toContain("첫 카드 풀이");
+    answer(() => Response.json(meBody()));
+    await act(async () => {
+      await refreshAccount();
+    });
+    await screen.findByText("첫 카드 풀이");
+    expect(asked).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps what was just received when /api/me failed: only a real answer changes what shows", async () => {
+    const { asked, answer } = await written();
+    answer(() => new Response("", { status: 503 }));
+    await act(async () => {
+      await refreshAccount();
+    });
+    expect(document.body.textContent).toContain("첫 카드 풀이");
+    expect(asked).toHaveBeenCalledTimes(1);
   });
 });

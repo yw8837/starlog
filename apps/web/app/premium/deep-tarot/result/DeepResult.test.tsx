@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CARDS, TEMPLATES } from "@starlog/core";
-import { resetAccountForTests } from "@/lib/account/client";
+import { refreshAccount, resetAccountForTests } from "@/lib/account/client";
 import { FLOW_KEY } from "@/lib/flowState";
 import { resetBotCheck } from "@/lib/reading/api";
 import { resetPremiumStatusForTests } from "@/lib/premium/status";
@@ -289,5 +289,42 @@ describe("DeepResult when the session could not be checked and a preview is kept
     fireEvent.click(retry);
     await screen.findByText("지금 당신은 지출을 다시 세는 자리에 서 있어요.");
     expect(asked).not.toHaveBeenCalled();
+  });
+});
+
+describe("DeepResult once the viewer is confirmed a visitor, after its preview was written here (code review 2026-11-06)", () => {
+  const written = async () => {
+    let me: () => Response = () => Response.json({ payments: true, login: true, owner: false, user: { nickname: "별", gift: null, unused: [], opening: [] } });
+    const base = stub({ unused: [], teaser: [() => Response.json({ preview: PREVIEW })] });
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => (url === "/api/me" ? me() : base(url, init))));
+    render(<DeepResult instant />);
+    await screen.findByText("지금 당신은 지출을 다시 세는 자리에 서 있어요.");
+    return { answer: (next: () => Response) => (me = next), asks: () => base.mock.calls.filter(([url]) => url === "/api/premium/tarot-deep/teaser").length };
+  };
+
+  it("hides it behind the login and asks nothing again; a login brings the same one back", async () => {
+    const { answer, asks } = await written();
+    answer(() => Response.json({ payments: true, login: true, owner: false, user: null }));
+    await act(async () => {
+      await refreshAccount();
+    });
+    await screen.findByRole("region", { name: "미리보기는 로그인하고 볼 수 있어요" });
+    expect(document.body.textContent).not.toContain("지금 당신은 지출을 다시 세는 자리에 서 있어요.");
+    answer(() => Response.json({ payments: true, login: true, owner: false, user: { nickname: "별", gift: null, unused: [], opening: [] } }));
+    await act(async () => {
+      await refreshAccount();
+    });
+    await screen.findByText("지금 당신은 지출을 다시 세는 자리에 서 있어요.");
+    expect(asks()).toBe(1);
+  });
+
+  it("keeps what was just received when /api/me failed: only a real answer changes what shows", async () => {
+    const { answer, asks } = await written();
+    answer(() => new Response("", { status: 503 }));
+    await act(async () => {
+      await refreshAccount();
+    });
+    expect(document.body.textContent).toContain("지금 당신은 지출을 다시 세는 자리에 서 있어요.");
+    expect(asks()).toBe(1);
   });
 });

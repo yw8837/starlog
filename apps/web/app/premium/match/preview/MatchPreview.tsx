@@ -14,7 +14,7 @@ import { LockedToc } from "@/components/tarot/LockedToc";
 import { Paper } from "@/components/tarot/Paper";
 import { Stepper } from "@/components/tarot/Stepper";
 import s from "@/app/tarot/result/FreeResult.module.css";
-import { asksServer, keptForMember, keptUnknown, loginHref, useAccount } from "@/lib/account/client";
+import { keptUnknown, loginHref, useAccount, useShown } from "@/lib/account/client";
 import { withFlags } from "@/lib/flowState";
 import { approxCharsText } from "@/lib/pricing";
 import { clearPremiumResume, pendingResumeToken, premiumApiPath } from "@/lib/premium/client";
@@ -70,8 +70,7 @@ export function MatchPreview({ instant, autoUnlock = false }: { instant: boolean
   const [fresh, setFresh] = useState<{ key: string; data: MatchPreviewData } | null>(null);
   // Kept for this tab, shown only with a session (owner 2026-11-05): a visitor's copy stays hidden and the server answers the login.
   const kept = teaserKey ? readTeaser("premium", teaserKey, isMatchPreview) : null;
-  const preview = teaserKey ? (fresh?.key === teaserKey ? fresh.data : keptForMember(account, kept)) : null;
-  const asks = asksServer(account, kept);
+  const { shown: preview, asks, loggedOut } = useShown(account, fresh?.key === teaserKey ? fresh.data : null, kept);
 
   // The free preview once per answers (kept for this tab), through the browser check like the free teasers.
   const { run: runTeaser, cancel: cancelTeaser } = teaserGen;
@@ -200,7 +199,7 @@ export function MatchPreview({ instant, autoUnlock = false }: { instant: boolean
           <>
             {unlock}
           </>
-        ) : teaserError && teaserState.status === "error" && teaserState.error.code === "LOGIN_REQUIRED" ? (
+        ) : loggedOut || (teaserError && teaserState.status === "error" && teaserState.error.code === "LOGIN_REQUIRED") ? (
           // The preview needs a login (owner 2026-11-04): the login comes back here with what was entered.
           <LoginFirst
             title="미리보기는 로그인하고 볼 수 있어요"

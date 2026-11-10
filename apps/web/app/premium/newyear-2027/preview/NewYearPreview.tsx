@@ -13,7 +13,7 @@ import { LockedToc } from "@/components/tarot/LockedToc";
 import { Paper } from "@/components/tarot/Paper";
 import { Stepper } from "@/components/tarot/Stepper";
 import s from "@/app/tarot/result/FreeResult.module.css";
-import { asksServer, keptForMember, keptUnknown, loginHref, useAccount } from "@/lib/account/client";
+import { keptUnknown, loginHref, useAccount, useShown } from "@/lib/account/client";
 import { approxCharsText } from "@/lib/pricing";
 import { premiumApiPath } from "@/lib/premium/client";
 import { opensAtText } from "@/lib/premium/offer";
@@ -64,8 +64,7 @@ export function NewYearPreview({ autoUnlock = false }: { autoUnlock?: boolean })
   const [fresh, setFresh] = useState<{ key: string; data: NewYearPreviewData } | null>(null);
   // Kept for this tab, shown only with a session (owner 2026-11-05): a visitor's copy stays hidden and the server answers the login.
   const kept = teaserKey ? readTeaser("premium", teaserKey, isNewYearPreview) : null;
-  const preview = teaserKey ? (fresh?.key === teaserKey ? fresh.data : keptForMember(account, kept)) : null;
-  const asks = asksServer(account, kept);
+  const { shown: preview, asks, loggedOut } = useShown(account, fresh?.key === teaserKey ? fresh.data : null, kept);
 
   // The free preview once per birth and chips (kept for this tab), through the browser check like the free teasers.
   const { run: runTeaser, cancel: cancelTeaser } = teaserGen;
@@ -200,7 +199,7 @@ export function NewYearPreview({ autoUnlock = false }: { autoUnlock?: boolean })
             </header>
             {notYet ? (
               <p className={v.soon}>{notYet}</p>
-            ) : teaserError && failed?.code === "LOGIN_REQUIRED" ? (
+            ) : loggedOut || (teaserError && failed?.code === "LOGIN_REQUIRED") ? (
               // The preview needs a login (owner 2026-11-04): the login comes back here with what was entered.
               <LoginFirst
                 title="미리보기는 로그인하고 볼 수 있어요"

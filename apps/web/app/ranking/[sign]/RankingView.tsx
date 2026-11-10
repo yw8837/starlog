@@ -11,6 +11,7 @@ import { ConstellationBackdrop } from "@/components/bonds/ConstellationBackdrop"
 import { InviteShareButton } from "@/components/bonds/InviteShareButton";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
+import { useOnSignedInChange } from "@/lib/account/client";
 import { bondsApi, bondsMessage, onLoginLost } from "@/lib/bonds/client";
 import type { RankingRowView, RankingView as Ranking } from "@/lib/bonds/service";
 import { StarList } from "../../bonds/StarList";
@@ -47,6 +48,7 @@ export function RankingView({ sign }: { sign: SignId }) {
 
   // A session that ended while this page is open: an owner's action answers the login, and nothing of the owner stays on it.
   useEffect(() => onLoginLost(() => void load()), [load]);
+  useOnSignedInChange(load);
 
   return (
     <div className={s.layout}>

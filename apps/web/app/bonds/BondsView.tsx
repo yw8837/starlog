@@ -15,7 +15,7 @@ import { SignPicker } from "@/components/bonds/SignPicker";
 import { LoginFirst } from "@/components/reading/LoginFirst";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
-import { loginHref } from "@/lib/account/client";
+import { loginHref, useOnSignedInChange } from "@/lib/account/client";
 import { bondsApi, bondsMessage, markSeen, monthDay, onLoginLost, savedSunSign, seenUntil } from "@/lib/bonds/client";
 import type { JoinedView, LinkOffer, OwnerSummary, OwnerView } from "@/lib/bonds/service";
 import { OwnerSetup } from "./OwnerSetup";
@@ -59,6 +59,7 @@ export function BondsView({ initialSign }: { initialSign: SignId | null }) {
 
   // A session that ended while this screen is open: an owner's action answers the login, and the screen asks for it.
   useEffect(() => onLoginLost(() => void load()), [load]);
+  useOnSignedInChange(load);
 
   // Remember the newest star and completion as seen once they are on screen.
   useEffect(() => {

@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LocaleProvider } from "@/components/i18n/LocaleProvider";
-import { resetAccountForTests } from "@/lib/account/client";
+import { refreshAccount, resetAccountForTests } from "@/lib/account/client";
 import { chartFor } from "@/components/saju/useSajuChart";
 import { SAJU_TEASERS_KEY, saveTeaser } from "@/lib/reading/teaserCache";
 import type { SajuTopicId } from "@/lib/reading/types";
@@ -672,5 +672,47 @@ describe("SajuChartView with a 맛보기 kept on this device (owner 2026-11-05)"
     }));
     render(<SajuChartView />);
     await screen.findByRole("region", { name: "맛보기 풀이는 로그인하고 볼 수 있어요" });
+  });
+});
+
+describe("SajuChartView once the viewer is confirmed a visitor, after a 맛보기 was written here (code review 2026-11-06)", () => {
+  const written = async () => {
+    saveSajuProfile(BIRTH);
+    let me: () => Response = () => Response.json(meBody());
+    const asked = vi.fn(() => Response.json({ title: "고요한 물", summary: "첫 장 요약", lockedToc: ["성향"] }));
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url === "/api/me") return me();
+      if (url === "/api/saju/teaser") return asked();
+      return Response.json({ readings: [], next: null });
+    }));
+    render(<SajuChartView />);
+    await screen.findByText("고요한 물");
+    return { asked, answer: (next: () => Response) => (me = next) };
+  };
+
+  it("a logout seen on return hides it behind the login and asks nothing again; a login brings the same one back", async () => {
+    const { asked, answer } = await written();
+    answer(() => Response.json({ ...meBody(), user: null }));
+    await act(async () => {
+      await refreshAccount();
+    });
+    await screen.findByRole("region", { name: "맛보기 풀이는 로그인하고 볼 수 있어요" });
+    expect(document.body.textContent).not.toContain("고요한 물");
+    answer(() => Response.json(meBody()));
+    await act(async () => {
+      await refreshAccount();
+    });
+    await screen.findByText("고요한 물");
+    expect(asked).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps what was just received when /api/me failed: only a real answer changes what shows", async () => {
+    const { asked, answer } = await written();
+    answer(() => new Response("", { status: 503 }));
+    await act(async () => {
+      await refreshAccount();
+    });
+    expect(document.body.textContent).toContain("고요한 물");
+    expect(asked).toHaveBeenCalledTimes(1);
   });
 });

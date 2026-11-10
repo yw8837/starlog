@@ -1,4 +1,4 @@
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 
 /**
  * Browser side of accounts: GET /api/me, shared by every component through one small store (one
@@ -151,6 +151,36 @@ export function useAccount(): AccountState | null | undefined {
 
 /** A kept reading shows only with a session (owner 2026-11-05): hidden from a visitor, not deleted. */
 export const keptForMember = <T>(account: AccountState | null | undefined, kept: T | null): T | null => (account?.user ? kept : null);
+
+/**
+ * What a screen shows of a 맛보기 or a card: what was written here a moment ago (`fresh`), else what is kept. Once a real answer
+ * says the viewer is a visitor (a logout in another tab, seen on return) the fresh one is hidden too, `loggedOut` says to show the
+ * login in its place, and nothing is asked for again: a login brings the same one back (code review 2026-11-06). When /api/me
+ * failed it stays. A session-only answer cannot reach a visitor, so a "visitor" that holds one may be out of date: asked once more.
+ */
+export function useShown<T>(account: AccountState | null | undefined, fresh: T | null, kept: T | null) {
+  const loggedOut = Boolean(fresh && account && !account.user);
+  useEffect(() => {
+    if (loggedOut) void refreshAccount(undefined, { keep: true });
+  }, [loggedOut]);
+  return { shown: loggedOut ? null : (fresh ?? keptForMember(account, kept)), asks: !fresh && asksServer(account, kept), loggedOut };
+}
+
+/**
+ * Runs `onChange` when a real answer says the viewer logged in or out while the screen is open (code review 2026-11-06): not for
+ * the first answer (the screen has just read itself) and not when /api/me failed. Follows the boolean, so it cannot loop.
+ */
+export function useOnSignedInChange(onChange: () => void): void {
+  const account = useAccount();
+  const signedIn = account ? Boolean(account.user) : null;
+  const last = useRef(signedIn);
+  useEffect(() => {
+    if (signedIn === null) return;
+    const before = last.current;
+    last.current = signedIn;
+    if (before !== null && before !== signedIn) onChange();
+  }, [signedIn, onChange]);
+}
 
 /**
  * Whether a screen asks the server for its 맛보기: nothing kept, or kept and this viewer is a known visitor (the server answers

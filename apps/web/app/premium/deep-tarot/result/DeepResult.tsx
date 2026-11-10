@@ -17,7 +17,7 @@ import { ReadingLayout } from "@/components/tarot/ReadingLayout";
 import { SituationSummary } from "@/components/tarot/SituationSummary";
 import { Stepper } from "@/components/tarot/Stepper";
 import s from "@/app/tarot/result/FreeResult.module.css";
-import { asksServer, keptForMember, keptUnknown, loginHref, useAccount } from "@/lib/account/client";
+import { keptUnknown, loginHref, useAccount, useShown } from "@/lib/account/client";
 import { deckPrefs } from "@/lib/deck";
 import { DEEP_RESULT_PATH, deepResultGate, summarizeFlow, tarotInput, useFlowState, withFlags } from "@/lib/flowState";
 import { DEEP_BUILDER_HREF } from "@/lib/freshStart";
@@ -73,8 +73,7 @@ export function DeepResult({ instant, autoUnlock = false }: { instant: boolean; 
   const [fresh, setFresh] = useState<{ key: string; data: DeepTarotPreviewData } | null>(null);
   // Kept for this tab, shown only with a session (owner 2026-11-05): a visitor's copy stays hidden and the server answers the login.
   const kept = teaserKey ? readTeaser("premium", teaserKey, isDeepTarotPreview) : null;
-  const preview = teaserKey ? (fresh?.key === teaserKey ? fresh.data : keptForMember(account, kept)) : null;
-  const asks = asksServer(account, kept);
+  const { shown: preview, asks, loggedOut } = useShown(account, fresh?.key === teaserKey ? fresh.data : null, kept);
 
   // The free preview, written once per draw and question (kept for this tab: a reload shows it again). It goes
   // through postGeneration, so a 403 BOT_CHECK runs the Turnstile check like the free teasers.
@@ -212,7 +211,7 @@ export function DeepResult({ instant, autoUnlock = false }: { instant: boolean; 
             <>
               {unlock}
             </>
-          ) : teaserError && teaserState.status === "error" && teaserState.error.code === "LOGIN_REQUIRED" ? (
+          ) : loggedOut || (teaserError && teaserState.status === "error" && teaserState.error.code === "LOGIN_REQUIRED") ? (
             // The preview needs a login (owner 2026-11-04): the flow stays in this tab, so the login comes back to these cards.
             <LoginFirst
               title="미리보기는 로그인하고 볼 수 있어요"

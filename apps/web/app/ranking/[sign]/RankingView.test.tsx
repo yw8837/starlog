@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { refreshAccount, resetAccountForTests } from "@/lib/account/client";
 import { bondsApi } from "@/lib/bonds/client";
 import type { RankingRowView, RankingView as Ranking } from "@/lib/bonds/service";
 import { Board, MyCard, RankingView } from "./RankingView";
@@ -236,5 +237,36 @@ describe("my completed constellation beside the board", () => {
       expect(screen.getByRole("button", { name: "별자리 공유하기" })).toBeTruthy();
       expect(screen.queryByRole("button", { name: "내 순위 공유하기" })).toBeNull();
     }
+  });
+});
+
+describe("별자리 랭킹 when the viewer logs in or out while it is open (code review 2026-11-06)", () => {
+  const MEMBER = { payments: true, login: true, owner: false, user: { nickname: "별", gift: null, unused: [], opening: [] } };
+  const recheck = () =>
+    act(async () => {
+      await refreshAccount();
+    });
+
+  it("reads the page again once on a real answer, not for the first one, and not when /api/me failed", async () => {
+    const now = { session: true, account: () => Response.json(MEMBER) as Response };
+    const page = vi.fn(() => new Response(JSON.stringify({ ok: true, ...(now.session ? { ...VIEW, owner: OWNER, mine: mine(300, 3) } : VIEW) })));
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => (url === "/api/me" ? now.account() : page())));
+    render(<RankingView sign="aries" />);
+    await within(await screen.findByRole("region", { name: "내 순위" })).findByText(/300/);
+    await recheck();
+    expect(page).toHaveBeenCalledTimes(1);
+    now.account = () => new Response("", { status: 503 });
+    await recheck();
+    expect(page).toHaveBeenCalledTimes(1);
+    now.session = false;
+    now.account = () => Response.json({ ...MEMBER, user: null });
+    await recheck();
+    await within(myBox()).findByRole("link", { name: "이 별자리 채우기" });
+    expect(myBox().textContent).not.toContain("300");
+    expect(page).toHaveBeenCalledTimes(2);
+    await recheck();
+    expect(page).toHaveBeenCalledTimes(2);
+    vi.unstubAllGlobals();
+    resetAccountForTests();
   });
 });

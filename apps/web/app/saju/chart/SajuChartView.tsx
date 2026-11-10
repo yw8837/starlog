@@ -24,7 +24,7 @@ import { ReadingLayout } from "@/components/tarot/ReadingLayout";
 import { Stepper } from "@/components/tarot/Stepper";
 import { UnlockSheet } from "@/components/tarot/UnlockSheet";
 import { Button } from "@/components/ui/Button";
-import { keptForMember, keptUnknown, loginHref, loginKind, loginMessage, refreshAccount, useAccount } from "@/lib/account/client";
+import { keptUnknown, loginHref, loginKind, loginMessage, refreshAccount, useAccount, useShown } from "@/lib/account/client";
 import { SITE, sajuTopicsMode } from "@/lib/config";
 import { approxCharsText } from "@/lib/pricing";
 import { standardProduct } from "@/lib/pay/catalog";
@@ -102,7 +102,8 @@ export function SajuChartView({
   const [fresh, setFresh] = useState<{ key: string; data: SajuTeaserData } | null>(null);
   // Kept on this device, shown only with a session (owner 2026-11-05): a visitor's copy stays hidden behind the login below.
   const kept = teaserKey ? readTeaser("saju", teaserKey, isSajuTeaser) : null;
-  const teaser = teaserKey ? (fresh?.key === teaserKey ? fresh.data : keptForMember(account, kept)) : null;
+  const justWritten = fresh?.key === teaserKey ? fresh.data : null;
+  const { shown: teaser } = useShown(account, justWritten, kept);
   // The 맛보기 needs a login (owner 2026-11-04): a visitor sees the 명식 and is asked here; the login comes back to the 운 on
   // screen (?topic=) and the birth data kept on this device, so it is written from the same input. When /api/me failed
   // (null) the server decides.
@@ -114,7 +115,7 @@ export function SajuChartView({
   const { run: runTeaser, cancel: cancelTeaser, reset: resetTeaser } = teaserGen;
   useEffect(() => {
     if (!accountKnown || guest) return;
-    if (!teaserKey || !own || !fields || kept) return;
+    if (!teaserKey || !own || !fields || kept || justWritten) return;
     void runTeaser("/api/saju/teaser", sajuBody(form, fields), progressPlan("saju-teaser"), isSajuTeaser).then((res) => {
       if (!res?.ok) return;
       saveTeaser("saju", teaserKey, res.data);

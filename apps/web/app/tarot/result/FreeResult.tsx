@@ -14,7 +14,7 @@ import { SituationSummary } from "@/components/tarot/SituationSummary";
 import { SpreadRow, faceUpCard } from "@/components/tarot/SpreadRow";
 import { Stepper } from "@/components/tarot/Stepper";
 import { UnlockSheet } from "@/components/tarot/UnlockSheet";
-import { asksServer, keptForMember, keptUnknown, loginHref, loginKind, loginMessage, refreshAccount, useAccount } from "@/lib/account/client";
+import { keptUnknown, loginHref, loginKind, loginMessage, refreshAccount, useAccount, useShown } from "@/lib/account/client";
 import { SITE, openingFreeOn } from "@/lib/config";
 import { approxCharsText } from "@/lib/pricing";
 import { backupFlowForLogin, dropFlowBackup, newResumeNonce, restoreFlowAfterLogin, resultGate, summarizeFlow, tarotInput, useFlowState, withFlags } from "@/lib/flowState";
@@ -108,8 +108,7 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null, resum
   const account = useAccount();
   // Kept for this tab, shown only with a session (owner 2026-11-05): a visitor's copy stays hidden and the server answers the login.
   const kept = teaserKey ? readTeaser("tarot", teaserKey, isTarotTeaser) : null;
-  const teaser = teaserKey ? (fresh?.key === teaserKey ? fresh.data : keptForMember(account, kept)) : null;
-  const asks = asksServer(account, kept);
+  const { shown: teaser, asks, loggedOut } = useShown(account, fresh?.key === teaserKey ? fresh.data : null, kept);
 
   // The free teaser, written once per draw and question (kept for this tab, so a reload shows it
   // again). Keyed by what it is written for: the draw and the input are both in the key. A visitor's request is asked too:
@@ -299,7 +298,7 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null, resum
   };
 
   const teaserState = teaserGen.state;
-  const loginFirst = !teaser && teaserState.status === "error" && teaserState.error.code === "LOGIN_REQUIRED";
+  const loginFirst = loggedOut || (!teaser && teaserState.status === "error" && teaserState.error.code === "LOGIN_REQUIRED");
   const teaserError = !teaser && !loginFirst && teaserState.status === "error" ? describeApiError(teaserState.error, "teaser") : null;
   // The login button keeps the draw for a login that comes back in another tab, marked for that trip only; read here, it
   // is not needed any more.

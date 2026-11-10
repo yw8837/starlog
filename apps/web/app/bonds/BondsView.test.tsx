@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { refreshAccount, resetAccountForTests } from "@/lib/account/client";
 import { bondsApi } from "@/lib/bonds/client";
 import { BondsView } from "./BondsView";
 
@@ -20,6 +21,7 @@ beforeAll(() => {
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  resetAccountForTests();
 });
 
 describe("BondsView loading (Q-06)", () => {
@@ -444,5 +446,45 @@ describe("BondsView for a device whose own 별자리 needs a login (owner 2026-1
     });
     await screen.findByRole("region", { name: "내 별자리는 로그인하고 볼 수 있어요" });
     expect(screen.queryByRole("heading", { level: 1, name: "용우님의 별자리" })).toBeNull();
+  });
+});
+
+describe("BondsView when the viewer logs in or out while it is open (code review 2026-11-06)", () => {
+  const MEMBER = { payments: true, login: true, owner: false, user: { nickname: "별", gift: null, unused: [], opening: [] } };
+  const server = () => {
+    const now = { session: true, account: () => Response.json(MEMBER) as Response };
+    const page = vi.fn(() => new Response(JSON.stringify(now.session ? { ...OWNER_ME, filling: null, signedIn: true } : { ok: true, owner: null, signedIn: false, ownerHidden: true })));
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => (url === "/api/me" ? now.account() : url === "/api/bonds/me" ? page() : new Response(JSON.stringify({ ok: true })))));
+    return { now, page };
+  };
+  const recheck = () =>
+    act(async () => {
+      await refreshAccount();
+    });
+
+  it("reads the page again once when a real answer says the viewer logged out, and not for the first answer", async () => {
+    const { now, page } = server();
+    render(<BondsView initialSign={null} />);
+    await screen.findByRole("heading", { level: 1, name: "용우님의 별자리" });
+    await recheck();
+    expect(page).toHaveBeenCalledTimes(1);
+    now.session = false;
+    now.account = () => Response.json({ ...MEMBER, user: null });
+    await recheck();
+    await screen.findByRole("region", { name: "내 별자리는 로그인하고 볼 수 있어요" });
+    expect(page).toHaveBeenCalledTimes(2);
+    await recheck();
+    expect(page).toHaveBeenCalledTimes(2);
+  });
+
+  it("stays as it is when /api/me failed", async () => {
+    const { now, page } = server();
+    render(<BondsView initialSign={null} />);
+    await screen.findByRole("heading", { level: 1, name: "용우님의 별자리" });
+    await recheck();
+    now.account = () => new Response("", { status: 503 });
+    await recheck();
+    expect(page).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("heading", { level: 1, name: "용우님의 별자리" })).toBeTruthy();
   });
 });

@@ -28,27 +28,33 @@ const loseSession = (page: Page) => page.context().clearCookies({ name: /sl_sid/
 
 const kept = (page: Page, area: "sessionStorage" | "localStorage", key: string) => page.evaluate(([a, k]) => window[a as "localStorage"].getItem(k!), [area, key]);
 
+/** From the question to the three cards drawn and the 맛보기 written on /tarot/result; returns the part only the 맛보기 shows. */
+async function tarotTeaser(page: Page) {
+  await page.goto("/tarot/new");
+  await page.getByRole("button", { name: "나", exact: true }).click();
+  await page.getByRole("button", { name: "재물운" }).click();
+  await page.getByRole("button", { name: "이번 주" }).click();
+  await page.getByRole("button", { name: "다음" }).click();
+  await expect(page).toHaveURL(/\/tarot\/new\/situation$/, { timeout: NAV });
+  await page.getByRole("button", { name: "카드 뽑기" }).click();
+  await expect(page).toHaveURL(/\/tarot\/draw$/, { timeout: NAV });
+  await page.goto("/tarot/draw?instant=1");
+  await expect(tableCards(page)).toHaveCount(78);
+  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running" || a.effect?.getComputedTiming().iterations === Infinity));
+  for (let i = 0; i < 3; i++) await pickCard(page);
+  await page.getByRole("button", { name: "결과 보기" }).click();
+  const sheet = page.getByRole("region", { name: "전체 풀이에 담긴 것" });
+  await expect(sheet).toBeVisible({ timeout: GENERATION });
+  return sheet;
+}
+
 test.describe("what a device keeps needs a session", { tag: "@login" }, () => {
   test.beforeEach(() => test.setTimeout(300_000));
 
   test("/tarot/result: the 맛보기 kept in this tab is hidden and kept without a session, and the same one shows after the login", async ({ page }, info) => {
     const name = `kept-tarot-${info.project.name}-${Date.now()}`;
     await member(page, info, name);
-    await page.goto("/tarot/new");
-    await page.getByRole("button", { name: "나", exact: true }).click();
-    await page.getByRole("button", { name: "재물운" }).click();
-    await page.getByRole("button", { name: "이번 주" }).click();
-    await page.getByRole("button", { name: "다음" }).click();
-    await expect(page).toHaveURL(/\/tarot\/new\/situation$/, { timeout: NAV });
-    await page.getByRole("button", { name: "카드 뽑기" }).click();
-    await expect(page).toHaveURL(/\/tarot\/draw$/, { timeout: NAV });
-    await page.goto("/tarot/draw?instant=1");
-    await expect(tableCards(page)).toHaveCount(78);
-    await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running" || a.effect?.getComputedTiming().iterations === Infinity));
-    for (let i = 0; i < 3; i++) await pickCard(page);
-    await page.getByRole("button", { name: "결과 보기" }).click();
-    const sheet = page.getByRole("region", { name: "전체 풀이에 담긴 것" });
-    await expect(sheet).toBeVisible({ timeout: GENERATION });
+    const sheet = await tarotTeaser(page);
     const stored = await kept(page, "sessionStorage", "starlog.teaser.tarot");
     expect(stored).toBeTruthy();
 
@@ -66,6 +72,26 @@ test.describe("what a device keeps needs a session", { tag: "@login" }, () => {
     });
     await page.goto("/tarot/result?instant=1");
     await expect(sheet).toBeVisible({ timeout: NAV });
+    expect(asked).toBe(0);
+  });
+
+  test("/tarot/result: a logout in another tab, seen on return, hides the 맛보기 just written here; nothing is asked again", async ({ page, context }, info) => {
+    await member(page, info, `kept-tab-${info.project.name}-${Date.now()}`);
+    const sheet = await tarotTeaser(page);
+    let asked = 0;
+    page.on("request", (request) => {
+      if (new URL(request.url()).pathname === "/api/tarot/teaser") asked++;
+    });
+    const other = await context.newPage();
+    await other.goto("/me");
+    await other.getByRole("button", { name: "로그아웃" }).click();
+    await expect(other.getByText(/^로그아웃했어요/)).toBeVisible({ timeout: NAV });
+    await other.close();
+    await expect(sheet).toBeVisible();
+    // Coming back to this tab: the browser restoring the page asks at once (lib/account/client.ts onPageShown).
+    await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true })));
+    await expect(page.getByRole("region", { name: "맛보기 풀이는 로그인하고 볼 수 있어요" })).toBeVisible({ timeout: NAV });
+    await expect(sheet).toHaveCount(0);
     expect(asked).toBe(0);
   });
 
