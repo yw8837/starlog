@@ -71,8 +71,8 @@ export function setLedgerContract(make: Make) {
     expect(await grants(db, "order_set")).toBe(2);
     const unused = (await entitlements(db, "u_1", NOW)).unused;
     expect([...unused].sort((a, b) => a.productId.localeCompare(b.productId))).toEqual([
-      { orderId: "order_set", productId: "match", paidAt: NOW, refundable: true },
-      { orderId: "order_set", productId: NY, paidAt: NOW, refundable: true },
+      { orderId: "order_set", productId: "match", paidAt: NOW, refundable: true, set: true },
+      { orderId: "order_set", productId: NY, paidAt: NOW, refundable: true, set: true },
     ]);
   });
 
@@ -122,11 +122,11 @@ export function setLedgerContract(make: Make) {
     expect(await lockPaidLotForRefund(db, "order_set", NOW + 2)).toBeNull();
     expect(await orderStatus(db, "order_set")).toBe("paid");
     expect((await lotsOf(db, "order_set")).map((lot) => [lot.product_id, lot.status, lot.units_left])).toEqual([["match", "active", 1], [NY, "active", 0]]);
-    expect((await entitlements(db, "u_1", NOW + 2)).unused).toEqual([{ orderId: "order_set", productId: "match", paidAt: NOW, refundable: false }]);
+    expect((await entitlements(db, "u_1", NOW + 2)).unused).toEqual([{ orderId: "order_set", productId: "match", paidAt: NOW, refundable: false, set: true }]);
     // Opened (delivered): still none.
     expect(await deliverUnlock(db, { unlockId: opening.unlockId, readingId: "r_1", now: NOW + 3 })).toBe("delivered");
     expect(await lockPaidLotForRefund(db, "order_set", NOW + 4)).toBeNull();
-    expect((await entitlements(db, "u_1", NOW + 4)).unused).toEqual([{ orderId: "order_set", productId: "match", paidAt: NOW, refundable: false }]);
+    expect((await entitlements(db, "u_1", NOW + 4)).unused).toEqual([{ orderId: "order_set", productId: "match", paidAt: NOW, refundable: false, set: true }]);
     const [history] = await orderHistory(db, "u_1");
     expect(history).toMatchObject({ orderId: "order_set", productId: SET, amount: 18900, refundable: false, opened: true });
     expect(await orderHistory(db, "u_1")).toHaveLength(1);

@@ -36,6 +36,9 @@ const openHref = (productId: string) => OPEN_HREF[productId] ?? "/tarot/new";
 const WINDOW_CLOSED = `환불 가능 기간(결제일로부터 ${REFUND_DAYS}일)이 지났어요. 문제가 있으면 문의해 주세요.`;
 /** Instead of 환불받기 for a purchase given back after its reading was cut off while written (SEC-02). */
 const LEFT_WHILE_WRITTEN = "풀이를 받던 중에 끊겨서 환불은 할 수 없어요. 열기로 다시 받을 수 있어요.";
+/** A 2027 신년운세 + 프리미엄 궁합 set (owner 2026-11-10): one payment, refunded whole while neither reading is opened. */
+const SET_TOGETHER = "세트로 산 풀이예요. 둘 다 열기 전에만 두 풀이가 함께 환불돼요. 하나라도 열면 환불되지 않아요.";
+const SET_OTHER_OPENED = "세트의 다른 풀이를 열어서 환불은 할 수 없어요. 열기로 받을 수 있어요.";
 
 /** A failed 환불받기 in refund words (the payment lines would say "결제를 확인하고 있어요"). */
 function refundNotice(error: ApiError): string {
@@ -75,12 +78,15 @@ type AccountPanelProps = {
  */
 export function AccountPanel({ account, navigate = (url) => window.location.assign(url), onNotice }: AccountPanelProps) {
   const { user } = account;
-  const refundableCount = user.unused.filter((item) => item.refundable !== false).length;
-  const forfeitedCount = user.unused.length - refundableCount;
+  // Payments, not readings: a set's two readings are one payment.
+  const payments = (refundable: boolean) => new Set(user.unused.filter((item) => (item.refundable !== false) === refundable).map((item) => item.orderId)).size;
+  const refundableCount = payments(true);
+  const forfeitedCount = payments(false);
   const [ownNotice, setOwnNotice] = useState("");
   const setNotice = onNotice ?? setOwnNotice;
   const [sheet, setSheet] = useState<"refund" | "delete" | "readings" | null>(null);
   const [refundId, setRefundId] = useState<string | null>(null);
+  const [refundSet, setRefundSet] = useState(false);
   const [historyKey, setHistoryKey] = useState(0);
   // One refund at a time: a second tap would answer NOT_REFUNDABLE over "환불했어요".
   const refunding = useRef(false);
@@ -145,31 +151,34 @@ export function AccountPanel({ account, navigate = (url) => window.location.assi
         </h3>
         {user.unused.length > 0 ? (
           <ul className={s.unused}>
-            {user.unused.map((item) => {
-              // Past its window, or given back after its reading was cut off, the purchase can still be
-              // opened; 환불받기 gives way to a plain line.
+            {user.unused.map((item, index) => {
+              // Past its window, or given back after its reading was cut off (or the other reading of its set opened),
+              // the purchase can still be opened; 환불받기 gives way to a plain line. A set's one payment has one 환불받기.
               const left = item.refundable === false;
-              const refundable = !left && (!item.refundUntil || Date.now() <= Date.parse(item.refundUntil));
+              const first = user.unused.findIndex((other) => other.orderId === item.orderId) === index;
+              const open = !left && (!item.refundUntil || Date.now() <= Date.parse(item.refundUntil));
               return (
-                <li key={item.orderId} className={s.unusedItem}>
+                <li key={`${item.orderId}:${item.productId}`} className={s.unusedItem}>
                   <span>{`${productById(item.productId)?.name ?? "풀이"} · 열지 않음`}</span>
                   <Button href={openHref(item.productId)} variant="secondary" size="md">
                     열기
                   </Button>
-                  {refundable ? (
+                  {open && first ? (
                     <button
                       type="button"
                       className={s.link}
                       onClick={() => {
                         setRefundId(item.orderId);
+                        setRefundSet(item.set === true);
                         setSheet("refund");
                       }}
                     >
                       환불받기
                     </button>
                   ) : null}
-                  {left ? <p className={s.refundLine}>{LEFT_WHILE_WRITTEN}</p> : null}
-                  {item.refundUntil ? <p className={s.refundLine}>{refundable ? `${lastDay(item.refundUntil)}까지 환불할 수 있어요` : WINDOW_CLOSED}</p> : null}
+                  {left ? <p className={s.refundLine}>{item.set ? SET_OTHER_OPENED : LEFT_WHILE_WRITTEN}</p> : null}
+                  {item.set && !left ? <p className={s.refundLine}>{SET_TOGETHER}</p> : null}
+                  {item.refundUntil ? <p className={s.refundLine}>{open ? `${lastDay(item.refundUntil)}까지 환불할 수 있어요` : WINDOW_CLOSED}</p> : null}
                 </li>
               );
             })}
@@ -216,7 +225,7 @@ export function AccountPanel({ account, navigate = (url) => window.location.assi
           <h2 id="refund-title" className={s.sectionTitle}>
             이 결제를 환불할까요?
           </h2>
-          <p>열지 않은 풀이라 결제한 금액 전액을 돌려 드려요.</p>
+          <p>{refundSet ? "두 풀이 모두 열지 않은 세트라 결제한 금액 전액을 돌려 드려요." : "열지 않은 풀이라 결제한 금액 전액을 돌려 드려요."}</p>
           <Button block disabled={refundBusy} onClick={() => void refund()}>
             {refundBusy ? "환불하고 있어요" : "전액 환불받기"}
           </Button>

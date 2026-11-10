@@ -18,9 +18,11 @@ export interface AccountUser {
   /**
    * paid readings bought and not opened yet (one being opened is in `opening` instead);
    * `refundUntil`: ISO time of the last moment 환불받기 works (the end of the 7th KST day after the payment);
-   * `refundable: false` instead: given back after its reading was cut off while written, it opens again but is never refunded
+   * `refundable: false` instead: given back after its reading was cut off while written, it opens again but is never refunded;
+   * `set: true`: one reading of a 2027 신년운세 + 프리미엄 궁합 set, refunded only with the other while neither is opened
+   * (`refundable: false` once the other was opened)
    */
-  unused: Array<{ orderId: string; productId: string; refundUntil?: string; refundable?: false }>;
+  unused: Array<{ orderId: string; productId: string; refundUntil?: string; refundable?: false; set?: true }>;
   /** readings being opened right now with a purchase (its order) or the gift; [] when /api/me leaves it out */
   opening: Array<{ productId: string; currency: "paid" | "gift"; orderId: string | null }>;
   /** the card-company review account (ID and password, no Kakao); absent for everyone else */
@@ -57,7 +59,7 @@ function parseUser(v: unknown): AccountUser | null | undefined {
   if (v === null) return null;
   if (!isRecord(v) || typeof v.nickname !== "string" || !Array.isArray(v.unused)) return undefined;
   const unused = v.unused.filter(
-    (u): u is { orderId: string; productId: string; refundUntil?: unknown; refundable?: unknown } => isRecord(u) && typeof u.orderId === "string" && typeof u.productId === "string",
+    (u): u is { orderId: string; productId: string; refundUntil?: unknown; refundable?: unknown; set?: unknown } => isRecord(u) && typeof u.orderId === "string" && typeof u.productId === "string",
   );
   const opening = (Array.isArray(v.opening) ? v.opening : []).flatMap((o): AccountUser["opening"] =>
     isRecord(o) && typeof o.productId === "string" && (o.currency === "paid" || o.currency === "gift")
@@ -67,11 +69,12 @@ function parseUser(v: unknown): AccountUser | null | undefined {
   return {
     nickname: v.nickname,
     gift: parseGift(v.gift),
-    unused: unused.map(({ orderId, productId, refundUntil, refundable }) => ({
+    unused: unused.map(({ orderId, productId, refundUntil, refundable, set }) => ({
       orderId,
       productId,
       ...(typeof refundUntil === "string" ? { refundUntil } : {}),
       ...(refundable === false ? { refundable } : {}),
+      ...(set === true ? { set } : {}),
     })),
     opening,
     ...(v.review === true ? { review: true as const } : {}),

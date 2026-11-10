@@ -17,6 +17,12 @@ describe("premium status in the browser", () => {
     });
   });
 
+  it("reads whether the 2027 신년운세 + 프리미엄 궁합 set may be ordered, closed when the server does not say", () => {
+    expect(parsePremiumStatus({ products: [], set: { open: true, opensAt: 1 } })?.set).toEqual({ open: true });
+    expect(parsePremiumStatus({ products: [], set: { open: "yes" } })?.set).toEqual({ open: false });
+    expect(parsePremiumStatus({ products: [] })?.set).toBeUndefined();
+  });
+
   it("treats an older answer without `visible` as hidden, and anything odd as no answer", () => {
     expect(parsePremiumStatus({ products: [{ id: "match", open: true, opensAt: null }] })?.match).toEqual({ open: true, visible: false, opensAt: null });
     expect(parsePremiumStatus(null)).toBeNull();

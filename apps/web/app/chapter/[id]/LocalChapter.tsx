@@ -235,7 +235,8 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
   // The next step after a finished standard reading (plan-reconciled §4.3), never gold and only where premium is
   // visible (PremiumRows draws nothing otherwise). A premium reading offers no other product.
   // A tarot question about love goes on to 프리미엄 궁합 first (sales 2026-11-10 item 2); a premium reading to its partner
-  // product (신년 ↔ 궁합). Plain links at the normal price.
+  // product (신년 ↔ 궁합). Plain links at the normal price. After a saju reading the 2027 신년운세 + 프리미엄 궁합 set too,
+  // where the server sells it (owner 2026-11-10); never after 신년 or 궁합, whose reading it would sell again.
   const next = !whole ? undefined : chapter.kind === "tarot" ? (
     <PremiumRows
       ids={LOVE_QUESTION.test(chapter.question) ? ["match", "tarot-deep"] : ["tarot-deep"]}
@@ -253,6 +254,7 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
     <PremiumRows
       ids={["newyear-2027", "match"]}
       onlyOpen
+      withSet
       title="더 깊게 보고 싶다면"
       lines={{ "newyear-2027": "다가올 2027년 한 해를 달마다 미리 봐요", match: "다른 사람과 함께, 두 사람의 사주로 앞으로 1년까지 봐요" }}
     />

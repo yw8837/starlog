@@ -8,12 +8,12 @@ const NOV = Date.parse("2026-11-10T12:00:00+09:00");
 const LAST = Date.parse("2026-11-30T23:59:59+09:00");
 const DEC = Date.parse("2026-12-01T00:00:00+09:00");
 
-function stub(visible: boolean, open: boolean = visible) {
+function stub(visible: boolean, open: boolean = visible, setOpen = false) {
   vi.stubGlobal("fetch", vi.fn(async () => Response.json({ products: [
     { id: "tarot-deep", open, visible, opensAt: null },
     { id: "match", open, visible, opensAt: null },
     { id: "newyear-2027", open, visible, opensAt: null },
-  ] })));
+  ], set: { open: setOpen, opensAt: DEC } })));
 }
 
 beforeEach(() => vi.useFakeTimers({ toFake: ["Date"] }));
@@ -33,6 +33,27 @@ describe("the home's 2027 banner (sales 2026-11-10 item 5)", () => {
     expect(link.getAttribute("href")).toBe("/premium/newyear-2027");
     expect(link.textContent).toContain("14,900원");
     expect(link.textContent).not.toMatch(/지금만|마감|할인|첫 풀이/);
+  });
+
+  it("adds the 2027 신년운세 + 프리미엄 궁합 set where the server sells it (from 12월 1일), to its checkout, with the real saving only", async () => {
+    vi.setSystemTime(DEC);
+    stub(true, true, true);
+    render(<HomeYearBanner />);
+    const set = await screen.findByRole("link", { name: /2027 신년운세 \+ 프리미엄 궁합/ });
+    expect(set.getAttribute("href")).toBe(`/pay/checkout?${new URLSearchParams({ product: "set-2027", returnTo: "/premium/newyear-2027/new" })}`);
+    expect(set.textContent).toContain("18,900원");
+    expect(set.textContent).toContain("따로 사면 22,800원, 3,900원 아껴요");
+    expect(set.textContent).not.toMatch(/지금만|마감|할인|첫 풀이|남은/);
+    // The plain 신년 row stays beside it.
+    expect(screen.getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(["/premium/newyear-2027", set.getAttribute("href")]);
+  });
+
+  it("offers no set before the server sells it", async () => {
+    vi.setSystemTime(NOV);
+    stub(true, true, false);
+    render(<HomeYearBanner />);
+    await screen.findByRole("link", { name: /2027 신년운세/ });
+    expect(screen.queryByRole("link", { name: /프리미엄 궁합/ })).toBeNull();
   });
 
   it("shows nothing where premium is off", async () => {

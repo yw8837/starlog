@@ -9,17 +9,21 @@ import { PREMIUM_IDS, type PremiumId } from "./products";
  * says it could not tell and asks again (refreshPremiumStatus).
  */
 
-export type PremiumStatus = Record<PremiumId, { open: boolean; visible: boolean; opensAt: number | null }>;
+export type PremiumStatus = Record<PremiumId, { open: boolean; visible: boolean; opensAt: number | null }> & {
+  /** the 2027 신년운세 + 프리미엄 궁합 set may be ordered now (from its opening moment); absent from an older answer */
+  set?: { open: boolean };
+};
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 
 export function parsePremiumStatus(body: unknown): PremiumStatus | null {
   if (!isRecord(body) || !Array.isArray(body.products)) return null;
-  const status = Object.fromEntries(PREMIUM_IDS.map((id) => [id, { open: false, visible: false, opensAt: null }])) as PremiumStatus;
+  const status = Object.fromEntries(PREMIUM_IDS.map((id) => [id, { open: false, visible: false, opensAt: null }])) as unknown as PremiumStatus;
   for (const p of body.products) {
     if (!isRecord(p) || typeof p.id !== "string" || !(p.id in status)) continue;
     status[p.id as PremiumId] = { open: p.open === true, visible: p.visible === true, opensAt: typeof p.opensAt === "number" ? p.opensAt : null };
   }
+  if (isRecord(body.set)) status.set = { open: body.set.open === true };
   return status;
 }
 

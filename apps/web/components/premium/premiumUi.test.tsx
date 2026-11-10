@@ -16,7 +16,7 @@ afterEach(() => {
   resetPremiumStatusForTests();
 });
 
-type Unused = { orderId: string; productId: string; refundable?: false };
+type Unused = { orderId: string; productId: string; refundable?: false; set?: true };
 const user = (unused: Unused[] = [], opening: Array<{ productId: string; currency: "paid" }> = []) =>
   ({ nickname: "별", gift: null, unused, opening: opening.map((o) => ({ ...o, orderId: null })) }) as unknown as NonNullable<AccountState["user"]>;
 const account = (over: Partial<AccountState> = {}): AccountState => ({ payments: true, login: true, owner: false, user: null, ...over });
@@ -124,6 +124,33 @@ describe("PremiumUnlock", () => {
     expect(onOpen).toHaveBeenCalledWith("owner");
     expect(actions(container).filter(([, v]) => v === "primary")).toHaveLength(0);
     expect(document.body.textContent).not.toMatch(/베타|오픈 기념/);
+  });
+
+  it("offers the 2027 신년운세 + 프리미엄 궁합 set beside paying for 신년 or 궁합 where the server sells it, never gold (owner 2026-11-10)", () => {
+    for (const id of ["newyear-2027", "match"] as const) {
+      const { container } = render(<PremiumUnlock id={id} account={account({ user: user() })} status={OPEN} setOpen returnTo={`/premium/${id}/preview`} onOpen={vi.fn()} />);
+      const set = screen.getByRole("link", { name: "세트로 18,900원 결제하기" });
+      expect(set.getAttribute("href")).toBe(`/pay/checkout?${new URLSearchParams({ product: "set-2027", returnTo: `/premium/${id}/preview` })}`);
+      expect(actions(container).filter(([, kind]) => kind === "primary")).toHaveLength(1);
+      expect(container.textContent).toContain("2027 신년운세 + 프리미엄 궁합 세트 · 따로 사면 22,800원, 3,900원 아껴요");
+      expect(container.textContent).not.toMatch(/지금만|마감|할인|남은/);
+      cleanup();
+    }
+    // Not where the server does not sell it, not for 켈틱 크로스, not to a guest or a buyer holding the reading.
+    render(<PremiumUnlock id="match" account={account({ user: user() })} status={OPEN} returnTo="/x" onOpen={vi.fn()} />);
+    render(<PremiumUnlock id="tarot-deep" account={account({ user: user() })} status={OPEN} setOpen returnTo="/x" onOpen={vi.fn()} />);
+    render(<PremiumUnlock id="match" account={account()} status={OPEN} setOpen returnTo="/x" onOpen={vi.fn()} />);
+    render(<PremiumUnlock id="match" account={account({ user: user([{ orderId: "o", productId: "match" }]) })} status={OPEN} setOpen returnTo="/x" onOpen={vi.fn()} />);
+    expect(screen.queryByText(/세트/)).toBeNull();
+  });
+
+  it("says before opening one reading of a set that opening it ends the set's refund, and after the other was opened why there is none", () => {
+    render(<PremiumUnlock id="match" account={account({ user: user([{ orderId: "o", productId: "match", set: true }]) })} status={OPEN} returnTo="/x" onOpen={vi.fn()} />);
+    expect(screen.getByText("세트는 두 풀이를 모두 열기 전에만 결제일로부터 7일 안에 환불할 수 있어요. 이 풀이를 열면 세트 전체가 환불되지 않아요")).toBeTruthy();
+    cleanup();
+    render(<PremiumUnlock id="match" account={account({ user: user([{ orderId: "o", productId: "match", refundable: false, set: true }]) })} status={OPEN} returnTo="/x" onOpen={vi.fn()} />);
+    expect(screen.getByText("세트의 다른 풀이를 열어서 환불은 할 수 없어요")).toBeTruthy();
+    expect(document.body.textContent).not.toContain("끊긴");
   });
 
   it("goes to the saved reading instead when this one was opened already", () => {

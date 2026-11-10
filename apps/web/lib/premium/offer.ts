@@ -8,7 +8,8 @@ import { PREMIUM, type PremiumId } from "./products";
  * - in-progress: a reading of this product is being opened with a purchase right now (another tab, a
  *   lost resume token): nothing to buy or open until it settles;
  * - open-paid: a purchase of this product is waiting (it opens whatever the sales flag says);
- *   `refundable: false` when it was given back after its reading was cut off while written;
+ *   `refundable: false` when it was given back after its reading was cut off while written (or, `set`, the other
+ *   reading of its 2027 신년운세 + 프리미엄 궁합 set was opened);
  * - login / pay: on sale for this device;
  * - soon: not on sale yet, opening at `opensAt` (a dated product; none since owner 2026-10-20 opened everything);
  * - closed: not on sale;
@@ -18,7 +19,7 @@ import { PREMIUM, type PremiumId } from "./products";
 export type PremiumOffer =
   | { mode: "loading" }
   | { mode: "in-progress" }
-  | { mode: "open-paid"; refundable?: false }
+  | { mode: "open-paid"; refundable?: false; set?: true }
   | { mode: "login"; priceKrw: number }
   | { mode: "pay"; priceKrw: number }
   | { mode: "soon"; opensAt: number }
@@ -36,7 +37,7 @@ export function premiumOffer(
   if (user) {
     if (user.opening.some((item) => item.productId === id)) return { mode: "in-progress" };
     const bought = user.unused.find((item) => item.productId === id);
-    if (bought) return { mode: "open-paid", ...(bought.refundable === false ? { refundable: false as const } : {}) };
+    if (bought) return { mode: "open-paid", ...(bought.refundable === false ? { refundable: false as const } : {}), ...(bought.set ? { set: true as const } : {}) };
   }
   if (status === undefined) return { mode: "loading" };
   if (status === null) return { mode: "unknown" };

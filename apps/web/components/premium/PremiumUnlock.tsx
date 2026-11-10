@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/Button";
 import { CrisisContacts } from "@/components/ui/CrisisContacts";
 import s from "@/components/tarot/UnlockSheet.module.css";
 import { loginHref, type AccountState } from "@/lib/account/client";
-import { won } from "@/lib/config";
-import { REFUND_DAYS } from "@/lib/pay/catalog";
+import { SITE, won } from "@/lib/config";
+import { REFUND_DAYS, SET_PRODUCT_ID } from "@/lib/pay/catalog";
 import { checkoutHref } from "@/lib/pay/offer";
 import { opensAtText, premiumOffer } from "@/lib/premium/offer";
 import { PREMIUM, type PremiumId } from "@/lib/premium/products";
@@ -37,7 +37,12 @@ type PremiumUnlockProps = {
   onCheck?: () => void;
   /** Tests: the clock for the opening date. */
   now?: number;
+  /** The server sells the 2027 신년운세 + 프리미엄 궁합 set now (usePremiumStatus().set): offered beside paying for either. */
+  setOpen?: boolean;
 };
+
+/** The set's price against its two readings apart (owner 2026-11-10: the real saving, nothing else). */
+const SET_APART = PREMIUM["newyear-2027"].krw + PREMIUM.match.krw;
 
 const CheckIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
@@ -51,7 +56,7 @@ const CheckIcon = () => (
  * open a purchase, log in, pay, or wait. A closed product says when it opens and sells nothing; a
  * purchase already made always opens. The owner pass gets a quiet free open.
  */
-export function PremiumUnlock({ id, account, status, returnTo, onOpen, resumable = false, error, refundHref, redrawHref, openedHref, checking = false, onCheck, now }: PremiumUnlockProps) {
+export function PremiumUnlock({ id, account, status, returnTo, onOpen, resumable = false, error, refundHref, redrawHref, openedHref, checking = false, onCheck, now, setOpen = false }: PremiumUnlockProps) {
   const spec = PREMIUM[id];
   const offer = premiumOffer(account, id, status, now);
   const checkAgain = onCheck ? (
@@ -61,6 +66,8 @@ export function PremiumUnlock({ id, account, status, returnTo, onOpen, resumable
   ) : null;
 
   let primary: ReactNode = null;
+  /** the set, a quiet second choice beside paying for 신년 or 궁합 */
+  let set: ReactNode = null;
   let note: string | null = null;
   let caption: string | null = null;
   switch (offer.mode) {
@@ -75,8 +82,11 @@ export function PremiumUnlock({ id, account, status, returnTo, onOpen, resumable
           {resumable ? "이어서 받기" : "결제한 풀이 열기"}
         </Button>
       );
-      caption =
-        offer.refundable === false
+      caption = offer.set
+        ? offer.refundable === false
+          ? "세트의 다른 풀이를 열어서 환불은 할 수 없어요"
+          : `세트는 두 풀이를 모두 열기 전에만 결제일로부터 ${REFUND_DAYS}일 안에 환불할 수 있어요. 이 풀이를 열면 세트 전체가 환불되지 않아요`
+        : offer.refundable === false
           ? "풀이를 받던 중에 끊긴 결제라 환불은 할 수 없어요. 다시 열어 끝까지 받을 수 있어요"
           : `결제한 풀이는 열기 전이면 결제일로부터 ${REFUND_DAYS}일 안에 환불할 수 있어요`;
       break;
@@ -95,6 +105,16 @@ export function PremiumUnlock({ id, account, status, returnTo, onOpen, resumable
         </Button>
       );
       caption = "결제하면 바로 풀이를 적기 시작해요";
+      if (setOpen && (id === "newyear-2027" || id === "match")) {
+        set = (
+          <>
+            <Button href={checkoutHref(SET_PRODUCT_ID, returnTo)} variant="secondary" block>
+              {`세트로 ${won(SITE.price.set.krw)} 결제하기`}
+            </Button>
+            <p className={s.caption}>{`${SITE.price.set.name} 세트 · 따로 사면 ${won(SET_APART)}, ${won(SET_APART - SITE.price.set.krw)} 아껴요`}</p>
+          </>
+        );
+      }
       break;
     case "soon":
       note = opensAtText(offer.opensAt);
@@ -166,6 +186,7 @@ export function PremiumUnlock({ id, account, status, returnTo, onOpen, resumable
 
       <div className={s.actions}>
         {primary}
+        {set && !openedHref && !checking && !error ? set : null}
         {ownerOpen ? (
           <Button variant="ghost" block onClick={() => onOpen("owner")}>
             운영자로 무료 열기

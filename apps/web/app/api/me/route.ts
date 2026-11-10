@@ -54,9 +54,10 @@ export async function GET(request: Request): Promise<Response> {
         gift?.status === "unused"
           ? { status: "unused", until: gift.expiresAt === null ? null : new Date(gift.expiresAt).toISOString() }
           : gift,
-      unused: held.unused.map(({ orderId, productId, paidAt, refundable }) =>
-        refundable ? { orderId, productId, refundUntil: new Date(refundDeadline(paidAt)).toISOString() } : { orderId, productId, refundable: false },
-      ),
+      unused: held.unused.map(({ orderId, productId, paidAt, refundable, set }) => ({
+        ...(refundable ? { orderId, productId, refundUntil: new Date(refundDeadline(paidAt)).toISOString() } : { orderId, productId, refundable: false }),
+        ...(set ? { set } : {}),
+      })),
       opening: held.opening,
       ...(review ? { review: true } : {}),
       ...(isGoogleAccount(ctx.session.user) ? { google: true } : {}),

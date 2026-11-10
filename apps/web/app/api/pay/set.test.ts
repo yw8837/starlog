@@ -93,7 +93,7 @@ describe("2027 신년운세 + 프리미엄 궁합 set (owner 2026-11-10)", () =>
     expect(await db.prepare("SELECT COUNT(*) AS n FROM ledger WHERE order_id = ? AND kind = 'grant'").bind(orderId).first()).toEqual({ n: 2 });
     const unused = (await me(b)).user!.unused;
     expect(unused.map((item) => item.productId).sort()).toEqual(["match", "newyear-2027"]);
-    expect(unused.every((item) => item.orderId === orderId && typeof item.refundUntil === "string")).toBe(true);
+    expect(unused.every((item) => item.orderId === orderId && typeof item.refundUntil === "string" && (item as { set?: true }).set === true)).toBe(true);
   });
 
   it("refunds 18,900원 whole when neither reading was opened", async () => {
@@ -128,6 +128,6 @@ describe("2027 신년운세 + 프리미엄 궁합 set (owner 2026-11-10)", () =>
       { product_id: "match", status: "active", units_left: 1 },
       { product_id: "newyear-2027", status: "active", units_left: 0 },
     ]);
-    expect((await me(b)).user!.unused).toEqual([{ orderId, productId: "match", refundable: false }]);
+    expect((await me(b)).user!.unused).toEqual([{ orderId, productId: "match", refundable: false, set: true }]);
   });
 });

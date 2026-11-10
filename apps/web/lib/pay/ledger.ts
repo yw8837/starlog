@@ -2,7 +2,7 @@ import "server-only";
 import type { D1Binding, D1Statement } from "@/lib/db/d1";
 import { isConstraintError } from "@/lib/db/sqlErrors";
 import { randomId } from "@/lib/security/sign";
-import { GIFT_DAYS, GIFT_PRODUCT, lotProducts, productById } from "./catalog";
+import { GIFT_DAYS, GIFT_PRODUCT, SET_PRODUCT_ID, lotProducts, productById } from "./catalog";
 import type { PayKeyMode } from "./mode";
 
 export { GIFT_DAYS };
@@ -551,7 +551,7 @@ export interface Entitlements {
    * reading was written (LEFT_SQL), or once the other reading of its set was opened or is being opened
    * (ORDER_UNTOUCHED_SQL): it can be opened but never refunded, by 환불받기 or by account deletion
    */
-  unused: Array<{ orderId: string; productId: string; paidAt: number; refundable: boolean }>;
+  unused: Array<{ orderId: string; productId: string; paidAt: number; refundable: boolean; set?: true }>;
   /** readings being opened, oldest first */
   opening: Opening[];
 }
@@ -571,12 +571,13 @@ export async function entitlements(db: D1Binding, userId: string, now: number): 
   // Every lot that can still open something, and every gift lot (a spent one says the gift was used).
   const { results } = await db
     .prepare(
-      `SELECT currency, order_id, product_id, units_left, expires_at, created_at, NOT ${ORDER_UNTOUCHED_SQL("credit_lots")} AS left_once FROM credit_lots
+      `SELECT currency, order_id, product_id, units_left, expires_at, created_at, NOT ${ORDER_UNTOUCHED_SQL("credit_lots")} AS left_once,
+         (SELECT o.product_id FROM orders o WHERE o.id = credit_lots.order_id) AS order_product FROM credit_lots
        WHERE user_id = ? AND status = 'active' AND (currency = 'free' OR (units_left > 0 AND (expires_at IS NULL OR expires_at > ?)))
        ORDER BY created_at`,
     )
     .bind(userId, now)
-    .all<Pick<Lot, "currency" | "order_id" | "product_id" | "units_left" | "expires_at" | "created_at"> & { left_once: number }>();
+    .all<Pick<Lot, "currency" | "order_id" | "product_id" | "units_left" | "expires_at" | "created_at"> & { left_once: number; order_product: string | null }>();
   const usable = (lot: (typeof results)[number]) => lot.units_left > 0 && (lot.expires_at === null || lot.expires_at > now);
   const gifts = results.filter((lot) => lot.currency === "free");
   const left = gifts.filter(usable);
@@ -591,7 +592,11 @@ export async function entitlements(db: D1Binding, userId: string, now: number): 
     gift,
     unused: results
       .filter((lot) => usable(lot) && lot.currency === "paid" && lot.order_id !== null && lot.product_id !== null)
-      .map((lot) => ({ orderId: lot.order_id!, productId: lot.product_id!, paidAt: lot.created_at, refundable: !lot.left_once })),
+      .map((lot) => ({
+        orderId: lot.order_id!, productId: lot.product_id!, paidAt: lot.created_at, refundable: !lot.left_once,
+        // one reading of a set: refunded only with the other, while neither is opened
+        ...(lot.order_product === SET_PRODUCT_ID ? { set: true as const } : {}),
+      })),
     opening: reservations.results.map((row) => ({
       productId: row.product_id,
       currency: row.currency === "paid" ? "paid" : "gift",
