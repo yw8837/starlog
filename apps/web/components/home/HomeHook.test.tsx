@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import { existsSync, readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { assertVoice } from "@/lib/voice/banned";
@@ -53,5 +55,14 @@ describe("below the entries", () => {
     expect(birth.getByText("생일로 찾는 내 카드")).toBeTruthy();
     expect(birth.getByText("로그인 없이 무료")).toBeTruthy();
     for (const a of links) assertVoice(a.textContent ?? "");
+  });
+});
+
+describe("the home's characters", () => {
+  it("scale with transform and a set size, not CSS zoom, which Firefox before 126 ignores (review 2026-11-11 #7d)", () => {
+    // jsdom's import.meta.url is not a file URL: found from the run's folder (the repo or apps/web), as GuideAds.test does.
+    const web = ["apps/web", "."].map((path) => resolve(process.cwd(), path)).find((path) => existsSync(join(path, "components/home"))) ?? "";
+    const css = readFileSync(join(web, "components/home/home.module.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+    expect(css).not.toMatch(/(^|[;{\s])zoom\s*:/);
   });
 });

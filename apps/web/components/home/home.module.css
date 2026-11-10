@@ -166,8 +166,21 @@
     display: inline;
   }
 
+  /* 1.6x on desktop: the box grows, each part scales from the corner it is pinned to (transform, not zoom, which
+     Firefox before 126 ignores). */
   .hookArt {
-    zoom: 1.6;
+    width: 147.2px;
+    height: 128px;
+  }
+
+  .hookBacks {
+    transform: scale(1.6);
+    transform-origin: top right;
+  }
+
+  .hookCat {
+    transform: scale(1.6);
+    transform-origin: bottom left;
   }
 
   .hookSub {
@@ -301,21 +314,24 @@
   outline-offset: 3px;
 }
 
-/* Laid over the card, outside the link: a tap makes the character react. 104px on phones (zoom keeps the art crisp). */
+/* Laid over the card, outside the link: a tap makes the character react. 104px on phones: the 120px art scaled from its
+   corner (transform, not zoom, which Firefox before 126 ignores), 10.4px in from the card's edges. */
 .entryCharacter {
   position: absolute;
-  bottom: 12px;
+  bottom: 10.4px;
   z-index: 1;
   display: flex;
-  zoom: 0.87;
+  transform: scale(0.87);
+  transform-origin: bottom left;
 }
 
 .entryRowStart .entryCharacter {
-  left: 12px;
+  left: 10.4px;
 }
 
 .entryRowEnd .entryCharacter {
-  right: 12px;
+  right: 10.4px;
+  transform-origin: bottom right;
 }
 
 /* 타로 보기: ivory paper, no glow (the hook above is the screen's one gold button, spec 2026-11-11 3.1). */
@@ -449,18 +465,18 @@
     right: 16px;
   }
 
-  /* zoom keeps the SVG crisp and scales the offsets with it (16px → 24px). */
+  /* 180px: the 120px art scaled 1.5x from its corner, 24px in. */
   .entryCharacter {
-    bottom: 16px;
-    zoom: 1.5;
+    bottom: 24px;
+    transform: scale(1.5);
   }
 
   .entryRowStart .entryCharacter {
-    left: 16px;
+    left: 24px;
   }
 
   .entryRowEnd .entryCharacter {
-    right: 16px;
+    right: 24px;
   }
 
   .entryText {
