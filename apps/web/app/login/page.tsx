@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { NightSky } from "@/components/sky/NightSky";
 import { safeReturnTo } from "@/lib/account/returnTo";
+import { openingFreeOn } from "@/lib/config";
 import { paymentsMode } from "@/lib/pay/mode";
 import { NOINDEX } from "@/lib/seo";
 import { LoginPanel } from "./LoginPanel";
@@ -20,7 +21,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
     <div className="page-shell">
       <NightSky fixed glow="center" />
       <main className="page-col">
-        <LoginPanel next={safeReturnTo(typeof query.next === "string" ? query.next : null)} status={typeof query.login === "string" ? query.login : null} />
+        <LoginPanel next={safeReturnTo(typeof query.next === "string" ? query.next : null)} status={typeof query.login === "string" ? query.login : null} opening={openingFreeOn()} />
       </main>
     </div>
   );

@@ -16,6 +16,8 @@ type LoginPanelProps = {
   next: string;
   /** the ?login= flag a previous attempt brought back */
   status: string | null;
+  /** 오픈 기념 무료 still runs, by the server's clock (app/login/page.tsx): only then does its login say so. */
+  opening?: boolean;
   /** tests: replaces the browser navigation */
   navigate?: (url: string) => void;
 };
@@ -29,11 +31,24 @@ function backTarget(next: string): string {
   return path === "/pay/checkout" ? safeReturnTo(new URLSearchParams(search).get("returnTo")) : next;
 }
 
-/** What the login is for, from where it came back to: 내 별자리 (/bonds), 내 기록 (/me), else a reading. */
-function purpose(next: string): { bubble: string; title: string } {
-  const path = next.split(/[?#]/)[0] ?? "";
-  if (path === "/bonds" || path.startsWith("/bonds/")) return { bubble: "내 별자리를 계정에 적어둘게요", title: "로그인하고 내 별자리 만들기" };
-  if (path === "/me" || path.startsWith("/me/")) return { bubble: "내 기록을 계정에 적어둘게요", title: "로그인하고 내 기록 이어 보기" };
+const under = (path: string, base: string) => path === base || path.startsWith(`${base}/`);
+
+/**
+ * What the login is for, from where it comes back to (spec 2026-11-11 entry funnel renewal 3.9): the reason the visitor came,
+ * in 해요체. The tarot 맛보기's login carries its one-time ?resume= mark (FreeResult); the unlock sheet's 로그인하고 전체 풀이
+ * 보기 does not, so that one keeps the full reading's title, as do the checkout and premium.
+ */
+function purpose(next: string, opening: boolean): { bubble: string; title: string } {
+  const [path = "", search = ""] = next.split("#")[0]!.split("?");
+  const query = new URLSearchParams(search);
+  if (under(path, "/bonds")) return { bubble: "내 별자리를 계정에 적어둘게요", title: "로그인하고 내 별자리 만들기" };
+  if (under(path, "/me")) return { bubble: "내 기록을 계정에 적어둘게요", title: "로그인하고 내 기록 이어 보기" };
+  if (path === "/tarot/result" && opening && query.get("unlock") === "opening") return { bubble: "오픈 기념 무료 풀이를 계정에 적어 둘게요", title: "로그인하고 오픈 기념 무료 받기" };
+  if (path === "/tarot/result" && query.has("resume")) return { bubble: "고른 카드와 질문은 그대로 둘게요", title: "로그인하고 맛보기 이어 보기" };
+  if (path === "/saju/chart") return { bubble: "명식과 입력한 정보는 그대로 있어요", title: "로그인하고 사주 맛보기 보기" };
+  if (path === "/today") return { bubble: "고른 카드는 그대로 기억해 둘게요", title: "로그인하고 오늘의 카드 펼치기" };
+  if (path.startsWith("/b/")) return { bubble: "적은 닉네임과 카드는 그대로 있어요", title: "로그인하고 별 되기" };
+  if (under(path, "/saju/grade")) return { bubble: "등급 카드는 그대로 있어요", title: "로그인하고 등급 풀이 열기" };
   return { bubble: `이 풀이를 ${SITE.nameKo}에 적어둘게요`, title: "로그인하고 전체 풀이 보기" };
 }
 
@@ -43,13 +58,13 @@ function purpose(next: string): { bubble: string; title: string } {
  * POST (/api/auth/age) then hands back that provider's start URL with a signed 5-minute token for it,
  * and the check is recorded on the account.
  */
-export function LoginPanel({ next, status, navigate = (url) => window.location.assign(url) }: LoginPanelProps) {
+export function LoginPanel({ next, status, opening = false, navigate = (url) => window.location.assign(url) }: LoginPanelProps) {
   const [adult, setAdult] = useState(false);
   const [showError, setShowError] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const checkbox = useRef<HTMLInputElement>(null);
   const note = loginMessage(failure ?? status);
-  const copy = purpose(next);
+  const copy = purpose(next, opening);
   // Google refuses apps' browsers (api/auth/google/start): say so before the tap.
   const [inApp, setInApp] = useState(false);
   useEffect(() => setInApp(isInAppBrowser(navigator.userAgent)), []);

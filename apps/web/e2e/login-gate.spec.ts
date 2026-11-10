@@ -36,9 +36,13 @@ function bodiesTo(page: Page, path: string): Array<Record<string, unknown> & { s
   return bodies;
 }
 
-/** /login as a person uses it: the 만 14세 box, then mock Kakao (a fresh account), back to where it was asked. */
-async function logIn(page: Page, next: string) {
+/**
+ * /login as a person uses it: the 만 14세 box, then mock Kakao (a fresh account), back to where it was asked. `title`: the
+ * login page names why the visitor came (spec 2026-11-11 entry funnel renewal 3.9).
+ */
+async function logIn(page: Page, next: string, title: string) {
   await expect(page).toHaveURL(new RegExp(`/login\\?next=${encodeURIComponent(next).replace(/[?]/g, "\\?")}$`), { timeout: NAV });
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(title);
   await page.getByRole("checkbox", { name: "만 14세 이상이에요" }).check();
   await page.getByRole("button", { name: "카카오로 계속하기" }).click();
 }
@@ -93,7 +97,7 @@ test("tarot: a visitor draws, is asked to log in where the 맛보기 would show,
     if (frame === page.mainFrame()) landed.push(new URL(frame.url()).pathname + new URL(frame.url()).search);
   });
   await go.click();
-  await logIn(page, back);
+  await logIn(page, back, "로그인하고 맛보기 이어 보기");
   // Back from the login with its mark, which then leaves the address: the history keeps no ?resume= or ?login= to read again.
   await expect(page).toHaveURL(/\/tarot\/result\?instant=1$/, { timeout: NAV });
   expect(landed).toContain(`${back}&login=ok`);
@@ -127,7 +131,7 @@ test("saju: a visitor sees the free 명식, is asked to log in for the 맛보기
   expect(teasers).toEqual([]);
 
   await panel.getByRole("link", { name: "로그인하고 맛보기 보기" }).click();
-  await logIn(page, "/saju/chart");
+  await logIn(page, "/saju/chart", "로그인하고 사주 맛보기 보기");
   await expect(page).toHaveURL(/\/saju\/chart\?login=ok$/, { timeout: NAV });
   await expect(page.getByRole("region", { name: "전체 풀이에 담긴 것" })).toBeVisible({ timeout: GENERATION });
   expect(teasers).toHaveLength(1);
@@ -148,7 +152,7 @@ test("오늘의 한 장: a visitor shuffles and picks, is asked to log in, and t
   expect(picks).toEqual([]);
 
   await panel.getByRole("link", { name: "로그인하고 카드 펼치기" }).click();
-  await logIn(page, "/today?pick=1");
+  await logIn(page, "/today?pick=1", "로그인하고 오늘의 카드 펼치기");
   await expect(page.locator("#today-line")).toBeVisible({ timeout: GENERATION });
   // That slot, once, with no second shuffle or pick; the address is clean again.
   expect(picks).toHaveLength(1);
