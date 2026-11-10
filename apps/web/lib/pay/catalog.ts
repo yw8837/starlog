@@ -6,7 +6,10 @@ import { SITE } from "@/lib/config";
  */
 
 export type StandardProductId = "tarot" | "saju";
-export type ProductId = StandardProductId | "tarot-deep" | "match" | "newyear-2027";
+export type ProductId = StandardProductId | "tarot-deep" | "match" | "newyear-2027" | typeof SET_PRODUCT_ID;
+
+/** The 2027 신년운세 + 프리미엄 궁합 set (SITE.price.set): one order, one reading of each. */
+export const SET_PRODUCT_ID = "set-2027";
 
 export interface Product {
   id: ProductId;
@@ -20,6 +23,8 @@ export interface Product {
   opensAt?: number;
   /** first moment it may no longer be sold (ms), for a product with a sales window */
   closesAt?: number;
+  /** a set: the readings one purchase opens, one of each (otherwise the product itself) */
+  includes?: readonly ProductId[];
 }
 
 /** The signup gift opens one full reading of this product, and of no other (owner 2026-10-08). */
@@ -57,7 +62,39 @@ const PREMIUM: Product[] = SITE.price.premium.map((premium) => {
   };
 });
 
-export const PRODUCTS: readonly Product[] = [...STANDARD, ...PREMIUM];
+const SET: Product = {
+  id: SITE.price.set.id,
+  name: SITE.price.set.name,
+  orderName: `${SITE.nameKo} ${SITE.price.set.name}`,
+  krw: SITE.price.set.krw,
+  deliverable: true,
+  opensAt: Date.parse(SITE.price.set.opensAt),
+  // Sold no longer than 2027 신년운세 itself.
+  closesAt: PREMIUM.find((product) => product.id === "newyear-2027")!.closesAt!,
+  includes: SITE.price.set.includes,
+};
+
+export const PRODUCTS: readonly Product[] = [...STANDARD, ...PREMIUM, SET];
+
+/** The readings one purchase of `product` opens, one paid lot each: a set's readings, or the product itself. */
+export function lotProducts(product: Product): readonly ProductId[] {
+  return product.includes ?? [product.id];
+}
+
+/**
+ * What refunding a purchase's unopened readings returns, in 원 (owner 2026-11-10; 전자상거래법 제17조 제2항 제5호 단서: a
+ * set is divisible): its price, less the single price of each of its readings kept (opened, being opened, or given back after
+ * it was cut off), less what was refunded before. A set with one reading opened refunds the other's part: 18,900 − 14,900 =
+ * 4,000원 once the 신년운세 was opened, 18,900 − 7,900 = 11,000원 once the 궁합 was. Never below 0; an unknown reading kept
+ * refunds nothing.
+ * Limitation: `price` is what the order recorded (orders.amount_krw), but each kept reading's single price is today's catalog
+ * price: no per-reading price is stored with an order. A single price changed while a set is inside its refund window
+ * changes what that set refunds (and its refund target); the runbook says never to (docs/runbook-payments.md section 10).
+ */
+export function refundAmount(price: number, kept: readonly string[], refunded = 0): number {
+  const keptKrw = kept.reduce((sum, id) => sum + (productById(id)?.krw ?? price), 0);
+  return Math.max(0, price - keptKrw - refunded);
+}
 
 export function productById(id: string): Product | null {
   return PRODUCTS.find((product) => product.id === id) ?? null;

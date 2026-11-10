@@ -48,8 +48,13 @@ export function createTossClient(secretKey: string, fetchImpl: typeof fetch = fe
       call("/v1/payments/confirm", { method: "POST", body: { paymentKey, orderId, amount }, idempotencyKey: `confirm-${orderId}` }),
     getPayment: (paymentKey) => call(`/v1/payments/${encodeURIComponent(paymentKey)}`, { method: "GET" }),
     getPaymentByOrder: (orderId) => call(`/v1/payments/orders/${encodeURIComponent(orderId)}`, { method: "GET" }),
-    cancel: (paymentKey, { reason, idempotencyKey }) =>
-      call(`/v1/payments/${encodeURIComponent(paymentKey)}/cancel`, { method: "POST", body: { cancelReason: reason }, idempotencyKey }),
+    // cancelAmount: a partial cancel (a set with one reading opened); without it Toss cancels the whole balance.
+    cancel: (paymentKey, { reason, idempotencyKey, amount }) =>
+      call(`/v1/payments/${encodeURIComponent(paymentKey)}/cancel`, {
+        method: "POST",
+        body: { cancelReason: reason, ...(amount !== undefined ? { cancelAmount: amount } : {}) },
+        idempotencyKey,
+      }),
   };
 }
 

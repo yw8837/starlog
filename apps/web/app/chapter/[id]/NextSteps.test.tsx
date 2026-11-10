@@ -47,7 +47,7 @@ const MATCH = {
   },
 };
 
-function stub(visible: boolean | "fail") {
+function stub(visible: boolean | "fail", setOpen = false) {
   const fetchMock = vi.fn(async (url: string) => {
     if (url !== "/api/premium/status") return new Response(null, { status: 404 });
     if (visible === "fail") throw new TypeError("offline");
@@ -57,6 +57,7 @@ function stub(visible: boolean | "fail") {
         { id: "match", open: visible, visible, opensAt: null },
         { id: "newyear-2027", open: visible === true, visible, opensAt: null },
       ],
+      set: { open: setOpen, opensAt: null },
     });
   });
   vi.stubGlobal("fetch", fetchMock);
@@ -137,5 +138,24 @@ describe("the next step at a reading's end", () => {
     const next = await screen.findByRole("region", { name: "더 깊게 보고 싶다면" });
     expect(within(next).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(["/premium/newyear-2027", "/premium/match"]);
     expect(next.textContent).toContain("다른 사람과 함께");
+  });
+
+  it("adds the 2027 신년운세 + 프리미엄 궁합 set after a saju reading where the server sells it, and only there (owner 2026-11-10)", async () => {
+    stub(true, true);
+    seed([SAJU, YEAR, MATCH]);
+    render(<LocalChapter id="saju00001" />);
+    const section = await screen.findByRole("region", { name: "더 깊게 보고 싶다면" });
+    const hrefs = within(section).getAllByRole("link").map((a) => a.getAttribute("href"));
+    expect(hrefs.slice(0, 2)).toEqual(["/premium/newyear-2027", "/premium/match"]);
+    expect(hrefs[2]).toMatch(/^\/pay\/checkout\?product=set-2027&/);
+    expect(section.textContent).toContain("3,900원 아껴요");
+    cleanup();
+    // After a 신년 or 궁합 record the set would buy that reading again: the other reading only.
+    for (const id of ["year0001", "pair0001"]) {
+      render(<LocalChapter id={id} />);
+      const after = await screen.findByRole("region", { name: "이어서 보면 좋은 풀이" });
+      expect(within(after).getAllByRole("link")).toHaveLength(1);
+      cleanup();
+    }
   });
 });

@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BusinessFacts, LegalNote, LegalPage, LegalSection } from "@/components/legal/LegalPage";
-import { PremiumChangeNotice, PremiumLegalNotice, PremiumRefund, PremiumUpcoming } from "@/components/legal/PremiumLegal";
+import { PremiumChangeNotice, PremiumLegalNotice, PremiumRefund, PremiumUpcoming, SetRuleNotice } from "@/components/legal/PremiumLegal";
 import s from "@/components/legal/legal.module.css";
 import { SITE } from "@/lib/config";
-import { LOGIN_RULE_DATE, contactChannels, koreanDate, legalEffectiveDate, loginRuleNoticeShown, premiumChangeNoticeShown, premiumLegalInForce } from "@/lib/legal";
+import { LOGIN_RULE_DATE, contactChannels, koreanDate, legalEffectiveDate, loginRuleNoticeShown, premiumChangeNoticeShown, premiumLegalInForce, setRuleNoticeShown } from "@/lib/legal";
 import { REFUND_DAYS } from "@/lib/pay/catalog";
 import { pageMetadata } from "@/lib/seo";
 
@@ -31,6 +31,8 @@ export default function RefundPage() {
     >
       {inForce ? null : <PremiumLegalNotice haeyo />}
       {premiumChangeNoticeShown(now) ? <PremiumChangeNotice haeyo /> : null}
+      {/* The 2027 신년운세 + 프리미엄 궁합 set (lib/legal.ts SET_RULE_DATE): from the deploy until 30 days after 12/1. */}
+      {setRuleNoticeShown(now) ? <SetRuleNotice haeyo now={now} /> : null}
       {/* AI 풀이 needs a login (owner 2026-11-04): the free part's new name, said on top for 30 days (lib/legal.ts LOGIN_RULE_DATE). */}
       {loginRuleNoticeShown(now) ? (
         <aside className={s.note} aria-labelledby="login-rule-refund-title">

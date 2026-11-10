@@ -146,6 +146,7 @@ export function NewYearPreview({ autoUnlock = false }: { autoUnlock?: boolean })
         id={ID}
         account={account}
         status={status === null ? null : status?.[ID]}
+        setOpen={status?.set?.open === true}
         returnTo={PREVIEW_PATH}
         onOpen={opener.open}
         resumable={opener.resumable}

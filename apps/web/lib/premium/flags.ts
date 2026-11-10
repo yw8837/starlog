@@ -1,6 +1,7 @@
 import "server-only";
+import { SET_PRODUCT_ID, lotProducts, productById, sellable } from "@/lib/pay/catalog";
 import { paymentsMode, salesOpen } from "@/lib/pay/mode";
-import { PREMIUM, inWindow, type PremiumId } from "./products";
+import { PREMIUM, inWindow, isPremiumId, type PremiumId } from "./products";
 
 /**
  * `STARLOG_PREMIUM` (spec §8): `off` (default), `owner` (owner-pass devices only), `on`. New orders
@@ -21,6 +22,16 @@ export function premiumOpen(id: PremiumId, owner: boolean, now: number, env: Nod
   const mode = premiumMode(env);
   if (owner) return mode !== "off";
   return mode === "on" && salesOpen(paymentsMode(env), false, env) && inWindow(PREMIUM[id], now);
+}
+
+/**
+ * The 2027 신년운세 + 프리미엄 궁합 set (owner 2026-11-10) may be ordered at `now`: inside its own sales window (from
+ * 2026-12-01 00:00 KST, for the owner pass too: it takes 오픈 기념 무료's place at that moment) and while each of its
+ * readings may be (premiumOpen). Opening a reading the set bought is never gated by this.
+ */
+export function setOpen(owner: boolean, now: number, env: NodeJS.ProcessEnv = process.env): boolean {
+  const set = productById(SET_PRODUCT_ID)!;
+  return sellable(set, now) && lotProducts(set).every((id) => isPremiumId(id) && premiumOpen(id, owner, now, env));
 }
 
 /**

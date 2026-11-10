@@ -201,15 +201,8 @@ describe("every 원본 자료 article", () => {
     expect(GUIDE_DATES[slug]).toEqual({ published: a.publishAt, updated: a.publishAt });
   });
 
-  it("come out about two a week from 2026-11-12, never two on one day", () => {
-    const days = DATA_ARTICLES.map((a) => a.publishAt as string);
-    expect(days[0]).toBe("2026-11-12");
-    expect(new Set(days).size).toBe(days.length);
-    for (let i = 1; i < days.length; i++) {
-      const gap = (publishInstant(days[i] as string) - publishInstant(days[i - 1] as string)) / 86_400_000;
-      expect(gap, days[i]).toBeGreaterThanOrEqual(3);
-      expect(gap, days[i]).toBeLessThanOrEqual(4);
-    }
+  it("all four come out on 2026-11-11 (owner 2026-11-10: published now, not staggered)", () => {
+    expect(DATA_ARTICLES.map((a) => a.publishAt)).toEqual(["2026-11-11", "2026-11-11", "2026-11-11", "2026-11-11"]);
   });
 
   it.each(DATA_ARTICLES.map((a) => [a.slug, a] as const))("%s: links and related reads only to pages out by its own day", (_slug, a) => {

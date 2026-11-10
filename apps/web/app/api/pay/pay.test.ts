@@ -167,7 +167,7 @@ describe("confirm", () => {
     const db = useTestDb();
     const b = await loggedIn();
     const orderId = await buy(b);
-    expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot", refundUntil: UNTIL }]);
+    expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot", refundUntil: UNTIL, refundAmount: 2900 }]);
     const again = await confirmAs(b, orderId, "mock_again");
     expect(again.status).toBe(200);
     expect(await again.json()).toMatchObject({ status: "paid", signedIn: true });
@@ -185,7 +185,7 @@ describe("confirm", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ status: "paid", orderId, productId: "tarot", returnTo: "/tarot/result", signedIn: false });
     expect(await statusOf(elsewhere, orderId)).toEqual({ orderId, productId: "tarot", status: "paid", returnTo: "/tarot/result", signedIn: false });
-    expect((await me(alice)).user?.unused).toEqual([{ orderId, productId: "tarot", refundUntil: UNTIL }]);
+    expect((await me(alice)).user?.unused).toEqual([{ orderId, productId: "tarot", refundUntil: UNTIL, refundAmount: 2900 }]);
     expect((await elsewhere.send(confirm, "/api/pay/confirm", { body: { paymentKey: "x", orderId, amount: 2900 } })).status).toBe(403);
   });
 
@@ -294,7 +294,7 @@ describe("confirm", () => {
     expect(await statusOf(b, orderId)).toMatchObject({ status: "confirming" });
     vi.setSystemTime(T0 + 31_000);
     expect(await statusOf(b, orderId)).toEqual({ orderId, productId: "tarot", status: "paid", returnTo: "/tarot/result", signedIn: true });
-    expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot", refundUntil: UNTIL }]);
+    expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot", refundUntil: UNTIL, refundAmount: 2900 }]);
   });
 
   it("sends a lost confirm once more, under the same key, while Toss holds the payment authenticated", async () => {
@@ -358,7 +358,7 @@ describe("confirm", () => {
     const b = await loggedIn();
     const orderId = await buy(b);
     const { orders } = (await (await b.send(ordersGet, "/api/pay/orders")).json()) as { orders: Array<Record<string, unknown>> };
-    expect(orders).toEqual([{ orderId, productId: "tarot", amount: 2900, status: "paid", createdAt: T0, receiptUrl: null, method: "카드", refundable: true, opened: false, unfinished: false }]);
+    expect(orders).toEqual([{ orderId, productId: "tarot", amount: 2900, status: "paid", createdAt: T0, receiptUrl: null, method: "카드", refundable: true, opened: false, openedProducts: [], refunded: 0, unfinished: false }]);
     expect((await browser("192.0.2.79").send(ordersGet, "/api/pay/orders")).status).toBe(401);
   });
 });

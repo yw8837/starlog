@@ -3,6 +3,7 @@ import type { D1Binding } from "@/lib/db/d1";
 import { P4_TABLES_CHILD_FIRST, openLocalD1 } from "@/lib/db/testing/localD1";
 import { ledgerContract } from "./ledgerContract";
 import { premiumLedgerContract } from "./ledgerPremiumContract";
+import { setLedgerContract } from "./ledgerSetContract";
 
 /** The same suite on real local D1 (workerd). Skipped with CI_NO_WORKERD=1. */
 describe.skipIf(process.env.CI_NO_WORKERD === "1")("ledger (local D1)", () => {
@@ -24,4 +25,5 @@ describe.skipIf(process.env.CI_NO_WORKERD === "1")("ledger (local D1)", () => {
 
   ledgerContract(fresh);
   describe("premium", () => premiumLedgerContract(fresh));
+  describe("set", () => setLedgerContract(fresh));
 });

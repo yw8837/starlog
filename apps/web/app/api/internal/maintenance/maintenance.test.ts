@@ -96,7 +96,7 @@ describe("maintenance", () => {
     vi.setSystemTime(T0 + 31_000);
     expect(await report()).toMatchObject({ confirming: 1 });
     expect(await db.prepare("SELECT status FROM orders WHERE id = ?").bind(orderId).first()).toEqual({ status: "paid" });
-    expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot", refundUntil: UNTIL }]);
+    expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot", refundUntil: UNTIL, refundAmount: 2900 }]);
   });
 
   it("puts back a refund Toss never did, and retries a deleted account's payment until it is cancelled", async () => {
@@ -115,8 +115,9 @@ describe("maintenance", () => {
 
     vi.setSystemTime(T0 + 10 * MIN + 1);
     expect(await report()).toMatchObject({ refunding: 2 });
-    expect(await db.prepare("SELECT status, cancel_attempt FROM orders WHERE id = ?").bind(refunded).first()).toEqual({ status: "paid", cancel_attempt: 2 });
-    expect((await me(alice)).user?.unused).toEqual([{ orderId: refunded, productId: "tarot", refundUntil: UNTIL }]);
+    // The answer was never known: the reading comes back under the same key.
+    expect(await db.prepare("SELECT status, cancel_attempt FROM orders WHERE id = ?").bind(refunded).first()).toEqual({ status: "paid", cancel_attempt: 1 });
+    expect((await me(alice)).user?.unused).toEqual([{ orderId: refunded, productId: "tarot", refundUntil: UNTIL, refundAmount: 2900 }]);
     expect(await db.prepare("SELECT status, cancel_attempt FROM orders WHERE id = ?").bind(orphan).first()).toEqual({ status: "refunded", cancel_attempt: 2 });
     expect((await mockToss.getPaymentByOrder(orphan)).status).toBe("CANCELED");
   });

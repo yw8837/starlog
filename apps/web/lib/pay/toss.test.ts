@@ -69,6 +69,21 @@ describe("Toss client", () => {
     expect(payment.status).toBe("CANCELED");
     expect(calls[0]).toMatchObject({ url: `https://api.tosspayments.com/v1/payments/${PAYMENT.paymentKey}/cancel`, method: "POST", body: { cancelReason: "열지 않은 풀이 환불" } });
     expect(calls[0]!.headers["Idempotency-Key"]).toBe(`cancel-${ORDER}`);
+    expect(calls[0]!.body).not.toHaveProperty("cancelAmount");
+  });
+
+  it("cancels part of a payment with cancelAmount (a set with one reading opened)", async () => {
+    const { calls, fetchImpl } = fakeFetch([{ status: 200, body: { ...PAYMENT, totalAmount: 18900, status: "PARTIAL_CANCELED", balanceAmount: 14900 } }]);
+    const payment = await createTossClient(SECRET, fetchImpl).cancel(PAYMENT.paymentKey, { reason: "열지 않은 풀이 환불", idempotencyKey: `cancel-${ORDER}-1`, amount: 4000 });
+    expect(payment).toMatchObject({ status: "PARTIAL_CANCELED", totalAmount: 18900, balanceAmount: 14900 });
+    expect(calls[0]!.body).toEqual({ cancelReason: "열지 않은 풀이 환불", cancelAmount: 4000 });
+    expect(calls[0]!.headers["Idempotency-Key"]).toBe(`cancel-${ORDER}-1`);
+  });
+
+  it("reads a payment without balanceAmount as an unknown balance (null), never as nothing cancelled", async () => {
+    const { balanceAmount: _, ...noBalance } = PAYMENT;
+    const { fetchImpl } = fakeFetch([{ status: 200, body: { ...noBalance, totalAmount: 18900, status: "PARTIAL_CANCELED" } }]);
+    expect(await createTossClient(SECRET, fetchImpl).getPayment(PAYMENT.paymentKey)).toMatchObject({ status: "PARTIAL_CANCELED", totalAmount: 18900, balanceAmount: null });
   });
 
   it("turns Toss errors, no response and odd bodies into TossError", async () => {
@@ -134,6 +149,15 @@ describe("mock Toss", () => {
     expect(await mockToss.cancel("mock_2", { reason: "r", idempotencyKey: "cancel-1" })).toMatchObject({ status: "CANCELED" });
     await expect(mockToss.cancel("mock_2", { reason: "r", idempotencyKey: "cancel-2" })).rejects.toMatchObject({ code: "ALREADY_CANCELED_PAYMENT" });
     await expect(mockToss.getPayment("nope")).rejects.toMatchObject({ status: 404, code: "NOT_FOUND_PAYMENT" });
+  });
+
+  it("cancels part of the balance, then the rest; never more than is left", async () => {
+    await mockToss.confirm({ paymentKey: "mock_5", orderId: ORDER, amount: 18900 });
+    expect(await mockToss.cancel("mock_5", { reason: "r", idempotencyKey: "cancel-p1", amount: 4000 })).toMatchObject({ status: "PARTIAL_CANCELED", totalAmount: 18900, balanceAmount: 14900 });
+    // The same key replays its first answer.
+    expect(await mockToss.cancel("mock_5", { reason: "r", idempotencyKey: "cancel-p1", amount: 4000 })).toMatchObject({ status: "PARTIAL_CANCELED", balanceAmount: 14900 });
+    await expect(mockToss.cancel("mock_5", { reason: "r", idempotencyKey: "cancel-p2", amount: 15000 })).rejects.toMatchObject({ status: 400, code: "NOT_CANCELABLE_AMOUNT" });
+    expect(await mockToss.cancel("mock_5", { reason: "r", idempotencyKey: "cancel-p3", amount: 14900 })).toMatchObject({ status: "CANCELED", balanceAmount: 0 });
   });
 
   it("can lose an answer after the work, or refuse before it", async () => {

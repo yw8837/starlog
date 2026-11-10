@@ -20,7 +20,7 @@ import { Checkbox } from "@/components/ui/Checkbox";
 import { loginHref, loginMessage, useAccount } from "@/lib/account/client";
 import { birthProblem } from "@/lib/bonds/birth";
 import { CODE_LIMIT_MESSAGE, JOIN_FAILED, bondsApi, bondsMessage } from "@/lib/bonds/client";
-import { MESSAGE_MAX, NICKNAME_MAX, nicknameProblem, ordinalStar } from "@/lib/bonds/text";
+import { MESSAGE_MAX, NICKNAME_MAX, nicknameProblem, normalizeCode, ordinalStar } from "@/lib/bonds/text";
 import { newResumeNonce } from "@/lib/flowState";
 import { useSajuProfile } from "@/lib/sajuFlow";
 import type { FriendResultView, InviteState } from "./loadInvite";
@@ -83,6 +83,27 @@ function writeTrip(code: string, trip: string | null) {
   }
 }
 
+/**
+ * The trip's marks leave the address, so a shared device's history keeps none. `login` alone (no `resume`) came back from
+ * the see-again login (KeptPanel), which reads it for its note: it stays.
+ */
+function dropTripMarks() {
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has("resume")) return;
+  url.searchParams.delete("resume");
+  url.searchParams.delete("login");
+  window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+}
+
+/** The code in this page's address (a `bad` state carries none), or null. */
+function codeInPath(): string | null {
+  try {
+    return normalizeCode(decodeURIComponent(window.location.pathname.split("/").pop() ?? ""));
+  } catch {
+    return null;
+  }
+}
+
 /** The step in the address (#cards, #message), so the back button goes to the step before instead of leaving the page. */
 type StepHash = "" | "#cards" | "#message";
 function setStep(hash: StepHash, mode: "push" | "replace") {
@@ -99,6 +120,20 @@ function setStep(hash: StepHash, mode: "push" | "replace") {
  * wherever it logs in; a star a device left before that shows again on that device with a session (owner 2026-11-05).
  */
 export function JoinFlow({ state }: { state: InviteState }) {
+  // Nothing to join on this page (review 2026-11-10): the kept form and the login trip go, and their marks leave the address.
+  // `limited` and `error` pass: a reload may open the form again.
+  const ended = state.status !== "open" && state.status !== "limited" && state.status !== "error";
+  const code = "code" in state ? state.code : null;
+  useEffect(() => {
+    if (!ended) return;
+    const kept = code ?? codeInPath();
+    if (kept) {
+      writeDraft(kept, null);
+      writeTrip(kept, null);
+    }
+    dropTripMarks();
+  }, [ended, code]);
+
   if (state.status === "open") return <OpenInvite invite={state} />;
   if (state.status === "self") return <SelfInvite invite={state} />;
   if (state.status === "joined") {
@@ -283,13 +318,7 @@ function OpenInvite({ invite }: { invite: Open }) {
     const login = arrival.current.get("login");
     const resume = arrival.current.get("resume");
     const back = Boolean(resume && resume === readTrip(invite.code) && draft && draft.pick !== null);
-    if (resume !== null || login !== null) {
-      // the marks leave the address, so a shared device's history keeps none
-      const url = new URL(window.location.href);
-      url.searchParams.delete("resume");
-      url.searchParams.delete("login");
-      window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
-    }
+    dropTripMarks();
     if (draft) {
       setNickname(draft.nickname);
       if (draft.birth.year !== null) {

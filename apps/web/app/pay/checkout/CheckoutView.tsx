@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { setRefundRule } from "@/components/legal/PremiumLegal";
 import { Stepper } from "@/components/tarot/Stepper";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
@@ -9,8 +10,8 @@ import { Modal } from "@/components/ui/Modal";
 import { loginHref } from "@/lib/account/client";
 import { SITE, sajuTopicsMode, won } from "@/lib/config";
 import { approxCharsText } from "@/lib/pricing";
-import { REFUND_DAYS } from "@/lib/pay/catalog";
-import { CHECKOUT_TOC } from "@/lib/pay/toc";
+import { REFUND_DAYS, SET_PRODUCT_ID } from "@/lib/pay/catalog";
+import { checkoutTocs } from "@/lib/pay/toc";
 import { isPaymentWindowClosed, loadTossSdk, type TossWidgets } from "@/lib/pay/tossSdk";
 import { PREMIUM, isPremiumId } from "@/lib/premium/products";
 import { getJson, postJson } from "@/lib/reading/api";
@@ -37,7 +38,17 @@ interface OrderInfo {
   held?: number;
 }
 
+/** The set (owner 2026-11-10): each reading's whole, the follow-ups, the real saving against the two apart. */
+const SET_APART = PREMIUM["newyear-2027"].krw + PREMIUM.match.krw;
+const SET_SCOPE = [
+  ...SITE.price.set.includes.map((id) => `${PREMIUM[id].name} · ${PREMIUM[id].scope[0]}`),
+  `풀이마다 이어서 물어보기 ${PREMIUM.match.followUps}번`,
+  `따로 사면 ${won(SET_APART)}, ${won(SET_APART - SITE.price.set.krw)} 아껴요`,
+  "이 기기와 계정에 보관",
+];
+
 const scopeLines = (productId: string): string[] => {
+  if (productId === SET_PRODUCT_ID) return SET_SCOPE;
   if (isPremiumId(productId)) return [...PREMIUM[productId].scope];
   if (productId !== "tarot" && productId !== "saju") return [];
   const chars = approxCharsText(SITE.reading.approxChars[productId]);
@@ -50,11 +61,18 @@ const scopeLines = (productId: string): string[] => {
   ];
 };
 
-/** The sections, titles only; none for a saju topic reading (its sections follow the 운 chosen when it is opened). */
-const toc = (productId: string): readonly string[] => {
-  if (productId === "saju" && sajuTopicsMode() === "on") return [];
-  return (CHECKOUT_TOC as Record<string, readonly string[] | undefined>)[productId] ?? [];
-};
+/**
+ * The sections, titles only, per reading (both for the set, each under its name); none for a saju topic reading (its
+ * sections follow the 운 chosen when it is opened).
+ */
+const tocs = (productId: string) => (productId === "saju" && sajuTopicsMode() === "on" ? [] : checkoutTocs(productId));
+
+/** Premium clauses apply to the premium readings and to the set, whose two readings are premium. */
+const premiumTerms = (productId: string) => isPremiumId(productId) || productId === SET_PRODUCT_ID;
+
+/** When a refund is possible, as every refund line on this page says it: the set's own rule (the unopened reading's part, owner 2026-11-10). */
+const refundRule = (productId: string) =>
+  productId === SET_PRODUCT_ID ? setRefundRule() : `열기 전에는 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있어요.`;
 
 /** The details could not be loaded (a server error or a lost connection): payment words, never a reading's (F-03). */
 const LOAD_FAILED: ErrorView = { title: "결제 정보를 불러오지 못했어요", body: "청구된 금액은 없어요. 다시 시도해 주세요.", action: "retry" };
@@ -178,31 +196,35 @@ export function CheckoutView({ productId, returnTo, navigate = (url) => window.l
             ))}
           </ul>
           {/* Sales 2026-11-10 item 1: what the reading holds (titles only) and the one line a buyer hesitates on. */}
-          <p className={s.trust}>{`한 번 결제로 풀이 하나가 열려요. 자동결제는 없어요. 열기 전에는 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있어요.`}</p>
-          {toc(info.productId).length ? (
-            <section className={s.toc} aria-labelledby="toc-title">
-              <h2 id="toc-title" className={s.noticeTitle}>
-                풀이 목차
+          <p className={s.trust}>
+            {`${info.productId === SET_PRODUCT_ID ? `한 번 결제로 ${SITE.price.set.includes.map((id) => PREMIUM[id].name).join("와 ")}이 하나씩 열려요.` : "한 번 결제로 풀이 하나가 열려요."} 자동결제는 없어요. ${refundRule(info.productId)}`}
+          </p>
+          {tocs(info.productId).map(({ name, titles }, i) => (
+            <section key={name ?? "toc"} className={s.toc} aria-labelledby={`toc-title-${i}`}>
+              <h2 id={`toc-title-${i}`} className={s.noticeTitle}>
+                {name ? `${name} 목차` : "풀이 목차"}
               </h2>
               <ol>
-                {toc(info.productId).map((title) => (
+                {titles.map((title) => (
                   <li key={title}>{title}</li>
                 ))}
               </ol>
             </section>
-          ) : null}
+          ))}
           <section className={s.notice} aria-labelledby="withdrawal-title">
             <h2 id="withdrawal-title" className={s.noticeTitle}>
               결제 전에 확인해 주세요
             </h2>
             <p>결제하면 바로 풀이를 적기 시작해요. 풀이를 적기 시작하면 제공이 시작된 것이라 청약철회가 제한돼요(전자상거래법 제17조 제2항 제5호). 결제 전에 무료로 본 맛보기가 풀이의 일부를 미리 보여 드린 부분이에요.</p>
             <p>
-              {`다 받기 전에 화면을 닫거나 연결이 끊겨도 3번까지 다시 열어 받을 수 있어요. 네 번째로 끊기면 그 결제는 쓴 것으로 처리돼요. 열기 전에는 결제일로부터 ${REFUND_DAYS}일 안에 내 정보에서 전액 환불받을 수 있어요. `}
+              {`다 받기 전에 화면을 닫거나 연결이 끊겨도 3번까지 다시 열어 받을 수 있어요. 네 번째로 끊기면 그 결제는 쓴 것으로 처리돼요. ${
+                info.productId === SET_PRODUCT_ID ? `${refundRule(info.productId)} 환불은 내 정보에서 받을 수 있어요.` : `열기 전에는 결제일로부터 ${REFUND_DAYS}일 안에 내 정보에서 전액 환불받을 수 있어요.`
+              } `}
               <Link href="/refund">환불 정책</Link>
             </p>
             <p>만 19세 미만이 법정대리인의 동의 없이 결제하면 본인이나 법정대리인이 결제를 취소할 수 있어요.</p>
             {/* A premium purchase also agrees to the premium clauses, in force from 2026-10-20 (review 2026-10-20 A1). */}
-            {isPremiumId(info.productId) ? (
+            {premiumTerms(info.productId) ? (
               <p>
                 {"프리미엄 풀이에는 "}
                 <Link href="/terms#premium">이용약관 제7조의3</Link>
@@ -213,7 +235,7 @@ export function CheckoutView({ productId, returnTo, navigate = (url) => window.l
             ) : null}
           </section>
           <Checkbox checked={agreed} onChange={setAgreed} required>
-            {isPremiumId(info.productId) ? "위 내용과 이용약관 제7조의3, 환불 정책의 프리미엄 풀이 항목에 동의해요" : "위 내용을 확인했어요"}
+            {premiumTerms(info.productId) ? "위 내용과 이용약관 제7조의3, 환불 정책의 프리미엄 풀이 항목에 동의해요" : "위 내용을 확인했어요"}
           </Checkbox>
           {info.provider === "toss" ? (
             <>
@@ -232,7 +254,7 @@ export function CheckoutView({ productId, returnTo, navigate = (url) => window.l
             <div className={s.terms}>
               <p>서비스 제공 기간: 결제 즉시 · 결제하면 바로 풀이가 열리는 디지털 콘텐츠예요.</p>
               <p>
-                {`열기 전에는 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있어요. `}
+                {`${refundRule(info.productId)} `}
                 <Link href="/refund">환불 정책</Link>
               </p>
               {/* F3: some card companies may still refuse this store; no list of them, only what to do. */}

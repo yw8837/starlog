@@ -7,10 +7,11 @@ import s from "./home.module.css";
 
 /**
  * The home's 2027 신년운세 banner (sales 2026-11-10 item 5, owner decision 2026-11-10): the existing product at its
- * price, never gold, only where it is on sale (PremiumRows: nothing while premium is off or the status is unknown).
+ * price, never gold, only where it is on sale (PremiumRows: nothing while premium is off or the status is unknown); from
+ * 2026-12-01, where the server sells it, the 2027 신년운세 + 프리미엄 궁합 set beside it (owner 2026-11-10).
  */
 export function HomeYearBanner({ className }: { className?: string }) {
-  return <PremiumRows ids={["newyear-2027"]} onlyOpen title="2027년 미리 보기" lines={{ "newyear-2027": "사주로 2027년 한 해와 열두 달을 미리 봐요" }} className={className} />;
+  return <PremiumRows ids={["newyear-2027"]} onlyOpen withSet title="2027년 미리 보기" lines={{ "newyear-2027": "사주로 2027년 한 해와 열두 달을 미리 봐요" }} className={className} />;
 }
 
 /**

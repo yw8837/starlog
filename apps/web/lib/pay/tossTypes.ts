@@ -6,8 +6,8 @@ export interface TossPayment {
   /** READY, IN_PROGRESS, WAITING_FOR_DEPOSIT, DONE, CANCELED, PARTIAL_CANCELED, ABORTED, EXPIRED */
   status: string;
   totalAmount: number;
-  /** what is left to cancel */
-  balanceAmount: number;
+  /** what is left to cancel; null when the answer left it out (then what was cancelled cannot be told) */
+  balanceAmount: number | null;
   method: string | null;
   approvedAt: string | null;
   receiptUrl: string | null;
@@ -39,7 +39,8 @@ export interface TossClient {
   confirm(input: { paymentKey: string; orderId: string; amount: number }): Promise<TossPayment>;
   getPayment(paymentKey: string): Promise<TossPayment>;
   getPaymentByOrder(orderId: string): Promise<TossPayment>;
-  cancel(paymentKey: string, input: { reason: string; idempotencyKey: string }): Promise<TossPayment>;
+  /** `amount`: cancel only this much (cancelAmount, a partial cancel); without it, the whole balance. */
+  cancel(paymentKey: string, input: { reason: string; idempotencyKey: string; amount?: number }): Promise<TossPayment>;
 }
 
 /** The fields we use from a Payment object; anything that is not one is a TossError. */
@@ -54,7 +55,7 @@ export function parsePayment(value: unknown): TossPayment {
     orderId: v.orderId,
     status: v.status,
     totalAmount: v.totalAmount,
-    balanceAmount: typeof v.balanceAmount === "number" ? v.balanceAmount : v.totalAmount,
+    balanceAmount: typeof v.balanceAmount === "number" ? v.balanceAmount : null,
     method: typeof v.method === "string" ? v.method : null,
     approvedAt: typeof v.approvedAt === "string" ? v.approvedAt : null,
     receiptUrl: typeof receipt?.url === "string" ? receipt.url : null,

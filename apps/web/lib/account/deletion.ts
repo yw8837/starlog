@@ -1,12 +1,13 @@
 import "server-only";
 import { sealOpeningClaim } from "@/lib/account/openingClaim";
+import { accountFriendKey } from "@/lib/bonds/identity";
 import { eraseReviewStatements } from "@/lib/reviews/store";
 import type { D1Binding } from "@/lib/db/d1";
-import { LEFT_SQL, entitlements, forfeitStatements, sweepUser, type Lot } from "@/lib/pay/ledger";
+import { LOT_UNTOUCHED_SQL, entitlements, forfeitStatements, sweepUser, type Lot } from "@/lib/pay/ledger";
 import { orderForUser, reconcileConfirming, type OrderRow } from "@/lib/pay/orders";
 import { paidUnderOtherKeys, reconcileRefunding, refundUnusedOrder, setAsideForOperator } from "@/lib/pay/refunds";
 import type { TossClient } from "@/lib/pay/tossTypes";
-import { signToken, verifyToken, type SignedPayload } from "@/lib/security/sign";
+import { signToken, signingSecret, verifyToken, type SignedPayload } from "@/lib/security/sign";
 
 /** How long the deletion intent from 내 정보 is good for. */
 export const DELETE_INTENT_TTL_MS = 5 * 60 * 1000;
@@ -47,7 +48,8 @@ async function count(db: D1Binding, sql: string, ...values: unknown[]): Promise<
 
 /**
  * 회원 탈퇴 (spec 5.8, M3): settle what is in flight, refuse while anything still is, refund every
- * unopened purchase, mark the account deleted with one guarded statement, then erase.
+ * unopened purchase (a set with one reading opened: the other's part, owner 2026-11-10), mark the account deleted with one
+ * guarded statement, then erase.
  */
 export async function deleteAccount(db: D1Binding, toss: TossClient | null, input: { userId: string; now: number }): Promise<DeleteOutcome> {
   const { userId, now } = input;
@@ -65,9 +67,9 @@ export async function deleteAccount(db: D1Binding, toss: TossClient | null, inpu
 
   const { unused } = await entitlements(db, userId, now);
   let refunded = 0;
-  for (const { orderId, refundable } of unused) {
-    // Given back after its client left (SEC-02): never refunded; it leaves use with the account (eraseDeletedAccount).
-    if (!refundable) continue;
+  // A set's two readings are one order, refunded once (its untouched lots: both, or the unopened one's part). One given back
+  // after its client left (SEC-02) refunds nothing; it leaves use with the account (eraseDeletedAccount).
+  for (const orderId of new Set(unused.filter((item) => item.refundable > 0).map((item) => item.orderId))) {
     const order = await orderForUser(db, orderId, userId);
     if (order && toss && (await paidUnderOtherKeys(db, toss, order.id))) {
       // These keys cannot cancel it: the reading leaves use, the order stays for the operator (runbook 5).
@@ -81,6 +83,18 @@ export async function deleteAccount(db: D1Binding, toss: TossClient | null, inpu
     }
     refunded++;
   }
+  // An unopened reading whose order refunds 0원 now (what Toss cancelled already covers it, or a reading kept that the catalog
+  // does not know): there is nothing to send, so its lot leaves use with the account (logged for the operator) instead of
+  // holding the deletion up for good below.
+  const nothingBack = new Set(unused.filter((item) => item.refundable === 0 && item.noRefund !== "left").map((item) => item.orderId));
+  if (nothingBack.size) {
+    const { results } = await db.prepare(`SELECT * FROM credit_lots c WHERE c.user_id = ? AND c.currency = 'paid' AND ${LOT_UNTOUCHED_SQL("c")}`).bind(userId).all<Lot>();
+    const stranded = results.filter((lot) => lot.order_id !== null && nothingBack.has(lot.order_id));
+    if (stranded.length) {
+      console.warn(JSON.stringify({ evt: "account.delete_unrefundable_lot", orderIds: [...new Set(stranded.map((lot) => lot.order_id))] }));
+      await db.batch(stranded.flatMap((lot) => forfeitStatements(db, lot, "revoked", now)));
+    }
+  }
 
   // One guarded statement: nothing reserved, nothing in flight, no unopened refundable paid reading left.
   const marked = await db
@@ -88,8 +102,7 @@ export async function deleteAccount(db: D1Binding, toss: TossClient | null, inpu
       `UPDATE users SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL
          AND NOT EXISTS (SELECT 1 FROM unlocks WHERE user_id = ? AND status = 'reserved')
          AND NOT EXISTS (SELECT 1 FROM orders WHERE user_id = ? AND ${IN_FLIGHT})
-         AND NOT EXISTS (SELECT 1 FROM credit_lots c WHERE c.user_id = ? AND c.currency = 'paid' AND c.status = 'active' AND c.units_left > 0
-           AND c.units_left = c.units_total AND NOT ${LEFT_SQL("c")})
+         AND NOT EXISTS (SELECT 1 FROM credit_lots c WHERE c.user_id = ? AND c.currency = 'paid' AND ${LOT_UNTOUCHED_SQL("c")})
        RETURNING id`,
     )
     .bind(now, userId, userId, userId, mode, userId)
@@ -126,9 +139,34 @@ async function eraseBondsOwner(db: D1Binding, userId: string): Promise<void> {
 }
 
 /**
+ * 별자리 인연 (review 2026-11-10): the stars a deleted account joined as a friend (under accountFriendKey since a friend logs
+ * in to join, owner 2026-11-10) go with it, with their `bond:` share links and the owners' blocks of that key, and each
+ * constellation they were in is recounted (its total; a completed one stays completed, as a tally never un-completes). Stars a
+ * device joined before 2026-11-10 belong to the device and stay. Run before the account's erase, as eraseBondsOwner is.
+ */
+async function eraseFriendStars(db: D1Binding, userId: string): Promise<void> {
+  const secret = signingSecret();
+  if (!secret) return; // no key without it, and no join either (every /api/bonds route answers NOT_CONFIGURED)
+  const key = await accountFriendKey(userId, secret);
+  const joined = `SELECT id FROM stars WHERE friend_key = ? AND ${DELETED}`;
+  const { results } = await db
+    .prepare(`SELECT DISTINCT constellation_id AS id FROM stars WHERE friend_key = ? AND ${DELETED}`)
+    .bind(key, userId)
+    .all<{ id: string }>();
+  await db.batch([
+    db.prepare(`DELETE FROM shares WHERE chapter_key IN (SELECT 'bond:' || id FROM (${joined}))`).bind(key, userId),
+    db.prepare(`DELETE FROM stars WHERE id IN (${joined})`).bind(key, userId),
+    db.prepare(`DELETE FROM star_blocks WHERE friend_key = ? AND ${DELETED}`).bind(key, userId),
+    ...results.map(({ id }) =>
+      db.prepare("UPDATE constellations SET total = (SELECT COALESCE(SUM(score), 0) FROM stars WHERE constellation_id = ?1) WHERE id = ?1").bind(id),
+    ),
+  ]);
+}
+
+/**
  * Erases a deleted account's personal data in one batch, keeping what the law keeps:
  * - an unused signup gift is forfeited (its ledger rows stay), and so is a purchase given back after
- *   its client left (SEC-02: never refunded);
+ *   its client left (SEC-02: never refunded), or any other paid lot not untouched (deleteAccount refunded every untouched one);
  * - saved readings, share links, sessions and premium preview counts are deleted, and the account's reviews with their 도움돼요 and reports;
  * - its gift claim is stamped with the deletion time (purged a year later, Task 13);
  * - its 오픈 기념 무료 claim stays, marked used, until the event's purge, first (sealOpeningClaim, owner 2026-10-28);
@@ -142,11 +180,12 @@ export async function eraseDeletedAccount(db: D1Binding, userId: string, now: nu
   const { results: forfeited } = await db
     .prepare(
       `SELECT * FROM credit_lots WHERE user_id = ? AND status = 'active' AND units_left > 0
-         AND (currency = 'free' OR (currency = 'paid' AND ${LEFT_SQL("credit_lots")}))`,
+         AND (currency = 'free' OR (currency = 'paid' AND NOT ${LOT_UNTOUCHED_SQL("credit_lots")}))`,
     )
     .bind(userId)
     .all<Lot>();
   await eraseBondsOwner(db, userId);
+  await eraseFriendStars(db, userId);
   const results = await db.batch([
     ...forfeited.flatMap((lot) => forfeitStatements(db, lot, "revoked", now)),
     ...eraseReviewStatements(db, userId),

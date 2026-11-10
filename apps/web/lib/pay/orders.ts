@@ -3,7 +3,7 @@ import type { D1Binding } from "@/lib/db/d1";
 import { isConstraintError } from "@/lib/db/sqlErrors";
 import { randomId } from "@/lib/security/sign";
 import { productById, type Product } from "./catalog";
-import { LEFT_SQL, paidLotStatements } from "./ledger";
+import { LOT_UNTOUCHED_SQL, paidLotStatements } from "./ledger";
 import { TossError, isPendingTossError, type TossClient, type TossPayment } from "./tossTypes";
 
 /**
@@ -94,7 +94,9 @@ const LIVE_ACCOUNT = "EXISTS (SELECT 1 FROM users u WHERE u.id = orders.user_id 
  *   deleted meanwhile ("orphaned": Task 8 cancels the payment; nothing is granted);
  * - the payment row (UNIQUE payment_key and order_id);
  * - the paid lot and its grant, written only if the order became `paid`.
- * A second call (a repeated confirm, or the webhook first) breaks a UNIQUE key and changes nothing.
+ * A second call (a repeated confirm, or the webhook first) breaks a UNIQUE key and changes nothing: "already", but only
+ * when the payment row is there. Any other constraint failure (a migration missing, such as 0023 for a set's two lots)
+ * rolled the whole batch back, so it is logged and thrown: a paid order is never left unrecorded as "already".
  */
 export async function markPaid(db: D1Binding, order: OrderRow, payment: TossPayment, mode: TossClient["mode"], now: number): Promise<MarkPaidResult> {
   if (!productById(order.product_id)) throw new Error(`unknown product ${order.product_id}`);
@@ -116,7 +118,9 @@ export async function markPaid(db: D1Binding, order: OrderRow, payment: TossPaym
     ]);
   } catch (error) {
     if (!isConstraintError(error)) throw error;
-    return "already";
+    if (await db.prepare("SELECT 1 AS x FROM payments WHERE order_id = ?").bind(order.id).first()) return "already";
+    console.error(JSON.stringify({ evt: "pay.mark_paid_failed", orderId: order.id, mode, message: error instanceof Error ? error.message : String(error) }));
+    throw error;
   }
   const after = await orderById(db, order.id);
   if (after?.status === "refunding") {
@@ -274,10 +278,14 @@ export interface OrderListItem {
   createdAt: number;
   receiptUrl: string | null;
   method: string | null;
-  /** paid and never opened: the 환불받기 button */
+  /** paid, with a reading never opened: the 환불받기 button (a set with one opened: the other's part) */
   refundable: boolean;
   /** paid and opened (or being opened) */
   opened: boolean;
+  /** the readings of it opened or being opened (a set's names which of its two) */
+  openedProducts: string[];
+  /** refunded so far, in 원 (Toss's cancelled amount): 일부 환불 while the order is still paid */
+  refunded: number;
   /**
    * paid and used up with no reading delivered: its client left while it was written once more than
    * MAX_RESTORES allows (lib/pay/ledger.ts releaseUnlock), so it was never "opened" (F2-b). A purchase
@@ -290,26 +298,37 @@ export interface OrderListItem {
 const NOTHING_DELIVERED_SQL = (lot: string) =>
   `NOT EXISTS (SELECT 1 FROM ledger g JOIN unlocks u ON u.id = g.unlock_id WHERE g.lot_id = ${lot}.id AND g.kind = 'reserve' AND u.status IN ('reserved', 'delivered'))`;
 
-/** 결제 내역: the user's orders that reached Toss, newest first. */
+/** An active lot (aliased `e`) of order `o` that is used up (units_left 0), with `delivered` true or false. */
+const EMPTY_LOT = (delivered: boolean) =>
+  `e.order_id = o.id AND e.status = 'active' AND e.units_left = 0 AND ${delivered ? "NOT " : ""}${NOTHING_DELIVERED_SQL("e")}`;
+
+/**
+ * 결제 내역: the user's orders that reached Toss, newest first, one row per order (a set holds two lots): `refundable`
+ * while a lot of it is untouched (LOT_UNTOUCHED_SQL; a set with one opened refunds the other's part), `opened` once any
+ * of its readings was delivered or is being opened (`openedProducts` names them), `unfinished` when one was used up with
+ * nothing delivered and none was opened, `refunded` what Toss cancelled so far (a set's part while it stays paid).
+ */
 export async function orderHistory(db: D1Binding, userId: string, limit = 50): Promise<OrderListItem[]> {
   const { results } = await db
     .prepare(
-      `SELECT o.id, o.product_id, o.amount_krw, o.status, o.created_at, p.receipt_url, p.method,
-              l.units_left, l.units_total, l.status AS lot_status, ${LEFT_SQL("l")} AS left_once, ${NOTHING_DELIVERED_SQL("l")} AS undelivered
+      `SELECT o.id, o.product_id, o.amount_krw, o.status, o.created_at, p.receipt_url, p.method, COALESCE(p.canceled_amount, 0) AS refunded,
+              EXISTS (SELECT 1 FROM credit_lots l WHERE l.order_id = o.id AND ${LOT_UNTOUCHED_SQL("l")}) AS untouched,
+              (SELECT GROUP_CONCAT(COALESCE(e.product_id, ''), ' ') FROM credit_lots e WHERE ${EMPTY_LOT(true)}) AS opened,
+              EXISTS (SELECT 1 FROM credit_lots e WHERE ${EMPTY_LOT(false)}) AS undelivered
        FROM orders o
        LEFT JOIN payments p ON p.order_id = o.id
-       LEFT JOIN credit_lots l ON l.order_id = o.id
        WHERE o.user_id = ? AND o.status IN ('confirming', 'paid', 'refunding', 'refunded')
        ORDER BY o.created_at DESC LIMIT ?`,
     )
     .bind(userId, limit)
     .all<{
       id: string; product_id: string; amount_krw: number; status: OrderStatus; created_at: number; receipt_url: string | null; method: string | null;
-      units_left: number | null; units_total: number | null; lot_status: string | null; left_once: number | null; undelivered: number | null;
+      refunded: number; untouched: number; opened: string | null; undelivered: number;
     }>();
   return results.map((row) => {
-    const active = row.lot_status === "active";
-    const empty = row.status === "paid" && active && row.units_left === 0;
+    const paid = row.status === "paid";
+    const openedProducts = paid && row.opened ? row.opened.split(" ") : [];
+    const opened = openedProducts.length > 0;
     return {
       orderId: row.id,
       productId: row.product_id,
@@ -318,9 +337,11 @@ export async function orderHistory(db: D1Binding, userId: string, limit = 50): P
       createdAt: row.created_at,
       receiptUrl: row.receipt_url,
       method: row.method,
-      refundable: row.status === "paid" && active && row.units_left === row.units_total && !row.left_once,
-      opened: empty && !row.undelivered,
-      unfinished: empty && Boolean(row.undelivered),
+      refundable: paid && Boolean(row.untouched),
+      opened,
+      openedProducts,
+      refunded: row.refunded,
+      unfinished: paid && !opened && Boolean(row.undelivered),
     };
   });
 }

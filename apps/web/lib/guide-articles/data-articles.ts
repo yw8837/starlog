@@ -13,8 +13,8 @@ import { withParticle } from "../korean";
  * - 한국 서머타임·표준시 연표: the engine's P1 table (KOREA_CIVIL_PERIODS) and KASI_DST_DISAGREEMENTS;
  * - 출생지별 경도 보정표: lib/birthPlaces.ts (OpenStreetMap, ODbL 1.0).
  *
- * They come out one at a time (publishAt, about two a week from 2026-11-12), never as a batch. Each links only to pages
- * out on or before its own day.
+ * All four come out on 2026-11-11 (publishAt; owner 2026-11-10: publish them now rather than about two a week). Each
+ * links only to pages out on or before its own day.
  */
 
 const SEOUL = { name: "서울", longitude: 126.978 } as const;
@@ -93,9 +93,9 @@ const ENGINE_ARTICLE: GuideArticle = {
   title: "만세력 엔진 11종 비교: 같은 생일에 다른 사주가 나온 이유",
   category: "saju",
   description: "만세력 계산 패키지 11종에 같은 출생 시각 13가지를 넣고 천문 기준값과 대조한 결과를 표와 그래프로 정리했어요.",
-  publishAt: "2026-11-12",
-  published: "2026-11-12",
-  updated: "2026-11-12",
+  publishAt: "2026-11-11",
+  published: "2026-11-11",
+  updated: "2026-11-11",
   summary:
     "같은 출생 시각을 넣어도 만세력 프로그램마다 연주나 월주가 다르게 나올 때가 있어요. 스타로그가 엔진을 고르던 2026년 9월 30일, 공개 패키지 11종에 같은 13가지 입력을 넣어 보니 연·월·일주가 기준값과 어긋난 건수가 0건부터 5건까지 갈렸어요. 어긋난 결과는 대부분 절기가 바뀌는 시각을 한국보다 1시간 이른 중국 표준시로 비교하거나, 절기를 날짜 단위로만 다룬 데서 나왔어요.",
   keyPoints: [
@@ -260,9 +260,9 @@ const JEOLIP_ARTICLE: GuideArticle = {
   title: "2026·2027년 절입 시각표: 한국천문연구원 값과 맞춰 봤어요",
   category: "saju",
   description: "2026년과 2027년 24절기가 들어오는 시각을 한국천문연구원 자료로 정리하고, 앱의 계산값과 분 단위로 대조했어요.",
-  publishAt: "2026-11-16",
-  published: "2026-11-16",
-  updated: "2026-11-16",
+  publishAt: "2026-11-11",
+  published: "2026-11-11",
+  updated: "2026-11-11",
   summary:
     "사주에서 해와 달은 1월 1일이나 초하루가 아니라 절기가 들어오는 순간(절입)에 바뀌어요. 2026년과 2027년 24절기 시각을 한국천문연구원 달력자료에서 옮겨 표로 정리하고, 스타로그 앱의 만세력 계산값과 분 단위로 대조했어요. 2021~2028년 192개 가운데 187개가 같았고, 나머지 5개는 앱 값이 1분 늦었어요.",
   keyPoints: [
@@ -373,9 +373,9 @@ const DST_ARTICLE: GuideArticle = {
   title: "한국 서머타임·표준시 변경 연표와 출생 시각 보정",
   category: "saju",
   description: "1908년부터 1988년까지 한국의 표준시와 서머타임이 바뀐 날을 표로 정리하고, 그때 태어난 시각을 사주에서 어떻게 고쳐 읽는지 적었어요.",
-  publishAt: "2026-11-19",
-  published: "2026-11-19",
-  updated: "2026-11-19",
+  publishAt: "2026-11-11",
+  published: "2026-11-11",
+  updated: "2026-11-11",
   summary:
     "한국은 1908년에 표준시를 처음 정한 뒤 1912년, 1954년, 1961년 세 번 바꿨고, 열두 해 동안 서머타임을 했어요. 그 시기에 태어났다면 출생 기록의 시각은 당시 시계 기준이라, 사주를 볼 때는 그 시계를 되돌려 실제 순간을 찾아야 해요. 스타로그 앱이 쓰는 연표 28줄로 만든 표를 싣고, 한국천문연구원 자료와 국제 시간대 자료가 다른 열 군데도 함께 적었어요.",
   keyPoints: [
@@ -505,9 +505,9 @@ const LONGITUDE_ARTICLE: GuideArticle = {
   title: "출생지별 경도 보정표: 시·군 161곳의 시각 차이",
   category: "saju",
   description: "전국 시·군 161곳 청사의 경도로, 사주 시주를 볼 때 출생 시각에서 몇 분을 빼는지 계산한 표예요.",
-  publishAt: "2026-11-23",
-  published: "2026-11-23",
-  updated: "2026-11-23",
+  publishAt: "2026-11-11",
+  published: "2026-11-11",
+  updated: "2026-11-11",
   summary: `한국 표준시는 동경 135도에 맞춘 시계라, 그보다 서쪽인 한국 땅에서는 해가 시계보다 늦게 떠요. 스타로그 앱은 출생지 경도만큼 시각을 고쳐 일주와 시주를 정해요. 시·군 161곳 청사의 경도로 그 차이를 계산하면 가장 동쪽인 ${withParticle(byLongitude.at(-1)?.label ?? "", "은/는")} ${minutesKo(byLongitude.at(-1)?.longitude ?? 135)}, 가장 서쪽인 ${withParticle(byLongitude[0]?.label ?? "", "은/는")} ${minutesKo(byLongitude[0]?.longitude ?? 135)}이에요.`,
   keyPoints: [
     "보정 분 = (출생지 경도 − 135) × 4예요.",
@@ -579,5 +579,5 @@ const LONGITUDE_ARTICLE: GuideArticle = {
   ],
 };
 
-/** In release order; each comes out on its publishAt day. */
+/** In list order; each comes out on its publishAt day (all four 2026-11-11). */
 export const DATA_ARTICLES: readonly GuideArticle[] = [ENGINE_ARTICLE, JEOLIP_ARTICLE, DST_ARTICLE, LONGITUDE_ARTICLE];

@@ -23,6 +23,6 @@
 
 ## 원본 자료 글 공개 일정 (publishAt)
 
-- 2026-11-12 `manseryeok-engine-comparison`, 2026-11-16 `jeolip-times-2026-2027`, 2026-11-19 `korea-dst-standard-time`, 2026-11-23 `birthplace-longitude-table`
-- 글 주소와 사이트맵은 그날 00:00(한국 시각)부터 요청마다 열린다. 홈·탭 목록, llms-full, RSS는 빌드 때 정해지므로 그날 이후 배포해야 목록에 뜬다.
-- TODO: 각 공개일 이후 배포 일정 확인. 100건 교차검증 결과(`scripts/crosscheck-saju/results.json`, `docs/research/saju-calendar-crosscheck-2026-10.md`)도 같은 방식의 다섯 번째 글 후보다.
+- 2026-11-11 네 편 모두: `manseryeok-engine-comparison`, `jeolip-times-2026-2027`, `korea-dst-standard-time`, `birthplace-longitude-table`. 오너 2026-11-10 결정(공개일은 신경 쓰지 말 것)으로 처음 잡았던 11/12·11/16·11/19·11/23 나눠 공개는 취소했다. publishAt 장치는 그대로 둔다.
+- 글 주소와 사이트맵은 그날 00:00(한국 시각)부터 요청마다 열린다. 홈·탭 목록, llms-full, RSS는 빌드 때 정해지므로 2026-11-11 00:00 이후 빌드한 배포여야 목록에 뜬다.
+- TODO: 2026-11-11 이후 배포 확인. 100건 교차검증 결과(`scripts/crosscheck-saju/results.json`, `docs/research/saju-calendar-crosscheck-2026-10.md`)도 같은 방식의 다섯 번째 글 후보다.

@@ -241,14 +241,10 @@ export const GUIDE_DATES: Readonly<Record<string, { published: string; updated: 
     // text that reads them, and the minor arcana overview the 56 in four grids. Only these five changed that day.
     ...["wands-suit", "cups-suit", "swords-suit", "pentacles-suit"].map((slug) => [slug, { published: "2026-10-06", updated: "2026-11-10" }] as const),
     ...["minor-arcana-suits"].map((slug) => [slug, { published: "2026-10-01", updated: "2026-11-10" }] as const),
-    // 원본 자료 articles (AdSense audit task C), released about two a week: each dated its publishAt day (data-articles.ts).
-    ...(
-      [
-        ["manseryeok-engine-comparison", "2026-11-12"],
-        ["jeolip-times-2026-2027", "2026-11-16"],
-        ["korea-dst-standard-time", "2026-11-19"],
-        ["birthplace-longitude-table", "2026-11-23"],
-      ] as const
-    ).map(([slug, day]) => [slug, { published: day, updated: day }] as const),
+    // 원본 자료 articles (AdSense audit task C), all four out on 2026-11-11 (owner 2026-11-10: now, not staggered): each
+    // dated its publishAt day (data-articles.ts).
+    ...["manseryeok-engine-comparison", "jeolip-times-2026-2027", "korea-dst-standard-time", "birthplace-longitude-table"].map(
+      (slug) => [slug, { published: "2026-11-11", updated: "2026-11-11" }] as const,
+    ),
   ],
 );

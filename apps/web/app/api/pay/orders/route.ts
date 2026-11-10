@@ -4,13 +4,13 @@ import { safeReturnTo } from "@/lib/account/returnTo";
 import { isReviewAccount, isReviewer } from "@/lib/account/review";
 import { errorResponse, json, readJson } from "@/lib/api/http";
 import type { D1Binding } from "@/lib/db/d1";
-import { productById, sellable } from "@/lib/pay/catalog";
+import { SET_PRODUCT_ID, productById, sellable } from "@/lib/pay/catalog";
 import { entitlements } from "@/lib/pay/ledger";
 import { paymentsMode, salesOpen } from "@/lib/pay/mode";
 import { RECONCILE_AFTER_MS, createOrder, orderById, orderHistory, reconcileConfirming, type OrderRow } from "@/lib/pay/orders";
 import { reconcileRefunding } from "@/lib/pay/refunds";
 import { tossClient } from "@/lib/pay/toss";
-import { premiumOpen } from "@/lib/premium/flags";
+import { premiumOpen, setOpen } from "@/lib/premium/flags";
 import { isPremiumId } from "@/lib/premium/products";
 
 /** `ack: true` = the buyer ticked the 청약철회 notice on the checkout page (its time is kept on the order). */
@@ -22,7 +22,8 @@ const REVIEW_MAX_UNOPENED = 3;
 /**
  * POST {productId, returnTo?, ack: true} → a new order at the catalog price, plus Toss's success and fail URLs.
  * G3: a premium order also says how many purchases of that product the buyer holds unopened or is opening
- * (`held`), so the checkout asks before a second one; it never refuses one (two 프리미엄 궁합 for two people).
+ * (`held`), so the checkout asks before a second one; it never refuses one (two 프리미엄 궁합 for two people). A set
+ * counts those of either of its readings (2027 신년운세, 프리미엄 궁합).
  */
 export async function POST(request: Request): Promise<Response> {
   const ctx = await openAccountRoute(request, { limiter: "PAY_LIMITER", write: true });
@@ -45,10 +46,13 @@ export async function POST(request: Request): Promise<Response> {
   if (!product || !sellable(product, ctx.now)) return errorResponse("NOT_AVAILABLE");
   // P5: premium orders also need STARLOG_PREMIUM (lib/premium/flags.ts).
   if (isPremiumId(product.id) && !premiumOpen(product.id, ctx.owner, ctx.now)) return errorResponse("NOT_AVAILABLE");
+  // The set: its own window (from 2026-12-01 KST) and both of its readings open.
+  if (product.id === SET_PRODUCT_ID && !setOpen(ctx.owner, ctx.now)) return errorResponse("NOT_AVAILABLE");
   const order = await createOrder(ctx.db, { userId: session.user.id, product, returnTo: safeReturnTo(body.data.returnTo), now: ctx.now });
   const origin = new URL(request.url).origin;
   console.info(JSON.stringify({ evt: "pay.order_created", orderId: order.id, productId: product.id }));
-  const held = isPremiumId(product.id) ? await heldPurchases(ctx.db, session.user.id, product.id, ctx.now) : null;
+  const readings = product.includes ?? (isPremiumId(product.id) ? [product.id] : null);
+  const held = readings ? await heldPurchases(ctx.db, session.user.id, readings, ctx.now) : null;
   return json({
     orderId: order.id, orderName: order.order_name, amount: order.amount_krw, successUrl: `${origin}/pay/success`, failUrl: `${origin}/pay/fail`,
     ...(held === null ? {} : { held }),
@@ -56,10 +60,10 @@ export async function POST(request: Request): Promise<Response> {
 }
 
 /** G3: a hint for the checkout, never a gate: null (no `held`) when it cannot be read. */
-async function heldPurchases(db: D1Binding, userId: string, productId: string, now: number): Promise<number | null> {
+async function heldPurchases(db: D1Binding, userId: string, readings: readonly string[], now: number): Promise<number | null> {
   try {
     const { unused, opening } = await entitlements(db, userId, now);
-    return [...unused, ...opening].filter((item) => item.productId === productId).length;
+    return [...unused, ...opening].filter((item) => readings.includes(item.productId)).length;
   } catch (error) {
     console.error(JSON.stringify({ evt: "pay.held_failed", error: error instanceof Error ? error.constructor.name : typeof error }));
     return null;

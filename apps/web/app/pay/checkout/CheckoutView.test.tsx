@@ -116,6 +116,31 @@ describe("CheckoutView", () => {
     expect(screen.getByText("한 번 결제로 풀이 하나가 열려요. 자동결제는 없어요. 열기 전에는 결제일로부터 7일 안에 전액 환불받을 수 있어요.")).toBeTruthy();
   });
 
+  it("shows the 2027 신년운세 + 프리미엄 궁합 set: both readings' tables of contents, the real saving, the premium clauses, and the set's refund rule everywhere it is said (owner 2026-11-10)", async () => {
+    stubFetch(Response.json({ productId: "set-2027", name: "2027 신년운세 + 프리미엄 궁합", amount: 18900, customerKey: "c_x", provider: "mock", clientKey: null }), { amount: 18900, orderName: "스타로그 2027 신년운세 + 프리미엄 궁합" });
+    const navigate = vi.fn();
+    render(<CheckoutView productId="set-2027" returnTo="/premium/newyear-2027/new" navigate={navigate} />);
+    expect(await screen.findByText("18,900원")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "2027 신년운세 + 프리미엄 궁합" })).toBeTruthy();
+    for (const line of ["2027 신년운세 · 2027년 한 해와 열두 달 풀이 전체 · 4,200자 이상", "프리미엄 궁합 · 두 사람의 사주 궁합과 앞으로 1년 풀이 전체 · 3,100자 이상", "풀이마다 이어서 물어보기 3번", "따로 사면 22,800원, 3,900원 아껴요"]) {
+      expect(screen.getByText(line)).toBeTruthy();
+    }
+    const year = screen.getByRole("region", { name: "2027 신년운세 목차" });
+    expect(within(year).getAllByRole("listitem")[0]!.textContent).toBe("2027 정미년과 나의 명식");
+    const match = screen.getByRole("region", { name: "프리미엄 궁합 목차" });
+    expect(within(match).getAllByRole("listitem")[0]!.textContent).toBe("한 줄로 보면");
+    const rule =
+      "결제일로부터 7일 안에 두 풀이를 모두 열지 않았으면 18,900원 전액을, 하나만 열었으면 열지 않은 풀이 몫을 환불받을 수 있어요(2027 신년운세를 열었으면 4,000원, 프리미엄 궁합을 열었으면 11,000원). 두 풀이를 모두 열면 환불되지 않아요.";
+    expect(screen.getByText(`한 번 결제로 2027 신년운세와 프리미엄 궁합이 하나씩 열려요. 자동결제는 없어요. ${rule}`)).toBeTruthy();
+    const actions = screen.getByRole("button", { name: "18,900원 결제하기" }).closest("div")!;
+    expect(actions.textContent).toContain(rule);
+    expect(document.body.textContent).not.toContain("열기 전에는 결제일로부터 7일 안에");
+    expect(document.body.textContent).not.toMatch(/지금만|마감|할인|남은 시간/);
+    fireEvent.click(screen.getByRole("checkbox", { name: "위 내용과 이용약관 제7조의3, 환불 정책의 프리미엄 풀이 항목에 동의해요" }));
+    fireEvent.click(screen.getByRole("button", { name: "18,900원 결제하기" }));
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith(`http://localhost/pay/success?paymentType=NORMAL&orderId=${ORDER}&paymentKey=mock_${ORDER}&amount=18900`));
+  });
+
   it("keeps the standard readings' check as it is: no premium clause", async () => {
     render(<CheckoutView productId="tarot" returnTo="/tarot/result" navigate={vi.fn()} />);
     expect(await screen.findByRole("checkbox", { name: "위 내용을 확인했어요" })).toBeTruthy();

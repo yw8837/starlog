@@ -7,7 +7,7 @@ import PricingPage from "./page";
 
 const OCT = Date.parse("2026-10-20T12:00:00+09:00");
 
-function stub(visible: boolean | "fail") {
+function stub(visible: boolean | "fail", setOpen = false) {
   const fetchMock = vi.fn(async (url: string) => {
     if (url !== "/api/premium/status") return new Response(null, { status: 404 });
     if (visible === "fail") throw new TypeError("offline");
@@ -17,6 +17,7 @@ function stub(visible: boolean | "fail") {
         { id: "match", open: visible, visible, opensAt: null },
         { id: "newyear-2027", open: visible, visible, opensAt: null },
       ],
+      set: { open: setOpen, opensAt: null },
     });
   });
   vi.stubGlobal("fetch", fetchMock);
@@ -40,6 +41,30 @@ describe("/pricing links each reading to the page that starts it (SEO P1-1, P1-2
     stub(false);
     const html = renderToString(<PricingPage />);
     for (const href of ["/tarot/new", "/saju/new", "/premium/deep-tarot", "/premium/match", "/premium/newyear-2027"]) expect(html).toContain(`href="${href}"`);
+  });
+});
+
+describe("/pricing's 2027 신년운세 + 프리미엄 궁합 set (owner 2026-11-10)", () => {
+  it("shows the set with its price, the real saving, both readings, its checkout and its refund rule where the server sells it; nothing before", async () => {
+    stub(true, true);
+    render(<PricingPage />);
+    const card = await screen.findByRole("region", { name: /2027 신년운세 \+ 프리미엄 궁합/ });
+    expect(card.textContent).toContain("18,900원");
+    expect(card.textContent).toContain("따로 사면 22,800원, 3,900원 아껴요");
+    expect(card.textContent).toContain(
+      "결제일로부터 7일 안에 두 풀이를 모두 열지 않았으면 18,900원 전액을, 하나만 열었으면 열지 않은 풀이 몫을 환불받을 수 있어요(2027 신년운세를 열었으면 4,000원, 프리미엄 궁합을 열었으면 11,000원). 두 풀이를 모두 열면 환불되지 않아요.",
+    );
+    // Review LOW 4: the tier's closing line speaks of readings paid for alone and sends the set to its own rule.
+    const premium = document.getElementById("premium")!;
+    expect(premium.textContent).toContain("따로 결제한 풀이는 열기 전에는 결제일로부터 7일 안에 전액 환불받을 수 있어요. 세트의 환불 기준은 세트 안내에 있어요.");
+    expect(card.textContent).not.toMatch(/지금만|마감|할인|남은/);
+    expect(within(card).getByRole("link").getAttribute("href")).toMatch(/^\/pay\/checkout\?product=set-2027&/);
+    cleanup();
+    resetPremiumStatusForTests();
+    stub(true, false);
+    render(<PricingPage />);
+    await screen.findByRole("region", { name: /2027 신년운세/ });
+    expect(screen.queryByRole("region", { name: /프리미엄 궁합/ })?.textContent ?? "").not.toContain("18,900원");
   });
 });
 

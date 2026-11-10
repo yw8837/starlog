@@ -141,7 +141,7 @@ export interface MeBody {
   user: null | {
     nickname: string;
     gift: { status: "unused"; until: string | null } | { status: "used" } | null;
-    unused: Array<{ orderId: string; productId: string; refundUntil: string }>;
+    unused: Array<{ orderId: string; productId: string; refundUntil: string; refundAmount?: number }>;
     opening: Array<{ productId: string; currency: "paid" | "gift"; orderId: string | null }>;
   };
 }

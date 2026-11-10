@@ -1,12 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { deleteAccount } from "@/lib/account/deletion";
 import { resetDailyStore } from "@/lib/api/dailyStore";
-import { ownerCookie } from "@/lib/bonds/identity";
+import { accountFriendKey, ownerCookie } from "@/lib/bonds/identity";
 import { chooseSign, inviteOf, saveOwner } from "@/lib/bonds/service";
 import { bondsRepo, setTestDb } from "@/lib/db";
 import { createD1BondsRepo } from "@/lib/db/d1BondsRepo";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { randomId, signingSecret } from "@/lib/security/sign";
+import { saveShare } from "@/lib/share/store";
 import { signIn } from "@/lib/testing/bondsLogin";
 import { useTestDb } from "@/lib/testing/p4";
 import { POST as choosePost } from "./choose/route";
@@ -289,5 +290,40 @@ describe("별자리 인연 owners belong to accounts", () => {
     expect(await repo.inviteByCode("LNKD22")).toBeNull();
     expect((await repo.getOwner("device"))?.nickname).toBe("기기주인");
     expect((await repo.starsOf("c-device")).map((s) => s.id)).toEqual(["s-device"]);
+  });
+
+  it("deleting the account deletes the stars it joined as a friend, their share links and the owners' blocks of it; the totals are recounted, others' stars stay (review 2026-11-10)", async () => {
+    const db = useTestDb();
+    const repo = createD1BondsRepo(db);
+    const jar: Jar = new Map();
+    const userId = await signIn(jar);
+    const now = Date.now();
+    const mine = await accountFriendKey(userId, signingSecret()!);
+    await saveOwner(repo, now, "owner", { nickname: "별주인", birth: ME });
+    for (const [id, sign, status] of [["c-filling", "aries", "filling"], ["c-done", "leo", "complete"]] as const) {
+      await repo.insertConstellation({ id, ownerId: "owner", sign, status, total: 0, startedAt: now, completedAt: status === "complete" ? now : null });
+    }
+    const star = (id: string, constellationId: string, slot: number, friendKey: string, score: number) =>
+      repo.insertStar({ id, constellationId, slot, nickname: id, message: null, cardId: "cups-02", orientation: "upright", score, parts: [], friendKey, createdAt: now, scorePublic: true });
+    await star("s-mine", "c-filling", 0, mine, 80);
+    await star("s-other", "c-filling", 1, "someone-else", 70);
+    await star("s-mine-done", "c-done", 0, mine, 90);
+    await star("s-device", "c-done", 1, "this-device-before-11-10", 60);
+    for (const id of ["c-filling", "c-done"]) await repo.tally(id, 99, now);
+    for (const [starId, constellationId] of [["s-mine", "c-filling"], ["s-other", "c-filling"], ["s-mine-done", "c-done"]]) {
+      await saveShare(db, `bond:${starId}`, { kind: "bond", v: 1, constellationId: constellationId!, starId: starId! }, now);
+    }
+    await repo.blockFriend("c-done", mine, now);
+    await repo.blockFriend("c-done", "someone-blocked", now);
+
+    expect(await deleteAccount(db, null, { userId, now })).toEqual({ ok: true, refunded: 0 });
+    expect((await repo.starsOf("c-filling")).map((s) => s.id)).toEqual(["s-other"]);
+    expect((await repo.starsOf("c-done")).map((s) => s.id)).toEqual(["s-device"]);
+    expect((await repo.getConstellation("c-filling"))?.total).toBe(70);
+    expect(await repo.getConstellation("c-done")).toMatchObject({ total: 60, status: "complete" });
+    const { results: shares } = await db.prepare("SELECT chapter_key FROM shares ORDER BY chapter_key").all<{ chapter_key: string }>();
+    expect(shares.map((row) => row.chapter_key)).toEqual(["bond:s-other"]);
+    expect(await repo.isBlocked("c-done", mine)).toBe(false);
+    expect(await repo.isBlocked("c-done", "someone-blocked")).toBe(true);
   });
 });
