@@ -26,7 +26,13 @@ export const GRADE_REASON_TITLES = ["가장 크게 힘이 된 것", "아직 덜 
 
 type Kind = "own" | "friend" | "example";
 
-const EXAMPLE_NOTE = `${DEFAULT_SAJU_FORM.year}년 ${DEFAULT_SAJU_FORM.month}월 ${DEFAULT_SAJU_FORM.day}일생(시 모름)으로 계산한 예시예요. 아래에 내 생일을 넣으면 내 등급이 나와요.`;
+/**
+ * The example's birth (review 4): 1991-05-20, hour unknown, B in 2026 and A in 2027 (checked with the engine; B is the commonest
+ * grade), so the first card a visitor sees is not a C (DEFAULT_SAJU_FORM gives C in 2026). It stays labelled 예시.
+ */
+export const GRADE_EXAMPLE_FORM: SajuForm = Object.freeze({ ...DEFAULT_SAJU_FORM, year: 1991, month: 5, day: 20 });
+
+const EXAMPLE_NOTE = `${GRADE_EXAMPLE_FORM.year}년 ${GRADE_EXAMPLE_FORM.month}월 ${GRADE_EXAMPLE_FORM.day}일생(시 모름)으로 계산한 예시예요. 아래에 내 생일을 넣으면 내 등급이 나와요.`;
 
 /** ?y= when it names one of the ten chips from this year, else this year. */
 function yearFromAddress(thisYear: number): number {
@@ -37,7 +43,7 @@ function yearFromAddress(thisYear: number): number {
 
 /**
  * /saju/grade (spec 2026-11-11 B, E): the grade card for the profile saved on this device, computed here in the browser (nothing
- * about the birth leaves it; the address carries ?y= at most). Without a profile the example (DEFAULT_SAJU_FORM, 예시) shows
+ * about the birth leaves it; the address carries ?y= at most). Without a profile the example (GRADE_EXAMPLE_FORM, 예시) shows
  * first and the fields follow (#find); a friend's birth is shown from component state only, never saved.
  */
 export function GradeView() {
@@ -47,7 +53,7 @@ export function GradeView() {
   const [friend, setFriend] = useState<SajuForm | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const topRef = useRef<HTMLDivElement>(null);
-  const result = useMemo(() => (profile === undefined ? null : chartFor(friend ?? profile ?? DEFAULT_SAJU_FORM)), [profile, friend]);
+  const result = useMemo(() => (profile === undefined ? null : chartFor(friend ?? profile ?? GRADE_EXAMPLE_FORM)), [profile, friend]);
 
   if (profile === undefined || result === null) return <div className={s.placeholder} aria-hidden="true" />;
 

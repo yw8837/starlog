@@ -6,7 +6,7 @@ import { chartFor } from "@/components/saju/useSajuChart";
 import { SAJU_PROFILE_KEY } from "@/lib/sajuFlow";
 import { DEFAULT_SAJU_FORM, type SajuForm } from "@/lib/sajuForm";
 import { GRADE_FIXED_LINE, GRADE_NOTICE, currentGradeYear, gradeForYear, gradeObservations, nextBrightLine } from "@/lib/sajuGrade";
-import { GradeView } from "./GradeView";
+import { GRADE_EXAMPLE_FORM, GradeView } from "./GradeView";
 
 /**
  * /saju/grade (spec 2026-11-11 B, E, F C5): the card is computed in the browser; a saved profile shows its result first, none
@@ -52,13 +52,23 @@ const expectNoBirthInRequests = (form: SajuForm) => {
 const card = () => screen.getByRole("figure");
 
 describe("GradeView", () => {
+  it("the example is 1991-05-20, hour unknown: B in 2026 and A in 2027, the commonest grade first (not DEFAULT_SAJU_FORM's C)", () => {
+    expect(GRADE_EXAMPLE_FORM).toMatchObject({ calendar: "solar", year: 1991, month: 5, day: 20, timeKnown: false, hour: null, minute: null });
+    expect(DEFAULT_SAJU_FORM).toMatchObject({ year: 1990, month: 1, day: 1 });
+    const gc = gradeChartOf(chartOf(GRADE_EXAMPLE_FORM));
+    expect(gradeForYear(gc, 2026).grade).toBe("B");
+    expect(gradeForYear(gc, 2027).grade).toBe("A");
+    expect(gradeForYear(gradeChartOf(chartOf(DEFAULT_SAJU_FORM)), 2026).grade).toBe("C");
+  });
+
   it("without a saved profile: the example card (예시) first, then the fields; consent saves the profile and shows the own card", async () => {
     render(<GradeView />);
     const year = currentGradeYear();
-    const example = gradeForYear(gradeChartOf(chartOf(DEFAULT_SAJU_FORM)), year);
+    const example = gradeForYear(gradeChartOf(chartOf(GRADE_EXAMPLE_FORM)), year);
     await waitFor(() => expect(card().textContent).toContain("예시"));
     expect(card().textContent).toContain(`${year} ${example.ko}년 · 올해의 사주 등급`);
     expect(card().textContent).toContain(example.nickname);
+    expect(screen.getByText(/^1991년 5월 20일생\(시 모름\)으로 계산한 예시예요\./)).toBeTruthy();
     expect(screen.getByText(GRADE_FIXED_LINE)).toBeTruthy();
     // the fields: no 요즘 상황 chips, the grade's own consent
     const find = document.getElementById("find")!;
