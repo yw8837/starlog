@@ -189,7 +189,7 @@ export function MatchPreview({ instant, autoUnlock = false }: { instant: boolean
             </Paper>
             <LockedToc
               items={preview.lockedToc}
-              meta={`소제목 ${preview.lockedToc.length}개 · 약 ${approxCharsText({ min: PREMIUM[ID].approxChars, max: PREMIUM[ID].approxChars })}자`}
+              meta={`소제목 ${preview.lockedToc.length}개 · ${approxCharsText({ min: PREMIUM[ID].minChars, max: PREMIUM[ID].minChars })}자 이상`}
             />
             {unlock}
           </>

@@ -35,10 +35,17 @@ describe("premium products", () => {
 
   it("reads the 프리미엄 궁합 from the two people's saju only (owner 2026-10-17): its parts, scope and sub say no card or 타로", () => {
     expect(PREMIUM.match.parts).toEqual(["사주로 본 두 사람", "앞으로 1년과 서로 대하는 법"]);
-    expect(PREMIUM.match.scope[0]).toBe("두 사람의 사주 궁합과 앞으로 1년 풀이 전체 · 약 5,000자");
+    expect(PREMIUM.match.scope[0]).toBe("두 사람의 사주 궁합과 앞으로 1년 풀이 전체 · 3,100자 이상");
     expect(PREMIUM.match.sub).toBe("두 사람의 사주로 보는 관계와 앞으로 1년");
-    expect([PREMIUM.match.approxChars, PREMIUM.match.krw]).toEqual([5000, 7900]);
+    expect([PREMIUM.match.minChars, PREMIUM.match.krw]).toEqual([3100, 7900]);
     expect(JSON.stringify(PREMIUM.match)).not.toMatch(/카드|타로|5장/);
+  });
+
+  it("states the guaranteed least length the checks let through, never an approximate one (owner 2026-11-10)", () => {
+    expect(PREMIUM["tarot-deep"].scope[0]).toBe("카드 10장 풀이 전체 · 3,000자 이상");
+    expect(PREMIUM["newyear-2027"].scope[0]).toBe("2027년 한 해와 열두 달 풀이 전체 · 4,200자 이상");
+    expect(PREMIUM_IDS.map((id) => PREMIUM[id].minChars)).toEqual(PREMIUM_IDS.map((id) => ({ "tarot-deep": 3000, match: 3100, "newyear-2027": 4200 })[id]));
+    for (const id of PREMIUM_IDS) expect(PREMIUM[id].scope.join(" "), id).not.toMatch(/약 [\d,]+자/);
   });
 
   it("dates no opening (owner 2026-10-20 \"전부 오픈해\"): all three in their window now, 2027 신년운세 until 2027-12-01 00:00 KST", () => {

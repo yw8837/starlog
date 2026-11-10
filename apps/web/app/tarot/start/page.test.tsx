@@ -63,7 +63,7 @@ describe("/tarot/start, the 다리 화면 (owner 2026-10-16)", () => {
     const { links } = await renderBridge();
     expect(links[0]!.textContent).not.toMatch(/첫 풀이|하루 \d+번|무료/);
     expect(links[0]!.textContent).toContain(`이어서 물어보기 ${SITE.reading.followUps}번`);
-    expect(links[1]!.textContent).toContain(`약 ${num(deep.approxChars)}자`);
+    expect(links[1]!.textContent).toContain(`${num(deep.minChars)}자 이상`);
     expect(links[1]!.textContent).toContain(`이어서 물어보기 ${deep.followUps}번`);
   });
 
@@ -76,12 +76,12 @@ describe("/tarot/start, the 다리 화면 (owner 2026-10-16)", () => {
 
   it("reads the 10-card counts from PREMIUM at render time, never a hard-coded copy", async () => {
     const deep = PREMIUM["tarot-deep"];
-    const saved = { followUps: deep.followUps, approxChars: deep.approxChars };
+    const saved = { followUps: deep.followUps, minChars: deep.minChars };
     deep.followUps = 7;
-    deep.approxChars = 4321;
+    deep.minChars = 4321;
     try {
       const { links } = await renderBridge();
-      expect(links[1]!.textContent).toContain("약 4,321자");
+      expect(links[1]!.textContent).toContain("4,321자 이상");
       expect(links[1]!.textContent).toContain("이어서 물어보기 7번");
     } finally {
       Object.assign(deep, saved);

@@ -78,7 +78,7 @@ export function TarotBridge() {
               </span>
               <span className={s.scope}>
                 <span className={s.scopeLine}>
-                  <span className={s.piece}>{`약 ${num(deep.approxChars)}자`}</span>
+                  <span className={s.piece}>{`${num(deep.minChars)}자 이상`}</span>
                   {" · "}
                   <span className={s.piece}>{`이어서 물어보기 ${deep.followUps}번`}</span>
                 </span>

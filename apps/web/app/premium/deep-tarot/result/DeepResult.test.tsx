@@ -75,7 +75,7 @@ describe("켈틱 크로스 10장's result screen (Task 19)", () => {
     const list = screen.getByRole("list", { name: "카드 10장" });
     expect(within(list).getAllByRole("listitem")).toHaveLength(10);
     expect(within(list).getByText("지금의 나 열쇠")).toBeTruthy();
-    expect(screen.getByText(`소제목 ${PREVIEW.lockedToc.length}개 · 약 5,000자`)).toBeTruthy();
+    expect(screen.getByText(`소제목 ${PREVIEW.lockedToc.length}개 · 3,000자 이상`)).toBeTruthy();
     expect(screen.getByRole("heading", { name: "켈틱 크로스 10장에 담긴 것" })).toBeTruthy();
     expect(screen.getByText("켈틱 크로스 10장")).toBeTruthy();
     expect(document.body.textContent).not.toMatch(/베타|Claude|Anthropic/);

@@ -68,7 +68,7 @@ describe("2027 신년운세's preview (Task 21)", () => {
     for (const fact of PREVIEW.facts) expect(screen.getByText(fact)).toBeTruthy();
     expect(screen.getByText(PREVIEW.summary.body)).toBeTruthy();
     expect(within(screen.getByRole("region", { name: "이어지는 풀이" })).getAllByRole("listitem")).toHaveLength(21);
-    expect(screen.getByText("소제목 21개 · 약 6,800자")).toBeTruthy();
+    expect(screen.getByText("소제목 21개 · 4,200자 이상")).toBeTruthy();
     const [, init] = fetchMock.mock.calls.find(([url]) => url === "/api/premium/newyear-2027/teaser")!;
     expect(JSON.parse(String(init!.body))).toEqual({ birth: DEFAULT_SAJU_FORM, workStatus: "employee" });
   });
