@@ -23,7 +23,8 @@ Owner decisions (11/11): Google Play first; Google Play Billing inside the app; 
 - Play Console: one consumable in-app product per web product at the same KRW price (tarot, saju, 켈틱, 궁합, 신년운세, the 신년+궁합 set).
 - In the app the pay button opens the Play purchase sheet (native billing through the bridge). The purchase token goes to a new server route that verifies it with the Google Play Developer API (service account secret in the Worker), grants the same credit lot the Toss path grants (payments.mode gains a `play` source), then consumes the purchase. Idempotent on the purchase token.
 - Opening a reading, the 3 reopenings and the ledger are the existing code. Refunds are Google's: Real-time developer notifications (or the voided-purchases API on the cron) revoke the lot like a Toss cancellation does.
-- In the app no Toss checkout, no web-payment link or wording appears. The 환불받기 button for Play purchases points to Google's refund path.
+- In the app no Toss checkout, no web-payment link or wording appears.
+- 환불받기 for a Play purchase (owner 2026-11-11, changed from "points to Google's refund path"): an unopened reading is refunded by our server like on the web, within the same 7 days, through the Play Developer API (`orders.refund` with `revoke=true`); account deletion refunds an unopened Play purchase the same way. Whole orders only: a set with one reading opened goes to the operator. A refund made on Google's side (the buyer's request to Google, Play Console, a chargeback) reaches us through the voided-purchases list on the cron.
 
 ## Login
 - Google: native account picker (Credential Manager) through the bridge; the server exchanges the ID token for the existing session.
