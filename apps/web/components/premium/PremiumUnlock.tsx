@@ -7,7 +7,7 @@ import { loginHref, type AccountState } from "@/lib/account/client";
 import { SITE, won } from "@/lib/config";
 import { REFUND_DAYS, SET_PRODUCT_ID, refundAmount } from "@/lib/pay/catalog";
 import { checkoutHref } from "@/lib/pay/offer";
-import { opensAtText, premiumOffer } from "@/lib/premium/offer";
+import { PLAY_SET_PART_LINE, opensAtText, premiumOffer } from "@/lib/premium/offer";
 import { PREMIUM, type PremiumId } from "@/lib/premium/products";
 import { refreshPremiumStatus } from "@/lib/premium/status";
 import type { ErrorView } from "@/lib/reading/errors";
@@ -90,7 +90,9 @@ export function PremiumUnlock({ id, account, status, returnTo, onOpen, resumable
             ? `${offer.set ? "세트의 다른 풀이 " : ""}환불을 처리하고 있어서 지금은 이 풀이를 환불할 수 없어요`
             : offer.noRefund === "refunded"
               ? "이미 환불한 금액이 있어서 이 풀이는 환불할 수 없어요. 문제가 있으면 문의해 주세요"
-              : offer.noRefund === "other"
+              : offer.noRefund === "play-part"
+                ? PLAY_SET_PART_LINE
+                : offer.noRefund === "other"
                 ? "이 결제는 환불할 수 없어요. 문제가 있으면 문의해 주세요"
                 : "풀이를 받던 중에 끊긴 결제라 환불은 할 수 없어요. 다시 열어 끝까지 받을 수 있어요"
           : offer.set && offer.pair
@@ -205,6 +207,7 @@ export function PremiumUnlock({ id, account, status, returnTo, onOpen, resumable
         ) : null}
         <div className={s.links}>
           {error && refundHref && refundable && !openedHref ? <Link href={refundHref}>환불받기</Link> : null}
+          {offer.mode === "open-paid" && offer.noRefund === "play-part" ? <Link href="/contact">문의하기</Link> : null}
           <Link href="/refund">결제와 환불 안내</Link>
         </div>
         {caption && !checking && !openedHref ? <p className={s.caption}>{caption}</p> : null}

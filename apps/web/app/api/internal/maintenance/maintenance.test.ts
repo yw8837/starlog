@@ -6,7 +6,7 @@ import { accountSecret } from "@/lib/account/secrets";
 import { setTestDb } from "@/lib/db";
 import type { D1Binding } from "@/lib/db/d1";
 import { RESERVATION_MS, reserveUnlock } from "@/lib/pay/ledger";
-import { GIFT_CLAIM_KEEP_MS, RECORD_KEEP_MS, TOSS_CALLS_PER_RUN, TOSS_DEADLINE_MS, runMaintenance } from "@/lib/pay/maintenance";
+import { GIFT_CLAIM_KEEP_MS, PLAY_DEADLINE_MS, RECORD_KEEP_MS, TOSS_CALLS_PER_RUN, TOSS_DEADLINE_MS, runMaintenance } from "@/lib/pay/maintenance";
 import { PlayError, mockPlay, playAccountTag } from "@/lib/pay/play";
 import { orderById } from "@/lib/pay/orders";
 import { refundUnusedPlayOrder, verifyPlayPurchase } from "@/lib/pay/playOrders";
@@ -367,6 +367,22 @@ describe("Google Play purchases (the Android app)", () => {
     expect(await runMaintenance(db, mockToss, T0 + 12 * MIN, { play: mockPlay })).toMatchObject({ playRefunds: 1, refunding: 0, failed: 0 });
     expect(await one(db, `SELECT status FROM orders WHERE id = '${orderId}'`)).toEqual({ status: "paid" });
     expect(tossLookUp).not.toHaveBeenCalled();
+  });
+
+  it("starts no Play step or item once the Play steps' deadline has passed", async () => {
+    const db = useTestDb();
+    await playPaid(db, "t_a");
+    await playPaid(db, "t_b");
+    let clock = T0;
+    const google = mockPlay.getPurchase;
+    const asked = vi.spyOn(mockPlay, "getPurchase").mockImplementation(async (productId, token) => {
+      clock += PLAY_DEADLINE_MS;
+      return google(productId, token);
+    });
+    const listed = vi.spyOn(mockPlay, "listVoided");
+    expect(await runMaintenance(db, null, T0 + MIN, { play: mockPlay, clock: () => clock })).toMatchObject({ playConsumed: 1, playVoided: 0, playRefunds: 0 });
+    expect(asked).toHaveBeenCalledTimes(1);
+    expect(listed).not.toHaveBeenCalled();
   });
 
   it("is run by the Cron Trigger's route with this deploy's Play client", async () => {

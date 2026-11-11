@@ -187,4 +187,34 @@ describe("AppMode (root layout, the Starlog app only)", () => {
     await act(async () => {});
     expect(third.getByTestId("privacy").textContent).toBe("false");
   });
+  it("asks the shell again every minute while the app stays in front (a pending payment that went through), and stops when unmounted", async () => {
+    setUa(APP_UA);
+    vi.useFakeTimers();
+    try {
+      const types = fakeShell(() => []);
+      stubServer(() => Response.json({}));
+      const view = render(<AppMode />);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(types).toEqual(["unfinishedPurchases"]);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(60_000);
+      });
+      expect(types).toEqual(["unfinishedPurchases", "unfinishedPurchases"]);
+      visibility = "hidden";
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(60_000);
+      });
+      expect(types).toHaveLength(2);
+      view.unmount();
+      visibility = "visible";
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(120_000);
+      });
+      expect(types).toHaveLength(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

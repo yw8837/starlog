@@ -135,7 +135,9 @@ describe("test D1 with every migration applied", () => {
     const purchase = (token: string, orderId: string) =>
       before.prepare("INSERT INTO play_purchases (purchase_token, order_id, play_product_id, created_at) VALUES (?, ?, 'tarot', 0)").bind(token, orderId);
     await purchase("token_1", "o_3").run();
-    expect(await before.prepare("SELECT google_order_id, test, purchased_at, consumed_at, voided_at FROM play_purchases").first()).toEqual({ google_order_id: null, test: 0, purchased_at: null, consumed_at: null, voided_at: null });
+    expect(await before.prepare("SELECT google_order_id, purchase_type, purchased_at, consumed_at, consume_tried_at, refund_sent_at, voided_at FROM play_purchases").first()).toEqual({
+      google_order_id: null, purchase_type: null, purchased_at: null, consumed_at: null, consume_tried_at: null, refund_sent_at: null, voided_at: null,
+    });
     // One row per token and per order, and only for an order that exists.
     for (const [token, orderId] of [["token_1", "o_2"], ["token_2", "o_3"], ["token_3", "nope"]] as const) {
       await expect(purchase(token, orderId).run(), token).rejects.toSatisfy(isConstraintError);

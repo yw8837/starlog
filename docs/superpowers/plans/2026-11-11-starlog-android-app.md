@@ -13,7 +13,7 @@ Branch `feat/p1-foundation`. Nothing here deploys, applies a remote migration, o
    Behaviour approved by the owner is unchanged.
 2. **Personal Play developer account** (owner 11/11, relayed by the main session): its creation date is the first item of the owner checklist; launch steps are written for both cases (section "Launch").
 3. **Refund detection: the voided-purchases API on the existing 10-minute cron**, not RTDN. The spec allows either; the pull needs no Pub/Sub topic, no new public endpoint and no extra owner setup. A purchase whose client died is recovered by the app (`queryPurchasesAsync` on start/resume).
-4. **Play test purchases** (license testers the owner names in Play Console) are recorded like real ones (`payments.mode = 'play'`, `play_purchases.test = 1`): only owner-named accounts can make them, and the spec's verification needs a test-card purchase to open a reading on production.
+4. **Play test purchases** (license testers the owner names in Play Console) are recorded like real ones (`payments.mode = 'play'`, `play_purchases.purchase_type = 0`; a test, promo or rewarded purchase cannot write a public review): only owner-named accounts can make them, and the spec's verification needs a test-card purchase to open a reading on production.
 5. **신고 and the ad signal exist only in the app** (`data-app`), so the public web is unchanged.
 6. **Refunds of an unopened Play purchase are made by our server** (owner approved 2026-11-11, relayed by the main session; this replaces the spec's "환불받기 points to Google's refund path"): the 환불받기 button works as on the web, and account deletion refunds it too. Why: Google's buyer help sends a buyer to the developer once 48 hours have passed, while the site promises 7 days for an unopened reading. Official source for a developer-initiated refund: `POST https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{packageName}/orders/{orderId}:refund` with `revoke` — "Refunds a user's subscription or in-app purchase order. Orders older than 3 years cannot be refunded." and, for `revoke`, "If set to true, access to the subscription or in-app item will be terminated immediately." (https://developers.google.com/android-publisher/api-ref/rest/v3/orders/refund); the integration guide: "Calling orders.refund without revoke set to true refunds the order without revoking entitlement and doesn't trigger a revocation or voided purchase notification." and, for a purchase the app rejects, "Call orders.refund with the revoke parameter set to true" (https://developer.android.com/google/play/billing/integrate). The service account needs "Manage orders and subscriptions" ("View orders. Refund orders. Cancel subscriptions.", https://support.google.com/googleplay/android-developer/answer/9844686). Whole orders only: a set with one reading opened cannot be refunded in part through this call and goes to the operator. Task W1.9.
 7. Package name `kr.yeolmaeapps.starlog` (permanent once uploaded; the owner confirms it in the checklist).
@@ -49,11 +49,11 @@ Machine: JDK 21 (Adoptium), Android SDK platforms 35/36, build-tools 36.0.0, emu
 **App detection.** The shell appends ` StarlogApp/<versionName>` to the WebView user agent. `lib/inApp.ts` gains `isStarlogApp(userAgent)`. An inline script in `app/layout.tsx` sets `<html data-app="android">` before paint; CSS `.web-only` is hidden under `[data-app]`, `.app-only` is hidden without it. Routes read the request's user agent.
 
 **Bridge.** `window.StarlogNative` (from `addWebMessageListener`, origin-limited, main frame only): `postMessage(json)` and `onmessage`.
-- Request `{"id","type","payload"}` → reply `{"id","ok":true,"data"}` or `{"id","ok":false,"code":"CANCELED"|"PENDING"|"UNAVAILABLE"|"ERROR","message"?}`.
+- Request `{"id","type","payload"}` → reply `{"id","ok":true,"data"}` or `{"id","ok":false,"code":"CANCELED"|"PENDING"|"OWNED"|"UNAVAILABLE"|"ERROR","message"?}`. `OWNED` (Google Play: item already owned): the web asks `unfinishedPurchases` and sends them to verify.
 - `hello` → `{version, privacyOptionsRequired}`
 - `purchase` `{playProductId, orderId, accountTag}` → `{purchaseToken, productId}`
 - `unfinishedPurchases` → `{purchases:[{purchaseToken, productId}]}` (PURCHASED, not consumed)
-- `googleSignIn` `{clientId, nonce}` → `{idToken}`
+- `googleSignIn` `{clientId, nonce}` → `{idToken}` (a release build uses its own `GOOGLE_WEB_CLIENT_ID` and refuses a different one from the page)
 - `ad` `{show}` → ok. The shell also hides the banner on every page start and refuses to show it unless the path starts with `/now`, `/saju/grade` or `/today`.
 - `privacyOptions` → shows the UMP privacy options form.
 
@@ -111,7 +111,13 @@ Machine: JDK 21 (Adoptium), Android SDK platforms 35/36, build-tools 36.0.0, emu
 3. Play Console → internal testing: test-card purchase and refund, Kakao and Google login, banner per screen, deletion, 신고.
 4. **Account created after 2023-11-13:** closed testing with at least 12 testers opted in for 14 days in a row, then apply for production access, then production review. **Created before that date:** production review directly. (support.google.com/googleplay/android-developer/answer/14151465)
 
+## Review (2026-11-11, independent reviewer; notes file `android-review-1.md`)
+0 critical, 1 high, 9 medium, 21 low. Fixed: H1 (a purchase the server rejects, or one for a deleted account, is refunded at once through `orders.refund`, never left to the 3-day expiry), M1–M6, M8, M9 and the low items except L10 (accepted: a normal browser receives one head script, hidden app-only markup and a `provider` field; nothing visible changes). Open for the owner: M7 (terms and refund pages name Toss and cards only) and the set sentences below.
+
 ## Risks kept open
+- A Play set with one reading opened cannot be refunded in part through the API: the screen says so for that case and sends the buyer to 문의, but the set's refund rule at checkout, on /pricing and in the premium legal notice still promises the part refund (true on the web only). Wording for the owner.
+- `reading_reports` has no retention period yet (owner decides; one purge step in `runMaintenance`).
+- Deploy order: migrations 0024 and 0025 before the code (account deletion and public reviews read `play_purchases`).
 - Kakao login inside the WebView and the KakaoTalk `intent:` hop need a real device with KakaoTalk.
 - Credential Manager may need an Android OAuth client (package + SHA-1) in the same Google Cloud project (NOT VERIFIED): in the owner checklist.
 - The refund page and terms do not mention Google Play purchases yet: wording for the owner to approve before release.

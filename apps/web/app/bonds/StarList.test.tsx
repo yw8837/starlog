@@ -37,3 +37,22 @@ it("shows no 궁합 link where premium is not on sale", async () => {
   await new Promise((resolve) => setTimeout(resolve, 0));
   expect(screen.queryByRole("link")).toBeNull();
 });
+
+it("puts 신고 (the Starlog app only) under the day's 인연 카드 line, which the model writes (lib/bonds/todayLine.ts)", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string) =>
+      url === "/api/bonds/today-card"
+        ? Response.json({ ok: true, card: { cardId: "cups-02", orientation: "upright" }, line: "오늘은 먼저 안부를 건네 보세요." })
+        : new Response(null, { status: 404 }),
+    ),
+  );
+  render(<StarList sign="aries" stars={[STAR]} fresh={new Set()} complete={false} otherFilling={null} onChanged={() => {}} />);
+  expect(screen.queryByRole("button", { name: "신고" })).toBeNull();
+  screen.getByRole("button", { name: "오늘의 인연 카드" }).click();
+  expect(await screen.findByText("오늘은 먼저 안부를 건네 보세요.")).toBeTruthy();
+  const report = screen.getByRole("button", { name: "신고" });
+  expect(report.closest(".app-only")).toBeTruthy();
+  report.click();
+  expect(await screen.findByRole("radio", { name: "그 밖의 문제예요" })).toBeTruthy();
+});

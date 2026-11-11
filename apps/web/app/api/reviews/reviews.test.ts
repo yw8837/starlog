@@ -60,16 +60,21 @@ async function savedReading(
 const write = (b: Browser, body: unknown) => b.send(reviewPost, "/api/reviews", { body, origin: true });
 
 /** A paid reading as a purchase leaves it: order, payment (made in `mode`), credit lot, unlock, and the reading itself. */
-async function paidReading(db: TestD1, userId: string, mode: "test" | "live" | "mock"): Promise<string> {
+async function paidReading(db: TestD1, userId: string, mode: "test" | "live" | "mock" | "play", purchaseType: number | null = null): Promise<string> {
   const k = ++n;
   const orderId = `order${k}`;
   const lotId = `lot${k}`;
   const unlockId = `ul_${k}`;
+  const play =
+    mode === "play"
+      ? [db.prepare("INSERT INTO play_purchases (purchase_token, order_id, play_product_id, purchase_type, created_at) VALUES (?, ?, 'tarot', ?, 0)").bind(`token${k}`, orderId, purchaseType)]
+      : [];
   await db.batch([
     db
       .prepare("INSERT INTO orders (id, user_id, product_id, amount_krw, order_name, status, return_to, withdrawal_ack_at, created_at, updated_at) VALUES (?, ?, 'tarot', 3900, '타로', 'paid', '/', 0, 0, 0)")
       .bind(orderId, userId),
     db.prepare("INSERT INTO payments (payment_key, order_id, total_amount, status, mode, updated_at) VALUES (?, ?, 3900, 'DONE', ?, 0)").bind(`pay${k}`, orderId, mode),
+    ...play,
     db
       .prepare("INSERT INTO credit_lots (id, user_id, currency, source, order_id, units_total, units_left, status, created_at) VALUES (?, ?, 'paid', 'order', ?, 1, 0, 'active', 0)")
       .bind(lotId, userId, orderId),
@@ -246,6 +251,18 @@ describe("reviews come from real readers", () => {
     expect((await write(alice.b, { readingId: await paidReading(db, alice.id, "live"), rating: 5 })).status).toBe(200);
     expect((await write(alice.b, { readingId: await paidReading(db, alice.id, "mock"), rating: 5 })).status).toBe(200);
     expect(await db.prepare("SELECT COUNT(*) AS n FROM reviews").first()).toEqual({ n: 2 });
+  });
+
+  it("refuses a reading paid with a Google Play test, promo-code or rewarded purchase, but takes a real Play purchase", async () => {
+    const db = useTestDb();
+    const alice = await person(db, "alice");
+    for (const purchaseType of [0, 1, 2]) {
+      expect(await json(await write(alice.b, { readingId: await paidReading(db, alice.id, "play", purchaseType), rating: 5 })), String(purchaseType)).toMatchObject({
+        code: "NOT_AVAILABLE", message: "시험 결제로 연 풀이에는 후기를 남길 수 없어요.",
+      });
+    }
+    expect((await write(alice.b, { readingId: await paidReading(db, alice.id, "play"), rating: 5 })).status).toBe(200);
+    expect(await db.prepare("SELECT COUNT(*) AS n FROM reviews").first()).toEqual({ n: 1 });
   });
 
   it("refuses every reading of the card-company review account, bought or free", async () => {

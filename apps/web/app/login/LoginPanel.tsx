@@ -68,9 +68,9 @@ export function LoginPanel({ next, status, opening = false, navigate = (url) => 
   const checkbox = useRef<HTMLInputElement>(null);
   const note = loginMessage(failure ?? status);
   const copy = purpose(next, opening);
-  // Google refuses apps' browsers (api/auth/google/start): say so before the tap. Not in the Starlog app, which signs in natively.
+  // Google refuses apps' browsers (api/auth/google/start): say so before the tap.
   const [inApp, setInApp] = useState(false);
-  useEffect(() => setInApp(isInAppBrowser(navigator.userAgent) && !isApp()), []);
+  useEffect(() => setInApp(isInAppBrowser(navigator.userAgent)), []);
 
   const start = async (provider: "kakao" | "google") => {
     if (!adult) {

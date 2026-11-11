@@ -1,11 +1,9 @@
-import { useEffect, useState } from "react";
 import { isStarlogApp } from "@/lib/inApp";
 
 /**
  * The web side of the Starlog Android app's bridge (plan 2026-11-11 "Contracts"). The shell injects `window.StarlogNative`
  * (AndroidX addWebMessageListener, our origin and the main frame only): `postMessage(json)` out, `onmessage` in.
  * - A request is `{id, type, payload}`; the shell answers `{id, ok: true, data}` or `{id, ok: false, code, message?}`.
- * - A message without an `id` and with an `event` name is the shell's own news: `{event, data?}` (onNativeEvent).
  * One `onmessage` dispatcher serves every call, keyed by `id`. Client-safe; on the server nothing here is in the app.
  */
 
@@ -42,20 +40,12 @@ const NO_TIMEOUT = new Set(["purchase", "googleSignIn", "privacyOptions"]);
 type Pending = { resolve: (data: unknown) => void; reject: (error: NativeError) => void; timer: ReturnType<typeof setTimeout> | null };
 
 const pending = new Map<string, Pending>();
-const handlers = new Map<string, Set<(data: unknown) => void>>();
 let installedOn: StarlogNative | null = null;
 let seq = 0;
 
 /** The Starlog app's WebView (its user agent ends with ` StarlogApp/<version>`); false on the server. */
 export function isApp(): boolean {
   return typeof navigator !== "undefined" && isStarlogApp(navigator.userAgent);
-}
-
-/** False on the server and on the first render (no hydration mismatch), then true after mount inside the app. */
-export function useIsApp(): boolean {
-  const [app, setApp] = useState(false);
-  useEffect(() => setApp(isApp()), []);
-  return app;
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
@@ -77,9 +67,7 @@ function dispatch(event: { data: unknown }): void {
     if (call.timer) clearTimeout(call.timer);
     if (message.ok === true) call.resolve(message.data);
     else call.reject(new NativeError(typeof message.code === "string" ? message.code : "ERROR", typeof message.message === "string" ? message.message : undefined));
-    return;
   }
-  if (typeof message.event === "string") handlers.get(message.event)?.forEach((handler) => handler(message.data));
 }
 
 /** The shell's object with our dispatcher on it, or null outside the app. */
@@ -96,7 +84,7 @@ function native(): StarlogNative | null {
 /**
  * Asks the shell for `type` and resolves with its `data`. Rejects with a NativeError: the shell's code (CANCELED, PENDING,
  * ERROR), or UNAVAILABLE without a shell, when the message cannot be sent, or after `timeoutMs` (0: wait as long as it takes;
- * purchase and googleSignIn wait by default).
+ * purchase, googleSignIn and privacyOptions wait by default).
  */
 export function callNative<T = unknown>(type: string, payload?: unknown, timeoutMs: number = NO_TIMEOUT.has(type) ? 0 : NATIVE_TIMEOUT_MS): Promise<T> {
   const shell = native();
@@ -121,17 +109,6 @@ export function callNative<T = unknown>(type: string, payload?: unknown, timeout
   });
 }
 
-/** Runs `handler` with the data of each `{event}` message the shell sends; returns the unsubscribe. */
-export function onNativeEvent(event: string, handler: (data: unknown) => void): () => void {
-  native();
-  const set = handlers.get(event) ?? new Set();
-  set.add(handler);
-  handlers.set(event, set);
-  return () => {
-    set.delete(handler);
-  };
-}
-
 /** The code of a bridge failure (NativeError's), else ERROR. */
 export const nativeCode = (error: unknown): string => (error instanceof NativeError ? error.code : "ERROR");
 
@@ -139,7 +116,6 @@ export const nativeCode = (error: unknown): string => (error instanceof NativeEr
 export function resetBridgeForTests(): void {
   pending.forEach((call) => call.timer && clearTimeout(call.timer));
   pending.clear();
-  handlers.clear();
   installedOn = null;
   seq = 0;
 }

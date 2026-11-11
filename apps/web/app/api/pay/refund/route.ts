@@ -26,8 +26,6 @@ export async function POST(request: Request): Promise<Response> {
   if (ctx instanceof Response) return ctx;
   const session = requireSession(ctx);
   if (session instanceof Response) return session;
-  const toss = tossClient();
-  if (!toss) return errorResponse("PAY_UNAVAILABLE");
   const body = RefundBody.safeParse(await readJson(request, 1_000));
   if (!body.success) return errorResponse("BAD_REQUEST");
   const order = await orderForUser(ctx.db, body.data.orderId, session.user.id);
@@ -40,12 +38,15 @@ export async function POST(request: Request): Promise<Response> {
   if (paid?.created_at == null) return errorResponse("NOT_REFUNDABLE");
   if (ctx.now > refundDeadline(paid.created_at)) return errorResponse("REFUND_WINDOW_CLOSED");
   const expected = body.data.amount ?? order.amount_krw;
+  // Each payment needs only its own provider: a Play order Google Play, a Toss order Toss.
   let outcome: RefundOutcome;
   if (await paidWithPlay(ctx.db, order.id)) {
     const play = playClient();
     if (!play) return errorResponse("PAY_UNAVAILABLE");
     outcome = await refundUnusedPlayOrder(ctx.db, play, { order, now: ctx.now, expected });
   } else {
+    const toss = tossClient();
+    if (!toss) return errorResponse("PAY_UNAVAILABLE");
     outcome = await refundUnusedOrder(ctx.db, toss, { order, reason: "구매자 요청: 열지 않은 풀이 환불", now: ctx.now, expected });
   }
   if (!outcome.ok) return errorResponse(outcome.code, outcome.message ? { message: outcome.message } : {});

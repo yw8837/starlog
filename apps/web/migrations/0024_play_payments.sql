@@ -26,20 +26,26 @@ ALTER TABLE payments_new RENAME TO payments;
 
 -- One row per Google Play purchase token ("globally unique, so you can safely use this value as a primary key"), written in
 -- the batch that marks its order paid: a token seen again changes nothing. order_id is the order the app sent to Google as
--- obfuscatedProfileId. consumed_at: Google was told the purchase was delivered (Purchases.products:consume); a purchase
--- never consumed is refunded by Google after three days. voided_at: Google's voided-purchases list said it was refunded or
--- revoked, and the cron applied it. Times are epoch milliseconds.
+-- obfuscatedProfileId. purchase_type: Google's purchaseType, NULL for a real purchase, else 0 a license tester's test,
+-- 1 a promo code, 2 rewarded (none is a real sale). consumed_at: Google was told the purchase was delivered
+-- (Purchases.products:consume); a purchase never consumed is refunded by Google after three days. consume_tried_at: the
+-- cron's last try at it (a purchase that cannot be consumed moves behind the others). refund_sent_at: our last refund
+-- request for it (orders.refund); a refund still unknown an hour later is reported stuck. voided_at: Google refunded or
+-- revoked it (its voided-purchases list, or our own refund), and it was applied. Times are epoch milliseconds.
 CREATE TABLE play_purchases (
   purchase_token TEXT PRIMARY KEY,
   order_id TEXT NOT NULL UNIQUE REFERENCES orders(id),
   play_product_id TEXT NOT NULL,
   google_order_id TEXT,
-  test INTEGER NOT NULL DEFAULT 0,
+  purchase_type INTEGER,
   purchased_at INTEGER,
   consumed_at INTEGER,
+  consume_tried_at INTEGER,
+  refund_sent_at INTEGER,
   voided_at INTEGER,
   created_at INTEGER NOT NULL
 );
 
--- The cron's scan for purchases still to consume (lib/pay/playOrders.ts consumePendingPlay), oldest first.
-CREATE INDEX play_purchases_unconsumed ON play_purchases(created_at) WHERE consumed_at IS NULL AND voided_at IS NULL;
+-- The cron's scan for purchases still to consume (lib/pay/playOrders.ts consumePendingPlay): never tried first, then the
+-- least recently tried.
+CREATE INDEX play_purchases_unconsumed ON play_purchases(consume_tried_at, created_at) WHERE consumed_at IS NULL AND voided_at IS NULL;

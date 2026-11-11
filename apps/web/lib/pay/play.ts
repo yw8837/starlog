@@ -54,8 +54,10 @@ export interface PlayPurchase {
   /** Google's order id (GPA.…) */
   orderId: string | null;
   purchaseTimeMillis: number | null;
-  /** a license tester's purchase (purchaseType 0) */
-  test: boolean;
+  /** null for a real purchase; 0 a license tester's test, 1 a promo code, 2 rewarded ("only set if this purchase was not made using the standard in-app billing flow") */
+  purchaseType: number | null;
+  /** how many were bought ("If not present, the quantity is 1."); our products are single */
+  quantity: number;
   /** obfuscatedExternalAccountId: playAccountTag of the buyer */
   obfuscatedAccountId: string | null;
   /** obfuscatedExternalProfileId: our order id */
@@ -144,8 +146,8 @@ function parsePurchase(value: unknown): PlayPurchase {
     orderId: text(v.orderId),
     // Google sends it as a string (int64).
     purchaseTimeMillis: typeof v.purchaseTimeMillis === "string" && Number.isFinite(millis) ? millis : null,
-    // Only set for a purchase made outside the standard flow: 0 is a license tester's.
-    test: v.purchaseType === 0,
+    purchaseType: typeof v.purchaseType === "number" ? v.purchaseType : null,
+    quantity: typeof v.quantity === "number" ? v.quantity : 1,
     obfuscatedAccountId: text(v.obfuscatedExternalAccountId),
     obfuscatedProfileId: text(v.obfuscatedExternalProfileId),
   };
@@ -273,7 +275,10 @@ export interface MockPlayPurchase {
   accountTag: string | null;
   /** obfuscatedProfileId: the order id */
   profileId: string | null;
-  test?: boolean;
+  /** purchaseType: null (a real purchase) by default */
+  purchaseType?: number | null;
+  /** 1 by default */
+  quantity?: number;
 }
 
 export interface MockPlay extends PlayClient {
@@ -328,7 +333,8 @@ export function createMockPlay(): MockPlay {
           consumptionState: 0,
           orderId: `GPA.0000-0000-0000-${String(++orders).padStart(5, "0")}`,
           purchaseTimeMillis: Date.now(),
-          test: input.test === true,
+          purchaseType: input.purchaseType ?? null,
+          quantity: input.quantity ?? 1,
           obfuscatedAccountId: input.accountTag,
           obfuscatedProfileId: input.profileId,
         },

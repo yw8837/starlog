@@ -23,7 +23,8 @@ import { signingSecret } from "@/lib/security/sign";
  *   its other reading was opened its own part; or `refundable: false` instead, with `noRefund` saying why unless it was given
  *   back after its client left (SEC-02, the meaning without it): `refunding` (its order is being refunded), `refunded` (what was
  *   cancelled already covers it) or `other`; `otherRefunded: true` on a set's reading whose other reading was refunded, not
- *   opened; `provider: "play"` on one paid with Google Play in the Starlog app) and `opening`, the readings being opened right now
+ *   opened; `provider: "play"` on one paid with Google Play in the Starlog app, and `noRefund: "play-part"` on such a set's
+ *   reading once the other is opened: refunded on request, never by 환불받기) and `opening`, the readings being opened right now
  *   (a paid one is never also in `unused`); `review: true` only on the review account, `google: true`
  *   only on a Google account; `openingUsed: true` once the account took 오픈 기념 무료 (owner 2026-10-27), while it runs.
  * Without a session cookie it never touches D1, so the site works with no database. Rate-limited per
@@ -59,6 +60,11 @@ export async function GET(request: Request): Promise<Response> {
         ).results.map((row) => row.order_id)
       : [],
   );
+  // A set paid with Google Play whose other reading is no longer refundable (opened, or being opened): Google refunds a Play
+  // order whole only, so 환불받기 would always be refused (lib/pay/playOrders.ts refundUnusedPlayOrder); the operator
+  // refunds that part on request (`play-part`).
+  const playPart = (item: (typeof held.unused)[number]) =>
+    onPlay.has(item.orderId) && Boolean(item.set) && item.refundable > 0 && !held.unused.some((other) => other.orderId === item.orderId && other.productId !== item.productId && other.refundable > 0);
   return json({
     payments: salesOpen(mode, owner || review),
     login: loginOpen(mode, owner || review),
@@ -69,14 +75,19 @@ export async function GET(request: Request): Promise<Response> {
         gift?.status === "unused"
           ? { status: "unused", until: gift.expiresAt === null ? null : new Date(gift.expiresAt).toISOString() }
           : gift,
-      unused: held.unused.map(({ orderId, productId, paidAt, refundable, noRefund, set, otherRefunded }) => ({
-        ...(refundable > 0
-          ? { orderId, productId, refundUntil: new Date(refundDeadline(paidAt)).toISOString(), refundAmount: refundable }
-          : { orderId, productId, refundable: false, ...(noRefund && noRefund !== "left" ? { noRefund } : {}) }),
-        ...(set ? { set } : {}),
-        ...(otherRefunded ? { otherRefunded } : {}),
-        ...(onPlay.has(orderId) ? { provider: "play" } : {}),
-      })),
+      unused: held.unused.map((item) => {
+        const { orderId, productId, paidAt, refundable, noRefund, set, otherRefunded } = item;
+        return {
+          ...(playPart(item)
+            ? { orderId, productId, refundable: false, noRefund: "play-part" }
+            : refundable > 0
+              ? { orderId, productId, refundUntil: new Date(refundDeadline(paidAt)).toISOString(), refundAmount: refundable }
+              : { orderId, productId, refundable: false, ...(noRefund && noRefund !== "left" ? { noRefund } : {}) }),
+          ...(set ? { set } : {}),
+          ...(otherRefunded ? { otherRefunded } : {}),
+          ...(onPlay.has(orderId) ? { provider: "play" } : {}),
+        };
+      }),
       opening: held.opening,
       ...(review ? { review: true } : {}),
       ...(isGoogleAccount(ctx.session.user) ? { google: true } : {}),

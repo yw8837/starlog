@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
@@ -9,6 +10,7 @@ import { appGoogleSignIn } from "@/lib/app/googleSignIn";
 import { OPENING_LAST_DAY, openingFreeOn, won } from "@/lib/config";
 import { DEEP_TAROT_HREF } from "@/lib/freshStart";
 import { REFUND_DAYS, productById } from "@/lib/pay/catalog";
+import { PLAY_SET_PART_LINE } from "@/lib/premium/offer";
 import { premiumPath } from "@/lib/premium/products";
 import { postJson, type ApiError } from "@/lib/reading/api";
 import { describeApiError } from "@/lib/reading/errors";
@@ -43,6 +45,7 @@ const NO_REFUND = {
   refunding: "환불을 처리하고 있어서 지금은 환불할 수 없어요.",
   refunded: "이미 환불한 금액이 있어서 이 풀이는 환불할 수 없어요. 문제가 있으면 문의해 주세요.",
   other: "이 결제는 환불할 수 없어요. 문제가 있으면 문의해 주세요.",
+  "play-part": PLAY_SET_PART_LINE,
 } as const;
 const noRefundLine = (item: { noRefund?: keyof typeof NO_REFUND; set?: true }) =>
   !item.noRefund ? LEFT_WHILE_WRITTEN : item.noRefund === "refunding" && item.set ? `세트의 다른 풀이 ${NO_REFUND.refunding}` : NO_REFUND[item.noRefund];
@@ -247,7 +250,17 @@ export function AccountPanel({ account, navigate = (url) => window.location.assi
                       환불받기
                     </button>
                   ) : null}
-                  {left ? <p className={s.refundLine}>{noRefundLine(item)}</p> : null}
+                  {left ? (
+                    <p className={s.refundLine}>
+                      {noRefundLine(item)}
+                      {item.noRefund === "play-part" ? (
+                        <>
+                          {" "}
+                          <Link href="/contact">문의하기</Link>
+                        </>
+                      ) : null}
+                    </p>
+                  ) : null}
                   {item.set && !left ? <p className={s.refundLine}>{whole ? SET_TOGETHER : setPart(item)}</p> : null}
                   {item.refundUntil ? <p className={s.refundLine}>{open ? `${lastDay(item.refundUntil)}까지 환불할 수 있어요` : WINDOW_CLOSED}</p> : null}
                 </li>

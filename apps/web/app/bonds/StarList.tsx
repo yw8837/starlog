@@ -8,6 +8,7 @@ import { usePremiumStatus } from "@/lib/premium/status";
 import { getCard, getConstellation, type Orientation, type SignId } from "@starlog/core";
 import { BondScore } from "@/components/bonds/BondScore";
 import { ConfirmDialog } from "@/components/bonds/ConfirmDialog";
+import { ReportReading } from "@/components/report/ReportReading";
 import { TarotCard } from "@/components/tarot/TarotCard";
 import { bondsApi, bondsMessage } from "@/lib/bonds/client";
 import { ordinalStar } from "@/lib/bonds/text";
@@ -122,6 +123,8 @@ export function StarList({ sign, stars, fresh, complete, otherFilling, onChanged
                     <p className={b.eyebrow}>오늘의 인연 카드 · {cardName(t.card.cardId, t.card.orientation)}</p>
                     <p className={s.todayLine}>{t.line}</p>
                     <p className={b.helper}>하루에 한 장, 내일 다시 누르면 새 카드가 나와요. 점수와 랭킹에는 영향이 없어요.</p>
+                    {/* The Starlog app only: 신고 on the day's line, which the model writes (lib/bonds/todayLine.ts). */}
+                    <ReportReading kind="bond" readingId={star.id} />
                   </div>
                 </div>
               ) : typeof t === "string" && t !== "loading" ? (

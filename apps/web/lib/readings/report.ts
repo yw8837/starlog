@@ -3,8 +3,11 @@
  * 신고 control (components/report/ReportReading.tsx). Client-safe.
  */
 
-/** The reading surfaces: the full readings, the premium ones, follow-up answers, the 맛보기, 오늘의 한 장 and a shared link. */
-export const REPORT_KINDS = ["tarot", "saju", "tarot-deep", "match", "newyear-2027", "followup", "teaser", "daily", "shared"] as const;
+/**
+ * The reading surfaces: the full readings, the premium ones, follow-up answers, the 맛보기 (premium previews too), 오늘의 한 장,
+ * a shared link, and 별자리 인연's 오늘의 인연 카드 line (`bond`, written by the model: lib/bonds/todayLine.ts).
+ */
+export const REPORT_KINDS = ["tarot", "saju", "tarot-deep", "match", "newyear-2027", "followup", "teaser", "daily", "shared", "bond"] as const;
 export type ReportKind = (typeof REPORT_KINDS)[number];
 
 /** Why, in fixed words: never free text as the reason (the note is optional and apart). */

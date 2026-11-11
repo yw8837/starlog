@@ -22,8 +22,6 @@ interface OrderItem {
   refunded?: number;
   /** used up before its reading was finished (left while written a fourth time) */
   unfinished?: boolean;
-  /** "play": paid with Google Play in the Starlog app (no Toss receipt) */
-  provider?: "toss" | "play";
 }
 
 const nameOf = (id: string) => productById(id)?.name ?? "풀이";
@@ -67,7 +65,7 @@ export function OrderHistory() {
             <span>{productById(item.productId)?.name ?? "풀이"}</span>
             <span>{won(item.amount)}</span>
             <span className={s.muted}>{label(item)}</span>
-            {item.receiptUrl && item.provider !== "play" ? (
+            {item.receiptUrl ? (
               <a className={s.link} href={item.receiptUrl} target="_blank" rel="noopener noreferrer">
                 영수증 보기
               </a>

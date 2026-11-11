@@ -44,14 +44,16 @@ interface OrderInfo {
   play?: { productId: string; accountTag: string };
 }
 
-/** /api/pay/play/verify's answer for a paid purchase (as /api/pay/confirm's, with the order). */
-type PlayPaid = { status: "paid"; orderId: string; returnTo: string; signedIn: boolean };
+/** /api/pay/play/verify's answer for a paid purchase (as /api/pay/confirm's, with the order and its web product id). */
+type PlayPaid = { status: "paid"; orderId: string; productId: string; returnTo: string; signedIn: boolean };
 
 /** In the app, never cards or 토스 (W2.2). Before Google charged: */
 const PLAY_FAILED = "결제하지 못했어요. 잠시 뒤에 다시 시도해 주세요.";
 const PLAY_PENDING = "결제가 아직 끝나지 않았어요. 결제가 끝나면 자동으로 열려요.";
 /** After Google charged (a purchase token came back) while the server has not granted it yet: never "결제하지 못했어요". */
 const PLAY_CHARGED = "결제는 됐어요. 풀이를 여는 중이에요. 잠시 뒤 자동으로 열려요.";
+/** Google Play holds an earlier purchase of this product that was never finished, and it was not this one to open now. */
+const PLAY_OWNED = "이전 결제를 정리하고 있어요. 잠시 뒤 다시 시도해 주세요.";
 /** The server's definite refusal of a charged purchase, when it sends no message of its own. */
 const PLAY_UNVERIFIED = "결제를 확인하지 못했어요. 문의해 주세요.";
 /** Only these answers from /api/pay/play/verify are final; anything else (a lost connection, 5xx, PAY_PENDING…) is asked again. */
@@ -135,7 +137,7 @@ export function CheckoutView({ productId, returnTo, navigate = (url) => window.l
       alive.current = false;
     };
   }, []);
-  const here =`/pay/checkout?${new URLSearchParams({ product: productId, returnTo })}`;
+  const here = `/pay/checkout?${new URLSearchParams({ product: productId, returnTo })}`;
 
   useEffect(() => {
     let cancelled = false;
@@ -229,6 +231,7 @@ export function CheckoutView({ productId, returnTo, navigate = (url) => window.l
       const code = nativeCode(error);
       // The buyer closed Google's sheet: stay here quietly.
       if (code === "CANCELED") return setBusy(false);
+      if (code === "OWNED") return settleOwned(order);
       return fail(code === "PENDING" ? PLAY_PENDING : PLAY_FAILED);
     }
     // Google charged: from here a lost or busy answer is never a failure. Asked again after each wait; the pay button stays
@@ -248,13 +251,40 @@ export function CheckoutView({ productId, returnTo, navigate = (url) => window.l
       return setError({ title: PLAY_CHARGED, action: null });
     }
     setError(null);
-    // Where /pay/success lands after a confirmed payment (PaySuccess finish): the reading with ?unlock=paid, or the login first.
-    const target = withQuery(res.data.returnTo, { unlock: "paid" });
-    if (res.data.signedIn === false) return navigate(loginHref(target));
-    const sent = trackMetaPurchase(res.data.orderId, order.amount);
+    await land(res.data, order.amount);
+  };
+
+  /** Where /pay/success lands after a confirmed payment (PaySuccess finish): the reading with ?unlock=paid, or the login first. */
+  const land = async (paid: PlayPaid, amount: number) => {
+    const target = withQuery(paid.returnTo, { unlock: "paid" });
+    if (paid.signedIn === false) return navigate(loginHref(target));
+    const sent = trackMetaPurchase(paid.orderId, amount);
     void refreshAccount();
     await sent;
     navigate(target);
+  };
+
+  /**
+   * Google Play says this product is owned already: an earlier purchase of it was paid and never finished (consumed). The
+   * purchases Google holds go to /api/pay/play/verify now; one that comes back paid for this product was this buyer's payment
+   * and lands as a normal purchase does. Otherwise the server sorts the earlier one out (a purchase it cannot match is
+   * refunded), so the buyer tries again a little later. Never "결제하지 못했어요": nothing new was charged.
+   */
+  const settleOwned = async (order: OrderInfo) => {
+    let paid: PlayPaid | null = null;
+    try {
+      const { purchases } = await callNative<{ purchases?: Array<{ purchaseToken: string; productId: string }> }>("unfinishedPurchases");
+      for (const { purchaseToken, productId } of purchases ?? []) {
+        const res = await postJson<PlayPaid>("/api/pay/play/verify", { purchaseToken, productId });
+        if (!paid && res.ok && res.data.status === "paid" && res.data.productId === info?.productId) paid = res.data;
+      }
+    } catch {
+      // the shell could not list them: said below like an earlier payment not settled yet
+    }
+    if (!alive.current) return;
+    if (paid) return land(paid, order.amount);
+    setBusy(false);
+    setError({ title: PLAY_OWNED, action: "retry" });
   };
 
   return (

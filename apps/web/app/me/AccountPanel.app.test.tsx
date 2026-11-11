@@ -46,7 +46,7 @@ beforeEach(() => {
         return Response.json({
           orders: [
             { orderId: "o-toss", productId: "tarot", amount: 2900, status: "paid", createdAt: Date.parse("2026-11-10T03:00:00Z"), receiptUrl: "https://dashboard.tosspayments.com/receipt/x", method: "카드", refundable: true, opened: false, provider: "toss" },
-            { orderId: "o-play", productId: "saju", amount: 2900, status: "paid", createdAt: Date.parse("2026-11-10T04:00:00Z"), receiptUrl: "https://example.com/should-not-show", method: null, refundable: true, opened: false, provider: "play" },
+            { orderId: "o-play", productId: "saju", amount: 2900, status: "paid", createdAt: Date.parse("2026-11-10T04:00:00Z"), receiptUrl: null, method: "Google Play", refundable: true, opened: false, provider: "play" },
           ],
         });
       }
@@ -89,6 +89,20 @@ describe("AccountPanel: a purchase paid with Google Play", () => {
     expect(requests.find((r) => r.url === "/api/pay/refund")!.body).toEqual({ orderId: "o-play", amount: 2900 });
   });
 
+  it("a Play set with one reading opened: no 환불받기, the 문의 line with the site's contact page (review L21)", () => {
+    const parsed = parseAccount({
+      payments: true, login: true, owner: false,
+      user: { nickname: "별", gift: null, opening: [], unused: [{ orderId: "o-set", productId: "newyear-2027", refundable: false, noRefund: "play-part", set: true, provider: "play" }] },
+    });
+    expect(parsed?.user?.unused).toEqual([{ orderId: "o-set", productId: "newyear-2027", refundable: false, noRefund: "play-part", set: true, provider: "play" }]);
+    render(<AccountPanel account={account(parsed!.user!.unused)} />);
+    const item = within(document.getElementById("purchases")!).getByRole("listitem");
+    expect(within(item).queryByRole("button", { name: "환불받기" })).toBeNull();
+    expect(item.textContent).toContain("앱에서 결제한 세트는 하나를 열면 남은 풀이를 문의로 환불해 드려요.");
+    expect(item.textContent).not.toMatch(/몫만 환불돼요|둘 다 열지 않았으면/);
+    expect(within(item).getByRole("link", { name: "문의하기" }).getAttribute("href")).toBe("/contact");
+  });
+
   it("keeps the web purchase's line as it was, and shows the server's own refusal as it is", async () => {
     answers["/api/pay/refund"] = () => Response.json({ ok: true, status: "refunded", amount: 2900 });
     const { unmount } = render(<AccountPanel account={account(BOTH)} />);
@@ -102,7 +116,7 @@ describe("AccountPanel: a purchase paid with Google Play", () => {
     expect(await screen.findByText(message)).toBeTruthy();
   });
 
-  it("shows no Toss receipt for a Google Play order in 결제 내역; a web order keeps 영수증 보기", async () => {
+  it("shows no receipt for a Google Play order in 결제 내역 (the server keeps none); a web order keeps 영수증 보기", async () => {
     render(<AccountPanel account={account([])} />);
     const orders = await screen.findByRole("region", { name: "결제 내역" });
     const rows = within(orders).getAllByRole("listitem");

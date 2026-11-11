@@ -210,8 +210,23 @@ describe("a Google Play order on the web's payment routes", () => {
     expect(await (await b.send(ordersGet, `/api/pay/orders?id=${orderId}`)).json()).toMatchObject({ status: "refunding" });
     expect((await b.send(ordersGet, "/api/pay/orders")).status).toBe(200);
     for (const spy of asked) expect(spy).not.toHaveBeenCalled();
+    // Skipped by how it was paid, not turned away by the Toss reconcilers (no pay.other_keys warning).
+    expect(JSON.stringify(vi.mocked(console.warn).mock.calls)).not.toContain("pay.other_keys");
   });
 
+  it("refunds a Play purchase on a deploy without Toss keys, and a Toss one without Play", async () => {
+    const db = useTestDb();
+    const b = await loggedIn();
+    const tossOrder = await buy(b);
+    const { orderId, token } = await appPurchase(b);
+    await verifyAs(b, { purchaseToken: token, productId: "tarot" });
+    vi.stubEnv("STARLOG_PAY", "");
+    expect(await (await b.send(refund, "/api/pay/refund", { body: { orderId }, origin: true })).json()).toEqual({ ok: true, status: "refunded", amount: 2900 });
+    vi.stubEnv("STARLOG_PAY", "mock");
+    vi.stubEnv("STARLOG_PLAY", "");
+    expect(await (await b.send(refund, "/api/pay/refund", { body: { orderId: tossOrder }, origin: true })).json()).toEqual({ ok: true, status: "refunded", amount: 2900 });
+    expect((await db.prepare("SELECT status FROM orders ORDER BY created_at, id").all()).results).toEqual([{ status: "refunded" }, { status: "refunded" }]);
+  });
 });
 
 describe("deleting an account that holds an unopened Play purchase", () => {
@@ -265,9 +280,22 @@ describe("deleting an account that holds an unopened Play purchase", () => {
     // Asked again before it settled: still in flight, never deleted with the refund unknown.
     expect(await deleteAccount(db, mockToss, { userId, now: T0 + 2 * MIN })).toEqual({ ok: false, code: "PENDING" });
     expect(await deleted(db)).toBe(false);
+    // Never sent to the Toss reconcilers meanwhile (no pay.other_keys warning).
+    expect(JSON.stringify(vi.mocked(console.warn).mock.calls)).not.toContain("pay.other_keys");
     // Google never refunded it (still purchased): the cron puts the reading back, and the next try refunds it.
     expect(await reconcilePlayRefunds(db, mockPlay, T0 + 12 * MIN, 5)).toBe(1);
     expect(await deleteAccount(db, mockToss, { userId, now: T0 + 13 * MIN })).toEqual({ ok: true, refunded: 1 });
     expect(await orderAndLot(db, orderId)).toEqual({ o: "refunded", l: "refunded" });
+  });
+
+  it("is not held up for good by a refund stuck an hour: the reading leaves use, the order goes to the operator, the account is deleted", async () => {
+    const { db, orderId, userId } = await playBuyer();
+    vi.spyOn(mockPlay, "refund").mockRejectedValueOnce(new PlayError(503, "UNAVAILABLE"));
+    expect(await deleteAccount(db, mockToss, { userId, now: T0 + MIN })).toEqual({ ok: false, code: "PENDING" });
+    expect(await deleteAccount(db, mockToss, { userId, now: T0 + 30 * MIN })).toEqual({ ok: false, code: "PENDING" });
+    expect(await deleteAccount(db, mockToss, { userId, now: T0 + 61 * MIN })).toEqual({ ok: true, refunded: 0 });
+    expect(await orderAndLot(db, orderId)).toEqual({ o: "paid", l: "revoked" });
+    expect(await deleted(db)).toBe(true);
+    expect(vi.mocked(console.warn).mock.calls.map(([line]: unknown[]) => String(line))).toContain(JSON.stringify({ evt: "account.delete_play_set_aside", orderId }));
   });
 });

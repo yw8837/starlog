@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import { act, cleanup, renderHook } from "@testing-library/react";
+import { cleanup } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { NativeError, callNative, isApp, onNativeEvent, resetBridgeForTests, useIsApp } from "./bridge";
+import { NativeError, callNative, isApp, resetBridgeForTests } from "./bridge";
 
 const APP_UA = "Mozilla/5.0 (Linux; Android 15; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/130.0 Mobile Safari/537.36 StarlogApp/1.0.0";
 const CHROME_UA = "Mozilla/5.0 (Linux; Android 15; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36";
@@ -34,30 +34,12 @@ afterEach(() => {
   resetBridgeForTests();
 });
 
-describe("isApp / useIsApp", () => {
+describe("isApp", () => {
   it("is true only in the Starlog app's WebView", () => {
     userAgent(APP_UA);
     expect(isApp()).toBe(true);
     userAgent(CHROME_UA);
     expect(isApp()).toBe(false);
-  });
-
-  it("starts false (as the server rendered) and turns true after mount in the app", () => {
-    userAgent(APP_UA);
-    const seen: boolean[] = [];
-    renderHook(() => {
-      const app = useIsApp();
-      seen.push(app);
-      return app;
-    });
-    expect(seen[0]).toBe(false);
-    expect(seen.at(-1)).toBe(true);
-  });
-
-  it("stays false in a browser", () => {
-    userAgent(CHROME_UA);
-    const { result } = renderHook(() => useIsApp());
-    expect(result.current).toBe(false);
   });
 });
 
@@ -143,25 +125,5 @@ describe("callNative", () => {
     native.reply({ id: "someone-else", ok: true, data: 1 });
     native.reply({ id: sent[0]!.id, ok: true, data: 2 });
     await expect(call).resolves.toBe(2);
-  });
-});
-
-describe("onNativeEvent", () => {
-  it("hands {event, data} messages to the handlers of that event until unsubscribed", async () => {
-    const { native } = fakeNative();
-    const seen: unknown[] = [];
-    const stop = onNativeEvent("resume", (data) => seen.push(data));
-    const other = vi.fn();
-    onNativeEvent("other", other);
-    act(() => native.reply({ event: "resume", data: { at: 1 } }));
-    stop();
-    act(() => native.reply({ event: "resume", data: { at: 2 } }));
-    expect(seen).toEqual([{ at: 1 }]);
-    expect(other).not.toHaveBeenCalled();
-  });
-
-  it("does nothing in a browser", () => {
-    const stop = onNativeEvent("resume", () => {});
-    expect(() => stop()).not.toThrow();
   });
 });

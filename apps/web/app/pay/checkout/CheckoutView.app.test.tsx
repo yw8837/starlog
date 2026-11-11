@@ -189,6 +189,81 @@ describe("CheckoutView in the Starlog app (provider play)", () => {
     expect((await screen.findByRole("alert")).textContent).toBe("결제를 확인하지 못했어요. 문의해 주세요.");
   });
 
+  describe("Google Play says the product is owned already (an earlier purchase of it was never finished)", () => {
+    /** The shell: `purchase` answers OWNED, `unfinishedPurchases` lists `unfinished` (or fails). */
+    function ownedShell(unfinished: Array<{ purchaseToken: string; productId: string }> | "ERROR") {
+      const sent: string[] = [];
+      const native = {
+        onmessage: null as ((event: { data: unknown }) => void) | null,
+        postMessage: (raw: string) => {
+          const { id, type } = JSON.parse(raw) as { id: string; type: string };
+          sent.push(type);
+          const answer =
+            type === "purchase" ? { ok: false, code: "OWNED" } : unfinished === "ERROR" ? { ok: false, code: "ERROR" } : { ok: true, data: { purchases: unfinished } };
+          queueMicrotask(() => native.onmessage?.({ data: JSON.stringify({ id, ...answer }) }));
+        },
+      };
+      Object.defineProperty(window, "StarlogNative", { configurable: true, value: native });
+      return sent;
+    }
+    const OWNED_LINE = "이전 결제를 정리하고 있어요. 잠시 뒤 다시 시도해 주세요.";
+
+    it("finishes the earlier purchase and lands as after a normal one when it was this product", async () => {
+      const sent = ownedShell([
+        { purchaseToken: "old-saju", productId: "saju" },
+        { purchaseToken: "old-tarot", productId: "tarot" },
+      ]);
+      const verified: Record<string, unknown> = {
+        "old-saju": { status: "paid", orderId: "o-saju", productId: "saju", returnTo: "/saju/chart", signedIn: true },
+        "old-tarot": { status: "paid", orderId: "o-tarot", productId: "tarot", returnTo: "/tarot/result", signedIn: true },
+      };
+      calls = [];
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (url: string, init?: RequestInit) => {
+          const body = init?.body ? (JSON.parse(String(init.body)) as { purchaseToken?: string }) : undefined;
+          calls.push({ url, body });
+          if (url.startsWith("/api/pay/checkout")) return Response.json(CHECKOUT);
+          if (url === "/api/pay/orders") return Response.json({ orderId: ORDER, orderName: "x", amount: 2900, successUrl: "s", failUrl: "f", play: { productId: "tarot", accountTag: TAG } });
+          if (url === "/api/pay/play/verify") return Response.json(verified[body!.purchaseToken!]);
+          return Response.json({ payments: true, login: true, owner: false, user: null });
+        }),
+      );
+      const navigate = vi.fn();
+      await openAndPay(navigate);
+      await waitFor(() => expect(navigate).toHaveBeenCalledWith("/tarot/result?unlock=paid"));
+      expect(sent).toEqual(["purchase", "unfinishedPurchases"]);
+      expect(calls.filter((c) => c.url === "/api/pay/play/verify").map((c) => c.body)).toEqual([
+        { purchaseToken: "old-saju", productId: "saju" },
+        { purchaseToken: "old-tarot", productId: "tarot" },
+      ]);
+      expect(document.body.textContent).not.toContain("결제하지 못했어요");
+    });
+
+    it("says the earlier payment is being sorted out when none of them was this product, or they could not be read", async () => {
+      ownedShell([{ purchaseToken: "old-saju", productId: "saju" }]);
+      stubServer({ verify: () => Response.json({ status: "paid", orderId: "o-saju", productId: "saju", returnTo: "/saju/chart", signedIn: true }) });
+      const navigate = vi.fn();
+      const pay = await openAndPay(navigate);
+      expect((await screen.findByRole("alert")).textContent).toBe(OWNED_LINE);
+      await waitFor(() => expect(pay.disabled).toBe(false));
+      expect(navigate).not.toHaveBeenCalled();
+      cleanup();
+      resetBridgeForTests();
+      ownedShell([{ purchaseToken: "unknown", productId: "tarot" }]);
+      stubServer({ verify: () => Response.json({ code: "BAD_REQUEST" }, { status: 400 }) });
+      await openAndPay();
+      expect((await screen.findByRole("alert")).textContent).toBe(OWNED_LINE);
+      cleanup();
+      resetBridgeForTests();
+      ownedShell("ERROR");
+      stubServer();
+      await openAndPay();
+      expect((await screen.findByRole("alert")).textContent).toBe(OWNED_LINE);
+      expect(document.body.textContent).not.toContain("결제하지 못했어요");
+    });
+  });
+
   it("says a plain line when the app's purchase fails before any charge (never cards or 토스)", async () => {
     fakeShell({ ok: false, code: "ERROR" });
     await openAndPay();

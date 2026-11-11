@@ -87,7 +87,8 @@ export type WriteResult =
 
 /**
  * Writes or rewrites the review of one of my saved readings. Reviews must come from real readers: a
- * reading opened with the owner pass, one bought with a Toss test payment (nobody was charged), and
+ * reading opened with the owner pass, one bought with a Toss test payment (nobody was charged) or with a Google Play purchase
+ * that was not a real sale (a license tester's test, a promo code, rewarded: play_purchases.purchase_type set), and
  * any reading of the card-company review account take none (the business reviewing itself would be
  * deceptive, 표시광고법). A reading whose hidden review its writer deleted takes none either ("removed").
  */
@@ -102,7 +103,8 @@ export async function writeReview(
     .prepare(
       `SELECT rd.*, u.kakao_key,
         EXISTS (SELECT 1 FROM unlocks k JOIN credit_lots l ON l.id = json_extract(k.allocations, '$[0][0]') JOIN payments p ON p.order_id = l.order_id
-          WHERE k.id = rd.unlock_id AND p.mode = 'test') AS test_paid
+          WHERE k.id = rd.unlock_id AND (p.mode = 'test'
+            OR EXISTS (SELECT 1 FROM play_purchases pp WHERE pp.order_id = l.order_id AND pp.purchase_type IS NOT NULL))) AS test_paid
        FROM readings rd JOIN users u ON u.id = rd.user_id WHERE rd.id = ? AND rd.user_id = ?`,
     )
     .bind(input.readingId, input.userId)

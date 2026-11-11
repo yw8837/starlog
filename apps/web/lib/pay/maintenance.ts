@@ -31,12 +31,18 @@ export const TOSS_DEADLINE_MS = 75_000;
 /** Each Toss call from the cron waits at most this long (requests wait 30 s, toss.ts). */
 export const CRON_TOSS_TIMEOUT_MS = 8_000;
 /**
- * Google Play purchases one run consumes at most, and Play refunds whose answer was lost it asks Google about at most. With
- * the access token and the voided list (one page in practice, three at most: play.ts) the Play steps make at most
- * 1 + 10 + 3 + 5 = 19 requests, which with TOSS_CALLS_PER_RUN (30) stays under the Worker's 50.
+ * Google Play purchases one run tries to consume at most (two requests each: the look-up, then the consume), and Play refunds
+ * whose answer was lost it asks Google about at most (one each). With the access token (two fetches at most: it may be
+ * renewed once within a run) and the voided list (one page in practice, three at most: play.ts) the Play steps make at most
+ * 2 + 4 × 2 + 3 + 3 = 16 requests; with TOSS_CALLS_PER_RUN (30) that is 46, under the Worker's 50 with 4 to spare.
  */
-export const PLAY_CONSUMES_PER_RUN = 10;
-export const PLAY_REFUND_CHECKS_PER_RUN = 5;
+export const PLAY_CONSUMES_PER_RUN = 4;
+export const PLAY_REFUND_CHECKS_PER_RUN = 3;
+/**
+ * No Play step or item starts after this long into the Play steps (each Play call from the cron waits at most
+ * CRON_TOSS_TIMEOUT_MS: the route passes it); whatever is left goes in the next run, and the Toss work then has its own.
+ */
+export const PLAY_DEADLINE_MS = 30_000;
 const ORDERS_PER_RUN = 50;
 const ERASES_PER_RUN = 50;
 const PURGES_PER_RUN = 20;
@@ -219,14 +225,18 @@ export async function runMaintenance(
 
   const play = options.play ?? null;
   if (play) {
+    const playDeadline = clock() + PLAY_DEADLINE_MS;
+    const playRoom = () => clock() < playDeadline;
     await attempt("cron.play_consume_failed", async () => {
-      report.playConsumed = await consumePendingPlay(db, play, now, PLAY_CONSUMES_PER_RUN);
+      report.playConsumed = await consumePendingPlay(db, play, now, PLAY_CONSUMES_PER_RUN, playRoom);
     });
-    await attempt("cron.play_voided_failed", async () => {
-      report.playVoided = await applyVoidedPlay(db, play, now);
-    });
+    if (playRoom()) {
+      await attempt("cron.play_voided_failed", async () => {
+        report.playVoided = await applyVoidedPlay(db, play, now);
+      });
+    }
     await attempt("cron.play_refund_failed", async () => {
-      report.playRefunds = await reconcilePlayRefunds(db, play, now, PLAY_REFUND_CHECKS_PER_RUN);
+      report.playRefunds = await reconcilePlayRefunds(db, play, now, PLAY_REFUND_CHECKS_PER_RUN, playRoom);
     });
   }
 

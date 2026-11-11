@@ -20,14 +20,15 @@ export interface AccountUser {
    * `refundUntil`: ISO time of the last moment 환불받기 works (the end of the 7th KST day after the payment);
    * `refundAmount`: what 환불받기 on its payment refunds, in 원 (from the server's catalog);
    * `refundable: false` instead: it opens but refunds nothing now; `noRefund` says why (`refunding`: a set's other part is being
-   * refunded; `refunded`: what was cancelled already covers it; `other`), and without it, it was given back after its reading
+   * refunded; `refunded`: what was cancelled already covers it; `play-part`: a set paid with Google Play whose other reading was
+   * opened, refunded on request only; `other`), and without it, it was given back after its reading
    * was cut off while written (never refunded);
    * `set: true`: one reading of a 2027 신년운세 + 프리미엄 궁합 set: refunded whole with the other while neither is opened,
    * or its own part once the other was opened (owner 2026-11-10); `otherRefunded: true`: that other reading was refunded, not opened;
-   * `provider: "play"`: paid with Google Play in the Starlog app, so its refund is asked of Google (absent for a web payment)
+   * `provider: "play"`: paid with Google Play in the Starlog app, so its refund goes back through Google Play (absent for a web payment)
    */
   unused: Array<{
-    orderId: string; productId: string; refundUntil?: string; refundAmount?: number; refundable?: false; noRefund?: "refunding" | "refunded" | "other";
+    orderId: string; productId: string; refundUntil?: string; refundAmount?: number; refundable?: false; noRefund?: "refunding" | "refunded" | "other" | "play-part";
     set?: true; otherRefunded?: true; provider?: "play";
   }>;
   /** readings being opened right now with a purchase (its order) or the gift; [] when /api/me leaves it out */
@@ -86,7 +87,7 @@ function parseUser(v: unknown): AccountUser | null | undefined {
       ...(typeof refundUntil === "string" ? { refundUntil } : {}),
       ...(typeof refundAmount === "number" && refundAmount > 0 ? { refundAmount } : {}),
       ...(refundable === false ? { refundable } : {}),
-      ...(refundable === false && (noRefund === "refunding" || noRefund === "refunded" || noRefund === "other") ? { noRefund } : {}),
+      ...(refundable === false && (noRefund === "refunding" || noRefund === "refunded" || noRefund === "other" || noRefund === "play-part") ? { noRefund } : {}),
       ...(set === true ? { set } : {}),
       ...(otherRefunded === true ? { otherRefunded } : {}),
       ...(provider === "play" ? { provider } : {}),

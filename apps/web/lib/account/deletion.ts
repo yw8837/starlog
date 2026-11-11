@@ -6,7 +6,7 @@ import type { D1Binding } from "@/lib/db/d1";
 import { LOT_UNTOUCHED_SQL, entitlements, forfeitStatements, sweepUser, type Lot } from "@/lib/pay/ledger";
 import { orderForUser, reconcileConfirming, type OrderRow } from "@/lib/pay/orders";
 import { playClient, type PlayClient } from "@/lib/pay/play";
-import { paidWithPlay, refundUnusedPlayOrder } from "@/lib/pay/playOrders";
+import { paidWithPlay, refundUnusedPlayOrder, setAsideStuckPlayRefunds } from "@/lib/pay/playOrders";
 import { paidUnderOtherKeys, reconcileRefunding, refundUnusedOrder, setAsideForOperator } from "@/lib/pay/refunds";
 import type { TossClient } from "@/lib/pay/tossTypes";
 import { signToken, signingSecret, verifyToken, type SignedPayload } from "@/lib/security/sign";
@@ -63,9 +63,15 @@ export async function deleteAccount(
 ): Promise<DeleteOutcome> {
   const { userId, now } = input;
   await sweepUser(db, userId, now);
+  // A Play refund stuck an hour no longer holds the deletion up: set aside for the operator (playOrders.ts).
+  await setAsideStuckPlayRefunds(db, userId, now);
   const mode = toss?.mode ?? null;
   if (toss) {
-    const { results } = await db.prepare(`SELECT * FROM orders WHERE user_id = ? AND ${IN_FLIGHT}`).bind(userId, mode).all<OrderRow>();
+    // Play orders settle with Google (the cron), never with Toss.
+    const { results } = await db
+      .prepare(`SELECT * FROM orders WHERE user_id = ? AND ${IN_FLIGHT} AND NOT EXISTS (SELECT 1 FROM payments pm WHERE pm.order_id = orders.id AND pm.mode = 'play')`)
+      .bind(userId, mode)
+      .all<OrderRow>();
     for (const order of results) {
       if (order.status === "confirming") await reconcileConfirming(db, toss, order, now, { force: true, confirmAgain: false });
       else await reconcileRefunding(db, toss, order, now);
@@ -190,7 +196,7 @@ async function eraseFriendStars(db: D1Binding, userId: string): Promise<void> {
  * - an unused signup gift is forfeited (its ledger rows stay), and so is a purchase given back after
  *   its client left (SEC-02: never refunded), or any other paid lot not untouched (deleteAccount refunded every untouched one);
  * - saved readings, share links, sessions and premium preview counts are deleted, and the account's reviews with their 도움돼요 and reports;
- * - its 신고 on readings (reading_reports) stay without its user id;
+ * - its 신고 on readings (reading_reports) stay without its user id or note (free text may hold personal data);
  * - its gift claim is stamped with the deletion time (purged a year later, Task 13);
  * - its 오픈 기념 무료 claim stays, marked used, until the event's purge, first (sealOpeningClaim, owner 2026-10-28);
  * - orders that never reached Toss are closed;
@@ -213,7 +219,7 @@ export async function eraseDeletedAccount(db: D1Binding, userId: string, now: nu
     ...forfeited.flatMap((lot) => forfeitStatements(db, lot, "revoked", now)),
     ...eraseReviewStatements(db, userId),
     // 신고 on readings (W2.5) stay, without who sent them.
-    db.prepare(`UPDATE reading_reports SET user_id = NULL WHERE user_id = ? AND ${DELETED}`).bind(userId, userId),
+    db.prepare(`UPDATE reading_reports SET user_id = NULL, note = NULL WHERE user_id = ? AND ${DELETED}`).bind(userId, userId),
     db.prepare(`DELETE FROM readings WHERE user_id = ? AND ${DELETED}`).bind(userId, userId),
     db.prepare(`DELETE FROM shares WHERE user_id = ? AND ${DELETED}`).bind(userId, userId),
     db.prepare(`DELETE FROM sessions WHERE user_id = ? AND ${DELETED}`).bind(userId, userId),

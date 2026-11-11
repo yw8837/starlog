@@ -114,15 +114,23 @@ describe("Play client", () => {
     ]);
     const client = createPlayClient(account(), google.fetchImpl);
     expect(await client.getPurchase("set_2027", TOKEN)).toEqual({
-      purchaseState: 0, consumptionState: 0, orderId: "GPA.3361-1234-5678-90123", purchaseTimeMillis: 1762830000123, test: true,
+      purchaseState: 0, consumptionState: 0, orderId: "GPA.3361-1234-5678-90123", purchaseTimeMillis: 1762830000123, purchaseType: 0, quantity: 1,
       obfuscatedAccountId: "a".repeat(64), obfuscatedProfileId: "Ab3_dEf-Gh5iJk7Lm9No1Pq2",
     });
     // A real purchase has no purchaseType; the ids are absent for a purchase made outside the app.
-    expect(await client.getPurchase("set_2027", TOKEN)).toEqual({ purchaseState: 2, consumptionState: 0, orderId: null, purchaseTimeMillis: null, test: false, obfuscatedAccountId: null, obfuscatedProfileId: null });
+    // Without quantity it is 1 ("If not present, the quantity is 1.").
+    expect(await client.getPurchase("set_2027", TOKEN)).toEqual({ purchaseState: 2, consumptionState: 0, orderId: null, purchaseTimeMillis: null, purchaseType: null, quantity: 1, obfuscatedAccountId: null, obfuscatedProfileId: null });
     expect(google.api().map((call) => [call.method, call.url])).toEqual([
       ["GET", `${BASE}/purchases/products/set_2027/tokens/${encodeURIComponent(TOKEN)}`],
       ["GET", `${BASE}/purchases/products/set_2027/tokens/${encodeURIComponent(TOKEN)}`],
     ]);
+  });
+
+  it("reads a promo code's or a rewarded purchase's type, and a quantity above one", async () => {
+    const google = fakeGoogle([{ status: 200, body: { purchaseState: 0, purchaseType: 1, quantity: 3 } }, { status: 200, body: { purchaseState: 0, purchaseType: 2 } }]);
+    const client = createPlayClient(account(), google.fetchImpl);
+    expect(await client.getPurchase("tarot", TOKEN)).toMatchObject({ purchaseType: 1, quantity: 3 });
+    expect(await client.getPurchase("tarot", TOKEN)).toMatchObject({ purchaseType: 2, quantity: 1 });
   });
 
   it("answers null for a token Google does not know (404, 410), and throws the rest: 5xx, timeouts and no answer are pending", async () => {
@@ -226,9 +234,10 @@ describe("this deploy's Play client", () => {
 
 describe("the mock Play (STARLOG_PLAY=mock)", () => {
   it("answers what a test registered, consumes once, and lists what was voided since a time", async () => {
-    mockPlay.addPurchase({ token: "t_ok", playProductId: "tarot", accountTag: "tag", profileId: "order_1", test: true });
+    mockPlay.addPurchase({ token: "t_ok", playProductId: "tarot", accountTag: "tag", profileId: "order_1", purchaseType: 0, quantity: 2 });
     mockPlay.addPurchase({ token: "t_pending", playProductId: "saju", state: 2, accountTag: "tag", profileId: "order_2" });
-    expect(await mockPlay.getPurchase("tarot", "t_ok")).toMatchObject({ purchaseState: 0, consumptionState: 0, test: true, obfuscatedAccountId: "tag", obfuscatedProfileId: "order_1" });
+    expect(await mockPlay.getPurchase("tarot", "t_ok")).toMatchObject({ purchaseState: 0, consumptionState: 0, purchaseType: 0, quantity: 2, obfuscatedAccountId: "tag", obfuscatedProfileId: "order_1" });
+    // Whether Google refuses a second consume is not stated in its reference (purchases.products/consume): the mock lets it be.
     expect(await mockPlay.getPurchase("saju", "t_ok")).toBeNull();
     expect(await mockPlay.getPurchase("tarot", "t_unknown")).toBeNull();
     await mockPlay.consume("tarot", "t_ok");

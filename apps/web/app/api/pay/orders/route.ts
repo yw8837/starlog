@@ -10,6 +10,7 @@ import { entitlements } from "@/lib/pay/ledger";
 import { paymentsMode, salesOpen } from "@/lib/pay/mode";
 import { RECONCILE_AFTER_MS, createOrder, orderById, orderHistory, reconcileConfirming, type OrderRow } from "@/lib/pay/orders";
 import { playAccountTag, playClient, playProductId } from "@/lib/pay/play";
+import { paidWithPlay } from "@/lib/pay/playOrders";
 import { reconcileRefunding } from "@/lib/pay/refunds";
 import { tossClient } from "@/lib/pay/toss";
 import { premiumOpen, setOpen } from "@/lib/premium/flags";
@@ -91,15 +92,21 @@ export async function GET(request: Request): Promise<Response> {
     if (!/^[A-Za-z0-9_-]{6,64}$/.test(id)) return errorResponse("BAD_REQUEST");
     let order = await orderById(ctx.db, id);
     if (!order) return errorResponse("BAD_REQUEST");
-    if (toss) order = await reconcileConfirming(ctx.db, toss, order, ctx.now);
-    if (toss) order = await reconcileRefunding(ctx.db, toss, order, ctx.now);
+    // A Play order settles with Google (the cron), never with Toss.
+    if (toss && !(await paidWithPlay(ctx.db, order.id))) {
+      order = await reconcileConfirming(ctx.db, toss, order, ctx.now);
+      order = await reconcileRefunding(ctx.db, toss, order, ctx.now);
+    }
     return json({ orderId: order.id, productId: order.product_id, status: order.status, returnTo: order.return_to, signedIn: ctx.session?.user.id === order.user_id });
   }
   const session = requireSession(ctx);
   if (session instanceof Response) return session;
   if (toss) {
     const { results } = await ctx.db
-      .prepare("SELECT * FROM orders WHERE user_id = ? AND status IN ('confirming', 'refunding') AND updated_at < ?")
+      .prepare(
+        `SELECT * FROM orders WHERE user_id = ? AND status IN ('confirming', 'refunding') AND updated_at < ?
+           AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.order_id = orders.id AND p.mode = 'play')`,
+      )
       .bind(session.user.id, ctx.now - RECONCILE_AFTER_MS)
       .all<OrderRow>();
     for (const stale of results) {

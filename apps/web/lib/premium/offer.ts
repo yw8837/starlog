@@ -21,12 +21,18 @@ import { PREMIUM, type PremiumId } from "./products";
 export type PremiumOffer =
   | { mode: "loading" }
   | { mode: "in-progress" }
-  | { mode: "open-paid"; refundable?: false; noRefund?: "refunding" | "refunded" | "other"; refundAmount?: number; otherRefunded?: true; set?: true; pair?: true }
+  | { mode: "open-paid"; refundable?: false; noRefund?: "refunding" | "refunded" | "other" | "play-part"; refundAmount?: number; otherRefunded?: true; set?: true; pair?: true }
   | { mode: "login"; priceKrw: number }
   | { mode: "pay"; priceKrw: number }
   | { mode: "soon"; opensAt: number }
   | { mode: "closed" }
   | { mode: "unknown" };
+
+/**
+ * Instead of 환불받기 on a set paid with Google Play in the Starlog app once its other reading is opened (/api/me `play-part`):
+ * Google refunds a Play order whole only, so that part is refunded by the operator on request (the screens link /contact).
+ */
+export const PLAY_SET_PART_LINE = "앱에서 결제한 세트는 하나를 열면 남은 풀이를 문의로 환불해 드려요.";
 
 export function premiumOffer(
   account: AccountState | null | undefined,
