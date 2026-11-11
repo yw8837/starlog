@@ -7,7 +7,7 @@ import type { D1Binding } from "../d1";
 const MIGRATIONS = fileURLToPath(new URL("../../../migrations/", import.meta.url));
 
 /** P4 tables, children before parents, for emptying a shared local D1 between tests. */
-export const P4_TABLES_CHILD_FIRST = ["readings", "ledger", "unlocks", "credit_lots", "payments", "orders", "gift_claims", "sessions", "users", "meta"];
+export const P4_TABLES_CHILD_FIRST = ["reading_reports", "readings", "ledger", "unlocks", "credit_lots", "payments", "play_purchases", "orders", "gift_claims", "sessions", "users", "meta"];
 
 /** Every migration's statements in file order (comment-only lines dropped, split at a ";" that ends a line). */
 export function migrationStatements(): string[] {

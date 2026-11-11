@@ -6,7 +6,9 @@ import { Rabbit } from "@/components/characters/Rabbit";
 import { Stepper } from "@/components/tarot/Stepper";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { loginMessage } from "@/lib/account/client";
-import { safeReturnTo } from "@/lib/account/returnTo";
+import { safeReturnTo, withQuery } from "@/lib/account/returnTo";
+import { isApp } from "@/lib/app/bridge";
+import { appGoogleSignIn } from "@/lib/app/googleSignIn";
 import { SITE } from "@/lib/config";
 import { isInAppBrowser } from "@/lib/inApp";
 import s from "./LoginPanel.module.css";
@@ -66,9 +68,9 @@ export function LoginPanel({ next, status, opening = false, navigate = (url) => 
   const checkbox = useRef<HTMLInputElement>(null);
   const note = loginMessage(failure ?? status);
   const copy = purpose(next, opening);
-  // Google refuses apps' browsers (api/auth/google/start): say so before the tap.
+  // Google refuses apps' browsers (api/auth/google/start): say so before the tap. Not in the Starlog app, which signs in natively.
   const [inApp, setInApp] = useState(false);
-  useEffect(() => setInApp(isInAppBrowser(navigator.userAgent)), []);
+  useEffect(() => setInApp(isInAppBrowser(navigator.userAgent) && !isApp()), []);
 
   const start = async (provider: "kakao" | "google") => {
     if (!adult) {
@@ -83,11 +85,23 @@ export function LoginPanel({ next, status, opening = false, navigate = (url) => 
         body: JSON.stringify({ ageConfirmed: true, returnTo: next, ...(provider === "google" ? { provider } : {}) }),
       });
       const body = res.ok ? ((await res.json()) as { url?: unknown }) : null;
+      if (typeof body?.url === "string" && provider === "google" && isApp()) return void signInInApp(body.url);
       if (typeof body?.url === "string") return navigate(body.url);
       setFailure(res.status === 429 ? "busy" : "unavailable");
     } catch {
       setFailure("unavailable");
     }
+  };
+
+  /**
+   * The Starlog app: Google's web sign-in must not run in a WebView, so the app signs in (lib/app/googleSignIn.ts) with the
+   * age token the start URL carries, and comes back as the web flow's redirect does (?login=ok, so a reading resumes).
+   */
+  const signInInApp = async (startUrl: string) => {
+    const age = new URL(startUrl, window.location.origin).searchParams.get("age") ?? "";
+    const result = await appGoogleSignIn({ returnTo: next, age });
+    if (result.ok) return navigate(withQuery(result.returnTo ?? next, { login: "ok" }));
+    if (result.flag) setFailure(result.flag);
   };
 
   return (

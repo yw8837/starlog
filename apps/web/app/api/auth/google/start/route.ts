@@ -1,7 +1,7 @@
 import { deleteIntentFor } from "@/lib/account/deletion";
 import { googleAuthorizeUrl, googleConfigProblems, googleMode } from "@/lib/account/google";
 import { MOCK_CODE_PREFIX } from "@/lib/account/kakao";
-import { isInAppBrowser } from "@/lib/inApp";
+import { isInAppBrowser, isStarlogApp } from "@/lib/inApp";
 import { ageChecked, issueOAuthState, type OAuthIntent } from "@/lib/account/oauthState";
 import { redirectTo } from "@/lib/account/redirect";
 import { openAccountRoute } from "@/lib/account/request";
@@ -30,7 +30,7 @@ export async function GET(request: Request): Promise<Response> {
   }
   const mockUser = url.searchParams.get("mockUser");
   if (url.searchParams.get("purpose") === "delete") {
-    if (isInAppBrowser(request.headers.get("user-agent") ?? "")) return redirectTo(request, "/me", { delete: "in-app" });
+    if (inApp(request)) return redirectTo(request, "/me", { delete: "in-app" });
     // Only with the intent a same-origin POST handed to this very session.
     if (!ctx.session || !(await deleteIntentFor(url.searchParams.get("intent"), ctx.session.id, ctx.secret, ctx.now))) {
       return redirectTo(request, "/me", { delete: "failed" });
@@ -40,9 +40,18 @@ export async function GET(request: Request): Promise<Response> {
   if (!loginOpen(paymentsMode(), ctx.owner)) return redirectTo(request, returnTo, { login: "closed" });
   if (!(await ageChecked(url.searchParams.get("age"), ctx.secret, ctx.now))) return redirectTo(request, "/login", { next: returnTo });
   // Google refuses to sign in inside apps' browsers (KakaoTalk, Instagram, Threads…): back to /login, where Kakao works.
-  if (isInAppBrowser(request.headers.get("user-agent") ?? "")) return redirectTo(request, "/login", { next: returnTo, login: "in-app" });
+  if (inApp(request)) return redirectTo(request, "/login", { next: returnTo, login: "in-app" });
   return toGoogle(request, { returnTo, purpose: "login", age: true }, mockUser, ctx);
 }
+
+/**
+ * Apps' browsers, and the Starlog app's WebView (Google's policy: no OAuth request in an embedded user-agent under our
+ * control; the app signs in natively through /api/auth/google/native).
+ */
+const inApp = (request: Request) => {
+  const userAgent = request.headers.get("user-agent") ?? "";
+  return isInAppBrowser(userAgent) || isStarlogApp(userAgent);
+};
 
 async function toGoogle(request: Request, intent: OAuthIntent, mockUser: string | null, ctx: { secret: string; now: number }): Promise<Response> {
   const nonce = randomId(16);

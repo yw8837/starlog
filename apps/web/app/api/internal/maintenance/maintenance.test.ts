@@ -7,6 +7,9 @@ import { setTestDb } from "@/lib/db";
 import type { D1Binding } from "@/lib/db/d1";
 import { RESERVATION_MS, reserveUnlock } from "@/lib/pay/ledger";
 import { GIFT_CLAIM_KEEP_MS, RECORD_KEEP_MS, TOSS_CALLS_PER_RUN, TOSS_DEADLINE_MS, runMaintenance } from "@/lib/pay/maintenance";
+import { PlayError, mockPlay, playAccountTag } from "@/lib/pay/play";
+import { orderById } from "@/lib/pay/orders";
+import { refundUnusedPlayOrder, verifyPlayPurchase } from "@/lib/pay/playOrders";
 import { mockToss } from "@/lib/pay/tossMock";
 import { TossError } from "@/lib/pay/tossTypes";
 import { insertReadingStatement, newReadingId } from "@/lib/readings/store";
@@ -282,6 +285,8 @@ describe("maintenance", () => {
       db.prepare("INSERT INTO users (id, kakao_key, nickname, customer_key, created_at, last_login_at, deleted_at, erased_at) VALUES ('u_old', NULL, NULL, 'c_old', 0, 0, 1, 1)"),
       db.prepare("INSERT INTO orders (id, user_id, product_id, amount_krw, order_name, status, return_to, withdrawal_ack_at, created_at, updated_at) VALUES ('order_old_000000000000001', 'u_old', 'tarot', 2900, 'x', 'paid', '/', 0, ?, ?)").bind(T0 - RECORD_KEEP_MS - 1, T0 - RECORD_KEEP_MS - 1),
       db.prepare("INSERT INTO payments (payment_key, order_id, total_amount, status, mode, updated_at) VALUES ('pk_old', 'order_old_000000000000001', 2900, 'DONE', 'live', 0)"),
+      // A Google Play purchase's row goes with its order (it references it).
+      db.prepare("INSERT INTO play_purchases (purchase_token, order_id, play_product_id, created_at) VALUES ('t_old', 'order_old_000000000000001', 'tarot', 0)"),
       db.prepare("INSERT INTO users (id, kakao_key, nickname, customer_key, created_at, last_login_at, deleted_at, erased_at) VALUES ('u_recent', NULL, NULL, 'c_recent', 0, 0, 1, 1)"),
       db.prepare("INSERT INTO orders (id, user_id, product_id, amount_krw, order_name, status, return_to, withdrawal_ack_at, created_at, updated_at) VALUES ('order_recent_00000000001', 'u_recent', 'tarot', 2900, 'x', 'refunded', '/', 0, ?, ?)").bind(T0 - 1000, T0 - 1000),
       db.prepare("INSERT INTO gift_claims (kakao_key, claimed_at, account_deleted_at) VALUES ('k_gone', 0, ?)").bind(T0 - GIFT_CLAIM_KEEP_MS - 1),
@@ -303,11 +308,74 @@ describe("maintenance", () => {
     expect(await one(db, "SELECT COUNT(*) AS n FROM users WHERE id = 'u_old'")).toEqual({ n: 0 });
     expect(await db.prepare("SELECT user_id FROM buyer_previews").all()).toMatchObject({ results: [{ user_id: "u_recent" }] });
     expect(await one(db, "SELECT COUNT(*) AS n FROM payments WHERE payment_key = 'pk_old'")).toEqual({ n: 0 });
+    expect(await one(db, "SELECT COUNT(*) AS n FROM play_purchases")).toEqual({ n: 0 });
     expect(await one(db, "SELECT COUNT(*) AS n FROM readings")).toEqual({ n: 0 });
     expect(await one(db, "SELECT COUNT(*) AS n FROM users WHERE id = 'u_recent'")).toEqual({ n: 1 });
     expect((await db.prepare("SELECT kakao_key FROM gift_claims ORDER BY kakao_key").all<{ kakao_key: string }>()).results.map((r) => r.kakao_key)).toEqual(expect.arrayContaining(["k_kept"]));
     expect(await one(db, "SELECT COUNT(*) AS n FROM gift_claims WHERE kakao_key = 'k_gone'")).toEqual({ n: 0 });
     expect(await one(db, "SELECT COUNT(*) AS n FROM users WHERE nickname IS NOT NULL")).toEqual({ n: 1 });
+  });
+});
+
+describe("Google Play purchases (the Android app)", () => {
+  /** A Play purchase recorded for the first mock account's order, its consume lost: what the cron picks up. */
+  async function playPaid(db: D1Binding, token: string): Promise<string> {
+    const b = await loggedIn();
+    const orderId = await newOrder(b);
+    mockPlay.addPurchase({ token, playProductId: "tarot", accountTag: await playAccountTag(await userIdOf(db)), profileId: orderId });
+    vi.spyOn(mockPlay, "consume").mockRejectedValueOnce(new PlayError(503, "UNAVAILABLE"));
+    expect(await verifyPlayPurchase(db, mockPlay, { purchaseToken: token, playProductId: "tarot", now: T0 })).toMatchObject({ ok: true });
+    return orderId;
+  }
+
+  beforeEach(() => mockPlay.reset());
+
+  it("consumes what was granted and not consumed, and applies what Google voided, with or without Toss", async () => {
+    const db = useTestDb();
+    const consumed = await playPaid(db, "t_consume");
+    vi.setSystemTime(T0 + 10 * MIN);
+    expect(await runMaintenance(db, null, Date.now(), { play: mockPlay })).toMatchObject({ playConsumed: 1, playVoided: 0, failed: 0 });
+    expect(await one(db, `SELECT consumed_at FROM play_purchases WHERE order_id = '${consumed}'`)).toEqual({ consumed_at: T0 + 10 * MIN });
+    mockPlay.voidPurchase("t_consume", T0 + 15 * MIN);
+    vi.setSystemTime(T0 + 20 * MIN);
+    expect(await runMaintenance(db, mockToss, Date.now(), { play: mockPlay })).toMatchObject({ playConsumed: 0, playVoided: 1, failed: 0 });
+    expect(await one(db, `SELECT status FROM orders WHERE id = '${consumed}'`)).toEqual({ status: "refunded" });
+    // No Play client (a deploy without the service account): the steps are skipped.
+    expect(await runMaintenance(db, mockToss, Date.now())).toMatchObject({ playConsumed: 0, playVoided: 0, failed: 0 });
+  });
+
+  it("goes on when a Play step throws: logged by event and code, counted, and the Toss work still runs", async () => {
+    const db = useTestDb();
+    await playPaid(db, "t_stuck");
+    const userId = await userIdOf(db);
+    await insertOrder(db, { id: oid(1), userId, status: "confirming", at: T0 - 20 * MIN });
+    await mockToss.confirm({ paymentKey: `mock_${oid(1)}`, orderId: oid(1), amount: 2900 });
+    vi.spyOn(mockPlay, "listVoided").mockRejectedValue(new PlayError(503, "UNAVAILABLE"));
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(await runMaintenance(db, mockToss, T0 + MIN, { play: mockPlay })).toMatchObject({ playConsumed: 1, playVoided: 0, confirming: 1, failed: 1 });
+    expect(error).toHaveBeenCalledWith(JSON.stringify({ evt: "cron.play_voided_failed", code: "UNAVAILABLE" }));
+    expect(await one(db, `SELECT status FROM orders WHERE id = '${oid(1)}'`)).toEqual({ status: "paid" });
+  });
+
+  it("settles a Play refund whose answer was lost: Google still holds it purchased, so the reading comes back", async () => {
+    const db = useTestDb();
+    const orderId = await playPaid(db, "t_refund");
+    vi.spyOn(mockPlay, "refund").mockRejectedValueOnce(new PlayError(503, "UNAVAILABLE"));
+    expect(await refundUnusedPlayOrder(db, mockPlay, { order: (await orderById(db, orderId))!, now: T0 + MIN })).toEqual({ ok: false, code: "PAY_PENDING" });
+    const tossLookUp = vi.spyOn(mockToss, "getPayment");
+    expect(await runMaintenance(db, mockToss, T0 + 5 * MIN, { play: mockPlay })).toMatchObject({ playRefunds: 0, refunding: 0 });
+    expect(await runMaintenance(db, mockToss, T0 + 12 * MIN, { play: mockPlay })).toMatchObject({ playRefunds: 1, refunding: 0, failed: 0 });
+    expect(await one(db, `SELECT status FROM orders WHERE id = '${orderId}'`)).toEqual({ status: "paid" });
+    expect(tossLookUp).not.toHaveBeenCalled();
+  });
+
+  it("is run by the Cron Trigger's route with this deploy's Play client", async () => {
+    const db = useTestDb();
+    await playPaid(db, "t_route");
+    vi.stubEnv("STARLOG_PLAY", "mock");
+    expect(await report()).toMatchObject({ playConsumed: 1 });
+    vi.stubEnv("STARLOG_PLAY", "");
+    expect(await report()).toMatchObject({ playConsumed: 0, playVoided: 0 });
   });
 });
 

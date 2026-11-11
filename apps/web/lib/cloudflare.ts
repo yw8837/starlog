@@ -38,6 +38,8 @@ declare global {
     REVIEW_LOGIN_PASSWORD?: string;
     GOOGLE_CLIENT_ID?: string;
     GOOGLE_CLIENT_SECRET?: string;
+    /** the Google Play service account's JSON key (lib/pay/play.ts) */
+    PLAY_SERVICE_ACCOUNT_JSON?: string;
   }
 }
 

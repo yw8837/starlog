@@ -159,8 +159,11 @@ export default function PricingPage() {
       </LegalSection>
 
       <LegalSection id="payment" title="결제 수단과 영수증">
-        <p>토스페이먼츠를 통해 신용·체크카드와 간편결제로 결제할 수 있어요. 풀이는 건별로 결제하고, 결제하면 바로 열려요.</p>
-        <p>영수증은 내 정보 &gt; 결제 내역에서 볼 수 있어요.</p>
+        {/* The web payment method on the website; the Starlog app pays with Google Play (lib/app/mode.ts, globals.css). */}
+        <p className="web-only">토스페이먼츠를 통해 신용·체크카드와 간편결제로 결제할 수 있어요. 풀이는 건별로 결제하고, 결제하면 바로 열려요.</p>
+        <p className="app-only">앱에서는 Google Play로 결제해요. 풀이는 건별로 결제하고, 결제하면 바로 열려요.</p>
+        <p className="web-only">영수증은 내 정보 &gt; 결제 내역에서 볼 수 있어요.</p>
+        <p className="app-only">결제 내역은 내 정보 &gt; 결제 내역에서 볼 수 있어요.</p>
         <p>
           {`결제한 풀이는 결제 직후 자동으로 적기 시작하고, 적기 시작하면 청약철회가 제한돼요. 열기 전에는 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있어요. 자세한 내용은 `}
           <Link href="/refund">환불 정책</Link>

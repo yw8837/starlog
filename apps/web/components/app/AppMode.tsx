@@ -1,0 +1,62 @@
+"use client";
+
+import { useEffect, useLayoutEffect } from "react";
+import { refreshAccount } from "@/lib/account/client";
+import { callNative, isApp } from "@/lib/app/bridge";
+import { setPrivacyOptionsRequired } from "@/lib/app/shell";
+import { postJson } from "@/lib/reading/api";
+
+type Unfinished = { purchases: Array<{ purchaseToken: string; productId: string }> };
+
+/** The shell answers hello at once; a page never waits long on it. */
+const HELLO_TIMEOUT_MS = 3_000;
+
+/**
+ * Mounted once in the root layout; renders nothing, and does nothing outside the Starlog app.
+ * - Keeps <html data-app>: the <head> script sets it before paint, and React's development remount clears it (Next's
+ *   "preventing flash before hydration" guide); a no-op in production.
+ * - On start: the shell's `hello`, keeping `privacyOptionsRequired` (lib/app/shell.ts) for 내 정보's 광고 개인정보 설정.
+ * - On start and whenever the app comes back to the front: the purchases Google Play holds as bought and not yet consumed
+ *   (a client that died mid-purchase, a pending one that went through) go to /api/pay/play/verify, which is safe to repeat.
+ *   One that comes back paid refreshes the account, as /pay/success does. Failures stay silent: it runs again on the next resume.
+ */
+export function AppMode() {
+  useLayoutEffect(() => {
+    if (isApp()) document.documentElement.dataset.app = "android";
+  }, []);
+
+  useEffect(() => {
+    if (!isApp()) return;
+    // The shell's hello, once per page load: whether 내 정보 offers 광고 개인정보 설정. No answer: it stays off.
+    void callNative<{ privacyOptionsRequired?: unknown } | undefined>("hello", undefined, HELLO_TIMEOUT_MS).then(
+      (data) => setPrivacyOptionsRequired(data?.privacyOptionsRequired === true),
+      () => {},
+    );
+    let running = false;
+    const recover = async () => {
+      if (running) return;
+      running = true;
+      try {
+        const { purchases } = await callNative<Unfinished>("unfinishedPurchases");
+        let paid = false;
+        for (const { purchaseToken, productId } of purchases ?? []) {
+          const res = await postJson<{ status: string }>("/api/pay/play/verify", { purchaseToken, productId });
+          if (res.ok && res.data.status === "paid") paid = true;
+        }
+        if (paid) void refreshAccount();
+      } catch {
+        // no shell answer: tried again on the next resume
+      } finally {
+        running = false;
+      }
+    };
+    void recover();
+    const onShown = () => {
+      if (document.visibilityState === "visible") void recover();
+    };
+    document.addEventListener("visibilitychange", onShown);
+    return () => document.removeEventListener("visibilitychange", onShown);
+  }, []);
+
+  return null;
+}

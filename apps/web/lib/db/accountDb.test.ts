@@ -103,6 +103,47 @@ describe("test D1 with every migration applied", () => {
     await before.prepare("INSERT INTO credit_lots (id, user_id, currency, source, product_id, units_total, units_left, created_at) VALUES ('lot_8', 'u_1', 'free', 'gift', 'tarot', 1, 1, 0)").run();
   });
 
+  it("0024 lets a payment be a Google Play one, keeping every payment and its foreign key, and records Play purchases once per token", async () => {
+    const before = migratedTestD1({ without: "0024_" });
+    await insertUser(before, "u_1", "k1").run();
+    for (const id of ["o_1", "o_2", "o_3"]) {
+      await before
+        .prepare(
+          `INSERT INTO orders (id, user_id, product_id, amount_krw, order_name, status, return_to, withdrawal_ack_at, created_at, updated_at)
+           VALUES (?, 'u_1', 'tarot', 2900, 't', 'paid', '/', 0, 0, 0)`,
+        )
+        .bind(id)
+        .run();
+    }
+    await before.batch([
+      before.prepare("INSERT INTO payments (payment_key, order_id, method, total_amount, status, approved_at, receipt_url, canceled_amount, canceled_at, mode, updated_at) VALUES ('pk_1', 'o_1', '카드', 2900, 'PARTIAL_CANCELED', 'a', 'r', 900, 'c', 'live', 7)"),
+      before.prepare("INSERT INTO payments (payment_key, order_id, total_amount, status, mode, updated_at) VALUES ('pk_2', 'o_2', 2900, 'DONE', 'test', 8)"),
+    ]);
+    const playPayment = "INSERT INTO payments (payment_key, order_id, total_amount, status, mode, updated_at) VALUES ('play_x', 'o_3', 2900, 'DONE', 'play', 9)";
+    await expect(before.prepare(playPayment).run()).rejects.toSatisfy(isConstraintError);
+    const rows = async () => (await before.prepare("SELECT * FROM payments ORDER BY payment_key").all()).results;
+    const kept = await rows();
+    const migration = readdirSync(MIGRATIONS).find((name) => name.startsWith("0024_"))!;
+    before.exec(readFileSync(`${MIGRATIONS}${migration}`, "utf8"));
+    expect(await rows()).toEqual(kept);
+    await before.prepare(playPayment).run();
+    for (const sql of [
+      "INSERT INTO payments (payment_key, order_id, total_amount, status, mode, updated_at) VALUES ('pk_9', 'o_1', 2900, 'DONE', 'live', 0)",
+      "INSERT INTO payments (payment_key, order_id, total_amount, status, mode, updated_at) VALUES ('pk_9', 'nope', 2900, 'DONE', 'live', 0)",
+      "INSERT INTO payments (payment_key, order_id, total_amount, status, mode, updated_at) VALUES ('pk_9', 'o_2', 2900, 'DONE', 'other', 0)",
+    ]) await expect(before.prepare(sql).run(), sql).rejects.toSatisfy(isConstraintError);
+    const purchase = (token: string, orderId: string) =>
+      before.prepare("INSERT INTO play_purchases (purchase_token, order_id, play_product_id, created_at) VALUES (?, ?, 'tarot', 0)").bind(token, orderId);
+    await purchase("token_1", "o_3").run();
+    expect(await before.prepare("SELECT google_order_id, test, purchased_at, consumed_at, voided_at FROM play_purchases").first()).toEqual({ google_order_id: null, test: 0, purchased_at: null, consumed_at: null, voided_at: null });
+    // One row per token and per order, and only for an order that exists.
+    for (const [token, orderId] of [["token_1", "o_2"], ["token_2", "o_3"], ["token_3", "nope"]] as const) {
+      await expect(purchase(token, orderId).run(), token).rejects.toSatisfy(isConstraintError);
+    }
+    const indexes = (await before.prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'play_purchases' AND name NOT LIKE 'sqlite_%'").all<{ name: string }>()).results;
+    expect(indexes).toEqual([{ name: "play_purchases_unconsumed" }]);
+  });
+
   it("refuses undefined like D1", async () => {
     const db = migratedTestD1();
     await expect(db.prepare("SELECT ?").bind(undefined).first()).rejects.toThrow(/undefined/);

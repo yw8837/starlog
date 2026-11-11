@@ -79,6 +79,8 @@ describe("켈틱 크로스 10장's result screen (Task 19)", () => {
     expect(screen.getByRole("heading", { name: "켈틱 크로스 10장에 담긴 것" })).toBeTruthy();
     expect(screen.getByText("켈틱 크로스 10장")).toBeTruthy();
     expect(document.body.textContent).not.toMatch(/베타|Claude|Anthropic/);
+    // 신고 on the AI-written preview, the Starlog app only (W2 follow-up 3)
+    expect(screen.getByRole("button", { name: "신고" }).closest(".app-only")).toBeTruthy();
   });
 
   it("writes the reading in its two parts, keeps it on this device with the cards' keywords and design, and opens its chapter", async () => {

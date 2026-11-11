@@ -82,6 +82,8 @@ describe("프리미엄 궁합's preview (Task 20; saju only, owner 2026-10-17)",
     expect(within(screen.getByRole("region", { name: "이어지는 풀이" })).getAllByRole("listitem")).toHaveLength(13);
     expect(screen.getByText("소제목 13개 · 3,100자 이상")).toBeTruthy();
     expect(document.body.textContent).toContain("2단계 중 2/2단계");
+    // 신고 on the AI-written preview, the Starlog app only (W2 follow-up 3)
+    expect(screen.getByRole("button", { name: "신고" }).closest(".app-only")).toBeTruthy();
     const [, init] = fetchMock.mock.calls.find(([url]) => url === "/api/premium/match/teaser")!;
     expect(JSON.parse(String(init!.body))).toEqual({ me: { birth: DEFAULT_SAJU_FORM, loveStatus: "single" }, partner: { birth: PARTNER, label: "민지" }, relation: "friend", concern: "요즘 연락이 뜸해요", ack: true });
   });

@@ -7,6 +7,7 @@ import { ReadingArticle, type ReadingBody } from "@/components/tarot/ReadingArti
 import { ReadingLayout } from "@/components/tarot/ReadingLayout";
 import { PrintFoot, PrintHead, SavePdfButton, type KeptReading } from "@/components/share/SavePdfButton";
 import { ShareResultButton, type ShareActions } from "@/components/share/ShareResultButton";
+import { ReportReading } from "@/components/report/ReportReading";
 import { SharePreview } from "@/components/tarot/SharePreview";
 import { SpreadRow, cardLabel, type SpreadCard } from "@/components/tarot/SpreadRow";
 import { Stepper } from "@/components/tarot/Stepper";
@@ -54,13 +55,15 @@ type ChapterViewProps = {
   rating?: ReactNode;
   /** The next step after the follow-ups and rating (plan-reconciled §4.3: 켈틱 크로스 10장 where premium is visible). */
   next?: ReactNode;
+  /** A saved reading's id: 신고 under the reading and its follow-up answers (the Starlog app only); absent for the demo. */
+  readingId?: string;
 };
 
 /**
  * An opened tarot reading in one scroll: the question and cards, the full reading, follow-ups,
  * rating. Sharing makes the reading's own link (the cards and the reading, never the question or note).
  */
-export function ChapterView({ eyebrow, question, cards, reading, followUp, keepOnly, checkin, invite, share, kept, deck, rating, next }: ChapterViewProps) {
+export function ChapterView({ eyebrow, question, cards, reading, followUp, keepOnly, checkin, invite, share, kept, deck, rating, next, readingId }: ChapterViewProps) {
   const [enlarged, setEnlarged] = useState<number | null>(null);
   const [sharing, setSharing] = useState(false);
   const shown = enlarged === null ? undefined : cards[enlarged];
@@ -89,10 +92,12 @@ export function ChapterView({ eyebrow, question, cards, reading, followUp, keepO
         <ChapterContents followUp={Boolean(followUp)} />
         <div id="chapter-reading" className={s.anchor}>
           <ReadingArticle paid={reading} />
+          {readingId !== undefined ? <ReportReading kind="tarot" readingId={readingId} /> : null}
         </div>
         {followUp ? (
           <div id="chapter-follow-up" className={s.anchor}>
             <FollowUp {...followUp} />
+            {readingId !== undefined && followUp.turns.length > 0 ? <ReportReading kind="followup" readingId={readingId} /> : null}
           </div>
         ) : null}
         {rating ?? <Feedback />}

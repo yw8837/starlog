@@ -10,6 +10,7 @@ import { SessionRetry } from "@/components/reading/KeptPanel";
 import { LoginFirst } from "@/components/reading/LoginFirst";
 import { GeneratingState } from "@/components/tarot/GeneratingState";
 import { LockedToc } from "@/components/tarot/LockedToc";
+import { ReportReading } from "@/components/report/ReportReading";
 import { Paper } from "@/components/tarot/Paper";
 import { Stepper } from "@/components/tarot/Stepper";
 import s from "@/app/tarot/result/FreeResult.module.css";
@@ -178,6 +179,7 @@ export function NewYearPreview({ autoUnlock = false }: { autoUnlock?: boolean })
               </h2>
               <p className={s.prose}>{preview.summary.body}</p>
             </Paper>
+            <ReportReading kind="teaser" />
             <LockedToc
               items={preview.lockedToc}
               meta={`소제목 ${preview.lockedToc.length}개 · ${approxCharsText({ min: PREMIUM[ID].minChars, max: PREMIUM[ID].minChars })}자 이상`}

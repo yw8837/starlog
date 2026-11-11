@@ -86,7 +86,8 @@ async function lookUpByOrder(toss: TossClient, orderId: string): Promise<TossPay
 
 export type MarkPaidResult = "paid" | "orphaned" | "already";
 
-const LIVE_ACCOUNT = "EXISTS (SELECT 1 FROM users u WHERE u.id = orders.user_id AND u.deleted_at IS NULL)";
+/** The order's account is not deleted (markPaid, and a Google Play purchase: playOrders.ts). */
+export const LIVE_ACCOUNT = "EXISTS (SELECT 1 FROM users u WHERE u.id = orders.user_id AND u.deleted_at IS NULL)";
 
 /**
  * Records a DONE payment in one batch:
@@ -286,6 +287,8 @@ export interface OrderListItem {
   openedProducts: string[];
   /** refunded so far, in 원 (Toss's cancelled amount): 일부 환불 while the order is still paid */
   refunded: number;
+  /** how it was paid: Google Play in the Android app (payments.mode 'play'; refunds go through Google), else Toss */
+  provider: "toss" | "play";
   /**
    * paid and used up with no reading delivered: its client left while it was written once more than
    * MAX_RESTORES allows (lib/pay/ledger.ts releaseUnlock), so it was never "opened" (F2-b). A purchase
@@ -311,7 +314,7 @@ const EMPTY_LOT = (delivered: boolean) =>
 export async function orderHistory(db: D1Binding, userId: string, limit = 50): Promise<OrderListItem[]> {
   const { results } = await db
     .prepare(
-      `SELECT o.id, o.product_id, o.amount_krw, o.status, o.created_at, p.receipt_url, p.method, COALESCE(p.canceled_amount, 0) AS refunded,
+      `SELECT o.id, o.product_id, o.amount_krw, o.status, o.created_at, p.receipt_url, p.method, p.mode, COALESCE(p.canceled_amount, 0) AS refunded,
               EXISTS (SELECT 1 FROM credit_lots l WHERE l.order_id = o.id AND ${LOT_UNTOUCHED_SQL("l")}) AS untouched,
               (SELECT GROUP_CONCAT(COALESCE(e.product_id, ''), ' ') FROM credit_lots e WHERE ${EMPTY_LOT(true)}) AS opened,
               EXISTS (SELECT 1 FROM credit_lots e WHERE ${EMPTY_LOT(false)}) AS undelivered
@@ -322,7 +325,7 @@ export async function orderHistory(db: D1Binding, userId: string, limit = 50): P
     )
     .bind(userId, limit)
     .all<{
-      id: string; product_id: string; amount_krw: number; status: OrderStatus; created_at: number; receipt_url: string | null; method: string | null;
+      id: string; product_id: string; amount_krw: number; status: OrderStatus; created_at: number; receipt_url: string | null; method: string | null; mode: string | null;
       refunded: number; untouched: number; opened: string | null; undelivered: number;
     }>();
   return results.map((row) => {
@@ -342,6 +345,7 @@ export async function orderHistory(db: D1Binding, userId: string, limit = 50): P
       openedProducts,
       refunded: row.refunded,
       unfinished: paid && !opened && Boolean(row.undelivered),
+      provider: row.mode === "play" ? "play" : "toss",
     };
   });
 }

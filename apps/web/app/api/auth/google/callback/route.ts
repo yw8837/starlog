@@ -1,12 +1,11 @@
 import type { CookieSpec } from "@/lib/api/http";
 import { deleteAccount } from "@/lib/account/deletion";
 import { GoogleError, googleConfigProblems, googleLogin, googleRevoke, googleUserKey } from "@/lib/account/google";
+import { googleLoginSession } from "@/lib/account/googleSession";
 import { clearOAuth, oauthCookieName, openOAuthState } from "@/lib/account/oauthState";
 import { redirectTo } from "@/lib/account/redirect";
 import { openAccountRoute, type AccountContext } from "@/lib/account/request";
-import { clearSession, createSession, revokeSession } from "@/lib/account/session";
-import { loginKakaoUser, userByKakaoKey } from "@/lib/account/users";
-import { paymentsMode, salesOpen } from "@/lib/pay/mode";
+import { clearSession } from "@/lib/account/session";
 import { tossClient } from "@/lib/pay/toss";
 
 type Back = (flag: string, cookies?: Array<CookieSpec | string>) => Response;
@@ -56,18 +55,8 @@ export async function GET(request: Request): Promise<Response> {
 }
 
 async function finishLogin(ctx: AccountContext, key: string, age: boolean, back: Back): Promise<Response> {
-  const open = salesOpen(paymentsMode(), ctx.owner);
-  if (!open && !(await userByKakaoKey(ctx.db, key))) return back("closed");
-  const account = await loginKakaoUser(ctx.db, { key, nickname: "", ageConfirmed: age, now: ctx.now });
-  if (!account) {
-    console.warn(JSON.stringify({ evt: "auth.account_still_erasing" }));
-    return back("failed");
-  }
-  const { user, created } = account;
-  if (ctx.session) await revokeSession(ctx.db, ctx.session.id, ctx.now);
-  const session = await createSession(ctx.db, user.id, ctx.secret, ctx.now);
-  console.info(JSON.stringify({ evt: "auth.login", provider: "google", created }));
-  return back("ok", [session.cookie]);
+  const outcome = await googleLoginSession(ctx, key, age);
+  return outcome.ok ? back("ok", [outcome.cookie]) : back(outcome.flag);
 }
 
 async function finishDelete(request: Request, ctx: AccountContext, sid: string | undefined, key: string, accessToken: string, back: Back): Promise<Response> {

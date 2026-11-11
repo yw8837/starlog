@@ -14,3 +14,6 @@ export const isInAppBrowser = (userAgent: string): boolean =>
 /** iPhone, iPad (one asking for the desktop site says Macintosh, with touch): its Safari may never send beforeprint. */
 export const isIos = (userAgent: string, touchPoints = 0): boolean =>
   /iPhone|iPad|iPod/.test(userAgent) || (/Macintosh/.test(userAgent) && touchPoints > 1);
+
+/** The Starlog Android app: its WebView appends ` StarlogApp/<version>` to the user agent (apps/android). */
+export const isStarlogApp = (userAgent: string): boolean => /\bStarlogApp\/\d/.test(userAgent);

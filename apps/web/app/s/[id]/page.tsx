@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 import { Footer } from "@/components/layout/Footer";
 import { TabBar } from "@/components/layout/TabBar";
+import { ReportReading } from "@/components/report/ReportReading";
 import { NightSky } from "@/components/sky/NightSky";
 import { SITE } from "@/lib/config";
 import { accountDb } from "@/lib/db";
@@ -98,7 +99,11 @@ export default async function SharePage({ params }: PageProps<"/s/[id]">) {
             <SharedBondsView view={share.bonds} />
           </>
         ) : (
-          <SharedReading share={share.payload} productVisible={share.payload.kind === "premium" ? (await premiumStateHere(share.payload.product)).visible : undefined} />
+          <>
+            <SharedReading share={share.payload} productVisible={share.payload.kind === "premium" ? (await premiumStateHere(share.payload.product)).visible : undefined} />
+            {/* 신고 (the Starlog app only): this link's reading, by its share id. */}
+            <ReportReading kind="shared" readingId={share.id} />
+          </>
         )}
       </main>
       <Footer />

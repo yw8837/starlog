@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { logout, refreshAccount, type AccountState, type AccountUser } from "@/lib/account/client";
+import { isApp } from "@/lib/app/bridge";
+import { appGoogleSignIn } from "@/lib/app/googleSignIn";
 import { OPENING_LAST_DAY, openingFreeOn, won } from "@/lib/config";
 import { DEEP_TAROT_HREF } from "@/lib/freshStart";
 import { REFUND_DAYS, productById } from "@/lib/pay/catalog";
@@ -53,6 +55,9 @@ const setPart = (item: { refundAmount?: number; otherRefunded?: true }) =>
   item.otherRefunded
     ? `세트의 다른 풀이는 환불했어요. 이 풀이 몫${item.refundAmount ? ` ${won(item.refundAmount)}` : ""}을 환불받을 수 있어요.`
     : `세트의 다른 풀이를 열어서 이 풀이 몫${item.refundAmount ? ` ${won(item.refundAmount)}` : ""}만 환불돼요.`;
+
+/** After 환불받기 on a purchase paid with Google Play (/api/me `provider`), instead of the card company's line. */
+const PLAY_REFUND_LINE = "Google Play를 통해 환불돼요. 결제 수단에 따라 며칠 걸릴 수 있어요.";
 
 /** A failed 환불받기 in refund words (the payment lines would say "결제를 확인하고 있어요"). */
 function refundNotice(error: ApiError): string {
@@ -118,6 +123,8 @@ export function AccountPanel({ account, navigate = (url) => window.location.assi
   const setNotice = onNotice ?? setOwnNotice;
   const [sheet, setSheet] = useState<"refund" | "delete" | "readings" | null>(null);
   const [refundId, setRefundId] = useState<string | null>(null);
+  /** that purchase was paid with Google Play (the Starlog app): Google refunds it, not the card company */
+  const [refundPlay, setRefundPlay] = useState(false);
   /** what the sheet refunds: a single purchase, a whole set, or a set's unopened part (its amount) */
   const [refundKind, setRefundKind] = useState<{ set: boolean; whole: boolean; amount?: number; otherRefunded?: boolean }>({ set: false, whole: true });
   /** the server refunds another amount now than the sheet showed: it shows the new one and asks again */
@@ -156,7 +163,7 @@ export function AccountPanel({ account, navigate = (url) => window.location.assi
       setSheet(null);
       // What the server says it refunded, never what this screen worked out.
       const amount = res.ok && typeof res.data.amount === "number" && res.data.amount > 0 ? `${won(res.data.amount)}을 ` : "";
-      setNotice(res.ok ? `${amount}환불했어요. 카드사에 따라 며칠 걸릴 수 있어요.` : refundNotice(res.error));
+      setNotice(res.ok ? `${amount}환불했어요. ${refundPlay ? PLAY_REFUND_LINE : "카드사에 따라 며칠 걸릴 수 있어요."}` : refundNotice(res.error));
       await refreshAccount();
       setHistoryKey((key) => key + 1);
     } finally {
@@ -173,11 +180,21 @@ export function AccountPanel({ account, navigate = (url) => window.location.assi
 
   const startDelete = async () => {
     const res = await postJson<{ url: string }>("/api/account/delete-intent", {});
+    // The Starlog app: Google's re-check runs in the app's own sign-in (Google's web page must not run in a WebView).
+    if (res.ok && isApp() && res.data.url.startsWith("/api/auth/google/start")) return void deleteInApp(res.data.url);
     if (res.ok) navigate(res.data.url);
     else {
       setSheet(null);
       setNotice(describeApiError(res.error).title);
     }
+  };
+
+  /** Lands where the web re-check's redirect would: /me?account=deleted, or /me?delete=<why>; a closed Google sheet stays. */
+  const deleteInApp = async (url: string) => {
+    const intent = new URL(url, window.location.origin).searchParams.get("intent") ?? "";
+    const result = await appGoogleSignIn({ purpose: "delete", intent });
+    if (result.ok) return navigate("/me?account=deleted");
+    if (result.flag) navigate(`/me?delete=${encodeURIComponent(result.flag)}`);
   };
 
   return (
@@ -221,6 +238,7 @@ export function AccountPanel({ account, navigate = (url) => window.location.assi
                       className={s.link}
                       onClick={() => {
                         setRefundId(item.orderId);
+                        setRefundPlay(item.provider === "play");
                         setRefundKind(refundKindOf(item, user.unused));
                         setRefundChanged(false);
                         setSheet("refund");

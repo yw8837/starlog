@@ -8,6 +8,8 @@ import { purgeExpiredShares } from "@/lib/share/store";
 import type { D1Binding, D1Statement } from "@/lib/db/d1";
 import { sweepStale } from "./ledger";
 import { RECONCILE_AFTER_MS, STALE_CONFIRM_MS, reconcileConfirming, type OrderRow } from "./orders";
+import { PlayError, type PlayClient } from "./play";
+import { applyVoidedPlay, consumePendingPlay, reconcilePlayRefunds } from "./playOrders";
 import { REFUND_RECONCILE_AFTER_MS, reconcileRefunding } from "./refunds";
 import { TossError, type TossClient } from "./tossTypes";
 
@@ -28,6 +30,13 @@ export const TOSS_CALLS_PER_RUN = 30;
 export const TOSS_DEADLINE_MS = 75_000;
 /** Each Toss call from the cron waits at most this long (requests wait 30 s, toss.ts). */
 export const CRON_TOSS_TIMEOUT_MS = 8_000;
+/**
+ * Google Play purchases one run consumes at most, and Play refunds whose answer was lost it asks Google about at most. With
+ * the access token and the voided list (one page in practice, three at most: play.ts) the Play steps make at most
+ * 1 + 10 + 3 + 5 = 19 requests, which with TOSS_CALLS_PER_RUN (30) stays under the Worker's 50.
+ */
+export const PLAY_CONSUMES_PER_RUN = 10;
+export const PLAY_REFUND_CHECKS_PER_RUN = 5;
 const ORDERS_PER_RUN = 50;
 const ERASES_PER_RUN = 50;
 const PURGES_PER_RUN = 20;
@@ -51,6 +60,12 @@ export interface MaintenanceReport {
   /** an account's day counts of 맛보기 and 오늘의 한 장 (lib/api/member.ts), deleted once noon KST of the next day passed */
   accountCounts: number;
   purgedAccounts: number;
+  /** Google Play purchases granted and consumed only now (their consume at the purchase failed) */
+  playConsumed: number;
+  /** Google Play purchases Google voided (refunded or revoked), applied now */
+  playVoided: number;
+  /** Play refunds whose answer was lost, settled now from what Google holds (put back, or applied) */
+  playRefunds: number;
   /** items (or whole steps) that threw; each is logged and the run goes on */
   failed: number;
 }
@@ -62,6 +77,7 @@ function purgeStatements(db: D1Binding, userId: string): D1Statement[] {
     db.prepare("DELETE FROM unlocks WHERE user_id = ?").bind(userId),
     db.prepare("DELETE FROM credit_lots WHERE user_id = ?").bind(userId),
     db.prepare("DELETE FROM payments WHERE order_id IN (SELECT id FROM orders WHERE user_id = ?)").bind(userId),
+    db.prepare("DELETE FROM play_purchases WHERE order_id IN (SELECT id FROM orders WHERE user_id = ?)").bind(userId),
     db.prepare("DELETE FROM orders WHERE user_id = ?").bind(userId),
     db.prepare("DELETE FROM sessions WHERE user_id = ?").bind(userId),
     // The erase deleted them already; one an interrupted erase left behind must not block the purge.
@@ -72,8 +88,9 @@ function purgeStatements(db: D1Binding, userId: string): D1Statement[] {
   ];
 }
 
-/** A short, data-free code for a log line: Toss's error code, or the error's class name. */
-const codeOf = (error: unknown) => (error instanceof TossError ? error.code : error instanceof Error ? error.name : "UNKNOWN");
+/** A short, data-free code for a log line: Toss's error code, Google Play's status word, or the error's class name. */
+const codeOf = (error: unknown) =>
+  error instanceof TossError ? error.code : error instanceof PlayError ? error.reason : error instanceof Error ? error.name : "UNKNOWN";
 
 /** The Toss client for one run, counting its calls (the subrequest budget). */
 function counted(toss: TossClient): { client: TossClient; calls: () => number } {
@@ -103,11 +120,20 @@ function counted(toss: TossClient): { client: TossClient; calls: () => number } 
  *   goes in the next run. An order the run could not decide (failed look-up, a stuck orphan, a
  *   partial cancel) moves behind the others, so it never blocks the head of the queue.
  * Toss steps are skipped when payments are not configured.
+ * - Google Play (`options.play`, the Android app; skipped without it) runs before Toss: purchases granted but not consumed
+ *   are consumed (Google refunds one left three days), what Google voided is applied, and a refund whose answer was lost
+ *   is settled from what Google holds (playOrders.ts).
  */
-export async function runMaintenance(db: D1Binding, toss: TossClient | null, now: number, options: { clock?: () => number } = {}): Promise<MaintenanceReport> {
+export async function runMaintenance(
+  db: D1Binding,
+  toss: TossClient | null,
+  now: number,
+  options: { clock?: () => number; play?: PlayClient | null } = {},
+): Promise<MaintenanceReport> {
   const clock = options.clock ?? Date.now;
   const report: MaintenanceReport = {
-    confirming: 0, refunding: 0, released: 0, expired: 0, abandoned: 0, erased: 0, sessions: 0, giftClaims: 0, openingClaims: 0, chapterTurns: 0, shares: 0, accountCounts: 0, purgedAccounts: 0, failed: 0,
+    confirming: 0, refunding: 0, released: 0, expired: 0, abandoned: 0, erased: 0, sessions: 0, giftClaims: 0, openingClaims: 0, chapterTurns: 0, shares: 0, accountCounts: 0, purgedAccounts: 0,
+    playConsumed: 0, playVoided: 0, playRefunds: 0, failed: 0,
   };
   /** One item or step: its result, or null when it threw (logged, counted, and the run goes on). */
   const attempt = async <T>(evt: string, work: () => Promise<T>, orderId?: string): Promise<T | null> => {
@@ -190,6 +216,19 @@ export async function runMaintenance(db: D1Binding, toss: TossClient | null, now
       });
     }
   });
+
+  const play = options.play ?? null;
+  if (play) {
+    await attempt("cron.play_consume_failed", async () => {
+      report.playConsumed = await consumePendingPlay(db, play, now, PLAY_CONSUMES_PER_RUN);
+    });
+    await attempt("cron.play_voided_failed", async () => {
+      report.playVoided = await applyVoidedPlay(db, play, now);
+    });
+    await attempt("cron.play_refund_failed", async () => {
+      report.playRefunds = await reconcilePlayRefunds(db, play, now, PLAY_REFUND_CHECKS_PER_RUN);
+    });
+  }
 
   if (!toss) return report;
   const budget = counted(toss);

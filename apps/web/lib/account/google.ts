@@ -44,6 +44,11 @@ export function googleConfigProblems(env: NodeJS.ProcessEnv = process.env, secre
   return problems;
 }
 
+/** GOOGLE_CLIENT_ID (the web client): the audience of every ID token we accept, the app's native sign-in included. */
+export function googleClientId(env: NodeJS.ProcessEnv = process.env, secrets: SecretEnv = cloudflareEnv() ?? env): string {
+  return secrets.GOOGLE_CLIENT_ID?.trim() ?? "";
+}
+
 /** The registered redirect URI: the production site, or localhost:3100 in development. */
 export function googleRedirectUri(env: NodeJS.ProcessEnv = process.env): string {
   const origin = env.NODE_ENV === "production" ? SITE.url : "http://localhost:3100";

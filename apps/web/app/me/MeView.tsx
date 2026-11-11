@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/Button";
 import { DotLine } from "@/components/ui/DotLine";
 import { Modal } from "@/components/ui/Modal";
 import { loginHref, refreshAccount, useAccount } from "@/lib/account/client";
+import { callNative } from "@/lib/app/bridge";
+import { usePrivacyOptionsRequired } from "@/lib/app/shell";
 import { SITE, openingFreeOn } from "@/lib/config";
 import { clearFlow } from "@/lib/flowState";
 import { openingFreeText } from "@/lib/helpGuide";
@@ -50,6 +52,7 @@ export function MeView({ status, accountDeleted = false }: MeViewProps) {
     if (said) setNotice(said);
   }, []);
   const { profile } = useSajuProfile();
+  const privacyOptions = usePrivacyOptionsRequired();
   const chapters = useChapters();
   const remaining = useRemainingFree();
   // Read once hydrated (remaining is undefined before): from 12월 1일 the box promises nothing.
@@ -198,6 +201,15 @@ export function MeView({ status, accountDeleted = false }: MeViewProps) {
                 <ChevronIcon />
               </Link>
             </li>
+            {/* The Starlog app only: Google's ad consent choices (AdMob/UMP), when the shell says they must be offered. */}
+            {privacyOptions ? (
+              <li className="app-only">
+                <button type="button" className={s.item} onClick={() => void callNative("privacyOptions").catch(() => {})}>
+                  <span>광고 개인정보 설정</span>
+                  <ChevronIcon />
+                </button>
+              </li>
+            ) : null}
             <li>
               {/* The address in the footer's business info (lib/config.ts SITE.business). */}
               <a href={`mailto:${SITE.business.email}`} className={s.item}>

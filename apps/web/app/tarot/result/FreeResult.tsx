@@ -3,6 +3,7 @@
 import { deckPrefs } from "@/lib/deck";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { ReportReading } from "@/components/report/ReportReading";
 import { ErrorPanel } from "@/components/reading/ErrorPanel";
 import { SessionRetry } from "@/components/reading/KeptPanel";
 import { LoginFirst } from "@/components/reading/LoginFirst";
@@ -391,6 +392,7 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null, resum
                   <p className={s.nudge}>이어지는 이야기는 전체 풀이에서 열려요</p>
                 </Paper>
               ) : null}
+              <ReportReading kind="teaser" />
               {/* The sheet sits below the locked contents: a quiet way down right after the free part (QA-05). */}
               <a href="#unlock-title" className={s.jump}>
                 전체 풀이 보러 가기<span aria-hidden="true"> ↓</span>

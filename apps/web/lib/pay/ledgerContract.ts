@@ -35,7 +35,7 @@ async function setup(make: Make) {
   return db;
 }
 
-async function paidOrder(db: D1Binding, orderId: string, productId = "tarot", mode: "test" | "live" = "live") {
+async function paidOrder(db: D1Binding, orderId: string, productId = "tarot", mode: "test" | "live" | "play" = "live") {
   await db
     .prepare(
       `INSERT INTO orders (id, user_id, product_id, amount_krw, order_name, status, return_to, withdrawal_ack_at, created_at, updated_at)
@@ -357,6 +357,20 @@ export function ledgerContract(make: Make) {
     expect(await paid("live")).toEqual({ ok: false });
     expect(await paid(null)).toEqual({ ok: false });
     expect((await paid("test")).ok).toBe(true);
+  });
+
+  it("spends a lot paid through Google Play under any deploy's keys, or none; a Toss test payment still never opens under live keys", async () => {
+    for (const payMode of ["test", "live", "mock", null] as const) {
+      const db = await setup(make);
+      await paidOrder(db, "order_play", "tarot", "play");
+      const result = await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "paid", now: NOW, payMode });
+      expect(result, String(payMode)).toMatchObject({ ok: true, allocations: [["lot_order_play", 1]] });
+    }
+    const db = await setup(make);
+    await paidOrder(db, "order_test", "tarot", "test");
+    await paidOrder(db, "order_play", "tarot", "play");
+    expect(await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "paid", now: NOW, payMode: "live" })).toMatchObject({ ok: true, allocations: [["lot_order_play", 1]] });
+    expect(await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "paid", now: NOW + 1, payMode: "live" })).toEqual({ ok: false });
   });
 
   it("opens a paid reading with one whole purchase, never parts of two, a 10-unit lot from before 2026-10-08 included", async () => {

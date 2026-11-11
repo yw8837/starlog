@@ -3,11 +3,14 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { setRefundRule } from "@/components/legal/PremiumLegal";
+import { trackMetaPurchase } from "@/components/seo/MetaPixel";
 import { Stepper } from "@/components/tarot/Stepper";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Modal } from "@/components/ui/Modal";
-import { loginHref } from "@/lib/account/client";
+import { loginHref, refreshAccount } from "@/lib/account/client";
+import { withQuery } from "@/lib/account/returnTo";
+import { callNative, nativeCode } from "@/lib/app/bridge";
 import { SITE, sajuTopicsMode, won } from "@/lib/config";
 import { approxCharsText } from "@/lib/pricing";
 import { REFUND_DAYS, SET_PRODUCT_ID } from "@/lib/pay/catalog";
@@ -24,7 +27,8 @@ interface CheckoutInfo {
   name: string;
   amount: number;
   customerKey: string;
-  provider: "toss" | "mock";
+  /** "play": the Starlog app, where Google Play takes the payment (no Toss) */
+  provider: "toss" | "mock" | "play";
   clientKey: string | null;
 }
 
@@ -36,7 +40,24 @@ interface OrderInfo {
   failUrl: string;
   /** G3, premium only: purchases of this product the buyer holds unopened or is opening */
   held?: number;
+  /** the app's order: Google Play's product id and the account tag the purchase carries (obfuscated account id) */
+  play?: { productId: string; accountTag: string };
 }
+
+/** /api/pay/play/verify's answer for a paid purchase (as /api/pay/confirm's, with the order). */
+type PlayPaid = { status: "paid"; orderId: string; returnTo: string; signedIn: boolean };
+
+/** In the app, never cards or 토스 (W2.2). Before Google charged: */
+const PLAY_FAILED = "결제하지 못했어요. 잠시 뒤에 다시 시도해 주세요.";
+const PLAY_PENDING = "결제가 아직 끝나지 않았어요. 결제가 끝나면 자동으로 열려요.";
+/** After Google charged (a purchase token came back) while the server has not granted it yet: never "결제하지 못했어요". */
+const PLAY_CHARGED = "결제는 됐어요. 풀이를 여는 중이에요. 잠시 뒤 자동으로 열려요.";
+/** The server's definite refusal of a charged purchase, when it sends no message of its own. */
+const PLAY_UNVERIFIED = "결제를 확인하지 못했어요. 문의해 주세요.";
+/** Only these answers from /api/pay/play/verify are final; anything else (a lost connection, 5xx, PAY_PENDING…) is asked again. */
+const PLAY_FINAL = new Set(["PAY_FAILED", "BAD_REQUEST"]);
+/** The waits before asking /api/pay/play/verify again; after them the app's resume check (AppMode) finishes it. */
+const PLAY_RETRY_MS = [2_000, 5_000, 10_000] as const;
 
 /** The set (owner 2026-11-10): each reading's whole, the follow-ups, the real saving against the two apart. */
 const SET_APART = PREMIUM["newyear-2027"].krw + PREMIUM.match.krw;
@@ -83,15 +104,19 @@ type CheckoutViewProps = {
   returnTo: string;
   /** tests: replaces the browser navigation */
   navigate?: (url: string) => void;
+  /** the app: the waits before verifying a charged Google Play purchase again (ms; tests shorten them) */
+  retryMs?: readonly number[];
 };
 
 /**
  * Spec 5.2. The page shows the product, the server's price, what it holds and the 청약철회 notice,
  * which must be ticked before paying. Then the Toss widget (payment methods and Toss's own terms).
  * Only on 결제하기 is the order created, and only at the server's price. STARLOG_PAY=mock skips the
- * widget and goes straight to /pay/success with a mock payment key.
+ * widget and goes straight to /pay/success with a mock payment key. In the Starlog app (provider "play") there is no Toss
+ * at all: Google Play's sheet takes the payment (lib/app/bridge.ts `purchase`), /api/pay/play/verify grants it, and the
+ * page lands where /pay/success would.
  */
-export function CheckoutView({ productId, returnTo, navigate = (url) => window.location.assign(url) }: CheckoutViewProps) {
+export function CheckoutView({ productId, returnTo, navigate = (url) => window.location.assign(url), retryMs = PLAY_RETRY_MS }: CheckoutViewProps) {
   const [info, setInfo] = useState<CheckoutInfo | null>(null);
   const [error, setError] = useState<ErrorView | null>(null);
   const [agreed, setAgreed] = useState(false);
@@ -102,7 +127,15 @@ export function CheckoutView({ productId, returnTo, navigate = (url) => window.l
   /** 다시 시도 after the details failed to load: loads them again. */
   const [attempt, setAttempt] = useState(0);
   const widgets = useRef<TossWidgets | null>(null);
-  const here = `/pay/checkout?${new URLSearchParams({ product: productId, returnTo })}`;
+  /** The page is still open (the app's verify retries stop when it is left). */
+  const alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
+  const here =`/pay/checkout?${new URLSearchParams({ product: productId, returnTo })}`;
 
   useEffect(() => {
     let cancelled = false;
@@ -115,8 +148,8 @@ export function CheckoutView({ productId, returnTo, navigate = (url) => window.l
         return;
       }
       setInfo(res.data);
-      if (res.data.provider === "mock" || !res.data.clientKey) {
-        setReady(res.data.provider === "mock");
+      if (res.data.provider !== "toss" || !res.data.clientKey) {
+        setReady(res.data.provider === "mock" || res.data.provider === "play");
         return;
       }
       try {
@@ -168,6 +201,7 @@ export function CheckoutView({ productId, returnTo, navigate = (url) => window.l
   };
 
   const requestPayment = async (checkout: CheckoutInfo, order: OrderInfo) => {
+    if (checkout.provider === "play") return payOnPlay(order);
     if (checkout.provider === "mock") {
       navigate(`${order.successUrl}?${new URLSearchParams({ paymentType: "NORMAL", orderId: order.orderId, paymentKey: `mock_${order.orderId}`, amount: String(order.amount) })}`);
       return;
@@ -179,6 +213,48 @@ export function CheckoutView({ productId, returnTo, navigate = (url) => window.l
       // The buyer closed the window: stay here quietly. Anything else is a real failure.
       if (!isPaymentWindowClosed(error)) setError({ title: "결제창을 열지 못했어요", body: "잠시 뒤에 다시 시도해 주세요. 청구된 금액은 없어요.", action: "retry" });
     }
+  };
+
+  /** The app: Google Play's sheet, then the server grants it, then the reading as after /pay/success. */
+  const payOnPlay = async (order: OrderInfo) => {
+    const fail = (title: string) => {
+      setBusy(false);
+      setError({ title, action: "retry" });
+    };
+    if (!order.play) return fail(PLAY_FAILED);
+    let bought: { purchaseToken: string; productId: string };
+    try {
+      bought = await callNative("purchase", { playProductId: order.play.productId, orderId: order.orderId, accountTag: order.play.accountTag });
+    } catch (error) {
+      const code = nativeCode(error);
+      // The buyer closed Google's sheet: stay here quietly.
+      if (code === "CANCELED") return setBusy(false);
+      return fail(code === "PENDING" ? PLAY_PENDING : PLAY_FAILED);
+    }
+    // Google charged: from here a lost or busy answer is never a failure. Asked again after each wait; the pay button stays
+    // off (a second purchase would only be refused), and the app's resume check (AppMode) finishes what is still open.
+    const verify = () => postJson<PlayPaid>("/api/pay/play/verify", { purchaseToken: bought.purchaseToken, productId: bought.productId });
+    let res = await verify();
+    for (const delay of retryMs) {
+      if (res.ok || PLAY_FINAL.has(res.error.code) || !alive.current) break;
+      setError({ title: PLAY_CHARGED, action: null });
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      if (!alive.current) return;
+      res = await verify();
+    }
+    if (!alive.current) return;
+    if (!res.ok) {
+      if (PLAY_FINAL.has(res.error.code)) return fail(res.error.message ?? PLAY_UNVERIFIED);
+      return setError({ title: PLAY_CHARGED, action: null });
+    }
+    setError(null);
+    // Where /pay/success lands after a confirmed payment (PaySuccess finish): the reading with ?unlock=paid, or the login first.
+    const target = withQuery(res.data.returnTo, { unlock: "paid" });
+    if (res.data.signedIn === false) return navigate(loginHref(target));
+    const sent = trackMetaPurchase(res.data.orderId, order.amount);
+    void refreshAccount();
+    await sent;
+    navigate(target);
   };
 
   return (
@@ -242,9 +318,9 @@ export function CheckoutView({ productId, returnTo, navigate = (url) => window.l
               <div id="payment-methods" className={s.widget} />
               <div id="payment-agreement" className={s.widget} />
             </>
-          ) : (
+          ) : info.provider === "mock" ? (
             <p className={s.mock}>테스트 결제예요. 실제로 청구되지 않아요.</p>
-          )}
+          ) : null}
           {error ? (
             <p role="alert" className={s.error}>
               {error.title}
@@ -257,11 +333,11 @@ export function CheckoutView({ productId, returnTo, navigate = (url) => window.l
                 {`${refundRule(info.productId)} `}
                 <Link href="/refund">환불 정책</Link>
               </p>
-              {/* F3: some card companies may still refuse this store; no list of them, only what to do. */}
-              <p>결제가 안 되면 다른 카드나 간편결제로 해 보세요.</p>
+              {/* F3: some card companies may still refuse this store; no list of them, only what to do. Not in the app (Google Play). */}
+              {info.provider === "play" ? null : <p>결제가 안 되면 다른 카드나 간편결제로 해 보세요.</p>}
             </div>
             <Button block onClick={() => void pay()} disabled={!agreed || !ready || busy}>
-              {`${won(info.amount)} 결제하기`}
+              {info.provider === "play" ? `Google Play로 ${won(info.amount)} 결제하기` : `${won(info.amount)} 결제하기`}
             </Button>
             {info.provider === "mock" ? (
               <Button

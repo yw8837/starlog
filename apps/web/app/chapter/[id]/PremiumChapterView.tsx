@@ -5,6 +5,7 @@ import { MatchArticle } from "@/components/premium/MatchArticle";
 import { CrossSpread } from "@/components/premium/CrossSpread";
 import { DeepTarotArticle } from "@/components/premium/DeepTarotArticle";
 import { NewYearArticle } from "@/components/premium/NewYearArticle";
+import { ReportReading } from "@/components/report/ReportReading";
 import { ChartPanel } from "@/components/saju/ChartPanel";
 import { InputLine } from "@/components/saju/InputLine";
 import { chartFor } from "@/components/saju/useSajuChart";
@@ -40,6 +41,8 @@ type PremiumChapterViewProps = {
   kept: KeptReading;
   /** The related reading after the rating (sales 2026-11-10 item 2: 신년 ↔ 궁합). */
   next?: ReactNode;
+  /** The saved reading's id: 신고 under the reading and its follow-up answers (the Starlog app only). */
+  readingId?: string;
 };
 
 /** The year titles /api/og/premium draws (plain Korean, 2–14 characters); any other title gets no share button. */
@@ -68,7 +71,7 @@ function YearChart({ chapter }: { chapter: NewYearChapter }) {
  * question or theme, the cards or the chart beside the paid body, its three follow-ups, 돌아보기 and the
  * rating, then the related reading (`next`).
  */
-export function PremiumChapterView({ chapter, followUp, checkin, rating, shareable = false, share, kept, next }: PremiumChapterViewProps) {
+export function PremiumChapterView({ chapter, followUp, checkin, rating, shareable = false, share, kept, next, readingId }: PremiumChapterViewProps) {
   // A 궁합's title carries the product's name already ("프리미엄 궁합 · 친구"): its line above says the date only.
   const eyebrow = chapter.kind === "match" ? kstMonthDay(chapter.createdAt) : `${PREMIUM[chapter.kind].name} · ${kstMonthDay(chapter.createdAt)}`;
   // The design the reading was written for; one saved before readings kept their deck was written for the 1909 scans.
@@ -154,9 +157,11 @@ export function PremiumChapterView({ chapter, followUp, checkin, rating, shareab
         <ChapterContents />
         <div id="chapter-reading" className={s.anchor}>
           {article}
+          {readingId !== undefined ? <ReportReading kind={chapter.kind} readingId={readingId} /> : null}
         </div>
         <div id="chapter-follow-up" className={s.anchor}>
           <FollowUp {...followUp} reader={chapter.kind === "tarot-deep" ? "cat" : "rabbit"} />
+          {readingId !== undefined && followUp.turns.length > 0 ? <ReportReading kind="followup" readingId={readingId} /> : null}
         </div>
         {rating ?? <Feedback />}
         {next}

@@ -2,7 +2,9 @@
 
 import { getCard, type Orientation } from "@starlog/core";
 import { useEffect, useRef, useState, type RefObject } from "react";
+import { AppAdSignal } from "@/components/app/AppAdSignal";
 import { ErrorPanel } from "@/components/reading/ErrorPanel";
+import { ReportReading } from "@/components/report/ReportReading";
 import { LoginFirst } from "@/components/reading/LoginFirst";
 import { Paper } from "@/components/tarot/Paper";
 import { ShuffleStage } from "@/components/tarot/ShuffleStage";
@@ -477,6 +479,10 @@ function Opened({ reading, revisit, flip, lineRef }: { reading: DailyData; revis
         </h2>
         <p className={s.tipText}>{reading.tip}</p>
       </section>
+
+      {/* The Starlog app only: 신고 on this reading, and the free result's banner while it is shown. */}
+      <ReportReading kind="daily" />
+      <AppAdSignal on />
 
       <div className={s.after}>
         {/* The card's own page (/s/<id>, made by the server from this device's card), never the home (owner 2026-10-20). */}

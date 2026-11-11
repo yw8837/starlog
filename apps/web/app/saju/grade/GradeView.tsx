@@ -3,6 +3,7 @@
 import { gradeChartOf, SAJU_GRADE_RULE, type GradeChart, type GradeLetter, type SajuChart } from "@starlog/core";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { AppAdSignal } from "@/components/app/AppAdSignal";
 import { PremiumRows } from "@/components/premium/PremiumRows";
 import { GradeCard } from "@/components/saju/GradeCard";
 import { SajuFields } from "@/components/saju/SajuForm";
@@ -33,6 +34,12 @@ type Kind = "own" | "friend" | "example";
 export const GRADE_EXAMPLE_FORM: SajuForm = Object.freeze({ ...DEFAULT_SAJU_FORM, year: 1991, month: 5, day: 20 });
 
 const EXAMPLE_NOTE = `${GRADE_EXAMPLE_FORM.year}년 ${GRADE_EXAMPLE_FORM.month}월 ${GRADE_EXAMPLE_FORM.day}일생(시 모름)으로 계산한 예시예요. 아래에 내 생일을 넣으면 내 등급이 나와요.`;
+
+/**
+ * The Starlog app's banner (W2.6), mounted with a computed card only (not while the profile is read, not on an error): a card
+ * from a birth the visitor entered (their own, or a friend's), never the example card.
+ */
+export const gradeAdOn = (kind: Kind): boolean => kind !== "example";
 
 /** ?y= when it names one of the ten chips from this year, else this year. */
 function yearFromAddress(thisYear: number): number {
@@ -127,6 +134,7 @@ export function GradeView() {
 
   return (
     <div className={s.view}>
+      <AppAdSignal on={gradeAdOn(kind)} />
       <div ref={topRef} />
       {/* the example's fields come right under its card: the visitor's own birth is the next step */}
       <GradeResult chart={result.chart} kind={kind} year={year} thisYear={thisYear} onYear={pickYear} afterCard={kind === "example" ? fields : null} />

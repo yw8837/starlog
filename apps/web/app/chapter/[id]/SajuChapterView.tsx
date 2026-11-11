@@ -3,6 +3,7 @@
 import { useMemo, type ReactNode } from "react";
 import { PrintFoot, PrintHead, SavePdfButton, type KeptReading } from "@/components/share/SavePdfButton";
 import { ShareResultButton, type ShareActions } from "@/components/share/ShareResultButton";
+import { ReportReading } from "@/components/report/ReportReading";
 import { ChartPanel } from "@/components/saju/ChartPanel";
 import { InputLine } from "@/components/saju/InputLine";
 import { chartFor } from "@/components/saju/useSajuChart";
@@ -38,10 +39,12 @@ type SajuChapterViewProps = {
   rating?: ReactNode;
   /** After 카드로 이어서 보기 (plan-reconciled §4.3: 2027 신년운세 and 프리미엄 궁합 where premium is visible). */
   next?: ReactNode;
+  /** The saved reading's id: 신고 under the reading and its follow-up answers (the Starlog app only). */
+  readingId?: string;
 };
 
 /** An opened saju reading in one scroll: the chart, the sections, follow-ups, rating, and a way on to tarot. */
-export function SajuChapterView({ eyebrow, title, birth, reading, followUp, checkin, share, kept, rating, next }: SajuChapterViewProps) {
+export function SajuChapterView({ eyebrow, title, birth, reading, followUp, checkin, share, kept, rating, next, readingId }: SajuChapterViewProps) {
   const result = useMemo(() => chartFor(birth), [birth]);
 
   return (
@@ -68,9 +71,11 @@ export function SajuChapterView({ eyebrow, title, birth, reading, followUp, chec
         <ChapterContents />
         <div id="chapter-reading" className={`${s.sections} ${s.anchor}`}>
           <SajuSections reading={reading} />
+          {readingId !== undefined ? <ReportReading kind="saju" readingId={readingId} /> : null}
         </div>
         <div id="chapter-follow-up" className={s.anchor}>
           <FollowUp {...followUp} reader="rabbit" />
+          {readingId !== undefined && followUp.turns.length > 0 ? <ReportReading kind="followup" readingId={readingId} /> : null}
         </div>
         {rating ?? <Feedback />}
 

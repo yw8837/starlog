@@ -126,6 +126,18 @@ a {
   white-space: nowrap;
 }
 
+/*
+ * The Starlog Android app (lib/app/mode.ts sets <html data-app> before paint): what only the website says (the web
+ * payment method) is .web-only, what only the app says is .app-only. A normal browser shows exactly what it did before.
+ */
+html[data-app] .web-only {
+  display: none !important;
+}
+
+html:not([data-app]) .app-only {
+  display: none !important;
+}
+
 /* 오행 colour hook: data-el="wood|fire|earth|metal|water" sets --el (metal when unset or unknown). */
 [data-el] {
   --el: var(--el-metal);

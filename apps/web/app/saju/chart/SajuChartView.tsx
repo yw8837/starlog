@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Cat } from "@/components/characters/Cat";
 import { Rabbit } from "@/components/characters/Rabbit";
 import { useLocale } from "@/components/i18n/LocaleProvider";
+import { ReportReading } from "@/components/report/ReportReading";
 import { ErrorPanel } from "@/components/reading/ErrorPanel";
 import { SessionRetry } from "@/components/reading/KeptPanel";
 import { LoginFirst } from "@/components/reading/LoginFirst";
@@ -381,6 +382,7 @@ export function SajuChartView({
             {...(teaser.share ? {} : { unavailable: SAJU_SHARE_LATER })}
           />
         </div>
+        <ReportReading kind="teaser" />
         {/* The sheet sits below the row and the locked contents: the tarot result's quiet way down right after the free part (M-05). */}
         <a href="#unlock-title" className={s.jump}>
           전체 풀이 보러 가기<span aria-hidden="true"> ↓</span>

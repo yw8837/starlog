@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Gowun_Batang, Noto_Sans_KR } from "next/font/google";
+import { AppMode } from "@/components/app/AppMode";
 import { CharacterDefs } from "@/components/characters/defs";
 import { RouteTracker } from "@/components/layout/RouteTracker";
 import { VersionCheck } from "@/components/layout/VersionCheck";
@@ -9,6 +10,7 @@ import { GoogleAnalytics } from "@/components/seo/GoogleAnalytics";
 import { MetaPixel } from "@/components/seo/MetaPixel";
 import { SiteJsonLd } from "@/components/seo/JsonLd";
 import { adsConfig } from "@/lib/ads";
+import { APP_MODE_SCRIPT } from "@/lib/app/mode";
 import { SITE } from "@/lib/config";
 import { FEED_ALTERNATES, HOME_DESCRIPTION, HOME_TITLE, OG_IMAGE, OG_SITE_NAME, siteVerification } from "@/lib/seo";
 import "./globals.css";
@@ -63,7 +65,11 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ko" className={`${display.variable} ${body.variable}`}>
+    // suppressHydrationWarning: in the Starlog app the <head> script adds data-app to <html> before React hydrates (this element only).
+    <html lang="ko" className={`${display.variable} ${body.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: APP_MODE_SCRIPT }} />
+      </head>
       <body>
         <SiteJsonLd />
         <CharacterDefs />
@@ -72,6 +78,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {children}
         <RouteTracker />
         <VersionCheck />
+        {/* The Starlog app only (renders nothing): purchases Google Play finished while the app was away are sent to verify. */}
+        <AppMode />
         {/* GA4 on consent (owner: 동의 받고 켜기), from the privacy revision of lib/legal.ts GA_REVISION_DATE: the banner
             asks once, the loader runs only after 허용. Both render nothing on the server. */}
         <ConsentBanner />

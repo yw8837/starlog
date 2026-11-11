@@ -1,6 +1,7 @@
 import { errorResponse, json } from "@/lib/api/http";
 import { accountDb } from "@/lib/db";
 import { CRON_TOSS_TIMEOUT_MS, runMaintenance } from "@/lib/pay/maintenance";
+import { playClient } from "@/lib/pay/play";
 import { tossClient } from "@/lib/pay/toss";
 import { safeEqual } from "@/lib/security/sign";
 
@@ -16,7 +17,9 @@ export async function POST(request: Request): Promise<Response> {
   if (!given || !(await safeEqual(given, secret, secret))) return errorResponse("FORBIDDEN");
   const db = accountDb();
   if (!db) return errorResponse("PAY_UNAVAILABLE");
-  const report = await runMaintenance(db, tossClient(process.env, { timeoutMs: CRON_TOSS_TIMEOUT_MS }), Date.now());
+  const report = await runMaintenance(db, tossClient(process.env, { timeoutMs: CRON_TOSS_TIMEOUT_MS }), Date.now(), {
+    play: playClient(process.env, { timeoutMs: CRON_TOSS_TIMEOUT_MS }),
+  });
   console.info(JSON.stringify({ evt: "cron.maintenance", ...report }));
   return json(report);
 }

@@ -4,10 +4,12 @@ import { safeReturnTo } from "@/lib/account/returnTo";
 import { isReviewAccount, isReviewer } from "@/lib/account/review";
 import { errorResponse, json, readJson } from "@/lib/api/http";
 import type { D1Binding } from "@/lib/db/d1";
+import { isStarlogApp } from "@/lib/inApp";
 import { SET_PRODUCT_ID, productById, sellable } from "@/lib/pay/catalog";
 import { entitlements } from "@/lib/pay/ledger";
 import { paymentsMode, salesOpen } from "@/lib/pay/mode";
 import { RECONCILE_AFTER_MS, createOrder, orderById, orderHistory, reconcileConfirming, type OrderRow } from "@/lib/pay/orders";
+import { playAccountTag, playClient, playProductId } from "@/lib/pay/play";
 import { reconcileRefunding } from "@/lib/pay/refunds";
 import { tossClient } from "@/lib/pay/toss";
 import { premiumOpen, setOpen } from "@/lib/premium/flags";
@@ -24,6 +26,9 @@ const REVIEW_MAX_UNOPENED = 3;
  * G3: a premium order also says how many purchases of that product the buyer holds unopened or is opening
  * (`held`), so the checkout asks before a second one; it never refuses one (two 프리미엄 궁합 for two people). A set
  * counts those of either of its readings (2027 신년운세, 프리미엄 궁합).
+ * From the Android app (isStarlogApp) the order is paid with Google Play: it needs this deploy's Play client instead of
+ * Toss, and also answers `play: {productId, accountTag}` for the app to buy it with (obfuscatedAccountId = accountTag,
+ * obfuscatedProfileId = orderId; lib/pay/playOrders.ts checks both).
  */
 export async function POST(request: Request): Promise<Response> {
   const ctx = await openAccountRoute(request, { limiter: "PAY_LIMITER", write: true });
@@ -39,7 +44,8 @@ export async function POST(request: Request): Promise<Response> {
       .first<{ n: number }>();
     if ((held?.n ?? 0) >= REVIEW_MAX_UNOPENED) return errorResponse("NOT_AVAILABLE");
   }
-  if (!tossClient()) return errorResponse("PAY_UNAVAILABLE");
+  const app = isStarlogApp(request.headers.get("user-agent") ?? "");
+  if (app ? !playClient() : !tossClient()) return errorResponse("PAY_UNAVAILABLE");
   const body = OrderBody.safeParse(await readJson(request, 2_000));
   if (!body.success) return errorResponse("BAD_REQUEST");
   const product = productById(body.data.productId);
@@ -56,6 +62,7 @@ export async function POST(request: Request): Promise<Response> {
   return json({
     orderId: order.id, orderName: order.order_name, amount: order.amount_krw, successUrl: `${origin}/pay/success`, failUrl: `${origin}/pay/fail`,
     ...(held === null ? {} : { held }),
+    ...(app ? { play: { productId: playProductId(product.id), accountTag: await playAccountTag(session.user.id) } } : {}),
   });
 }
 

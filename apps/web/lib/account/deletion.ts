@@ -5,6 +5,8 @@ import { eraseReviewStatements } from "@/lib/reviews/store";
 import type { D1Binding } from "@/lib/db/d1";
 import { LOT_UNTOUCHED_SQL, entitlements, forfeitStatements, sweepUser, type Lot } from "@/lib/pay/ledger";
 import { orderForUser, reconcileConfirming, type OrderRow } from "@/lib/pay/orders";
+import { playClient, type PlayClient } from "@/lib/pay/play";
+import { paidWithPlay, refundUnusedPlayOrder } from "@/lib/pay/playOrders";
 import { paidUnderOtherKeys, reconcileRefunding, refundUnusedOrder, setAsideForOperator } from "@/lib/pay/refunds";
 import type { TossClient } from "@/lib/pay/tossTypes";
 import { signToken, signingSecret, verifyToken, type SignedPayload } from "@/lib/security/sign";
@@ -37,10 +39,10 @@ export type DeleteOutcome = { ok: true; refunded: number } | { ok: false; code: 
 /**
  * Orders still settling with Toss. One paid under other keys than this deploy's (`?`, the Toss mode;
  * null counts every order) never settles here: the operator does it by hand (runbook section 5), so it
- * does not hold the deletion up.
+ * does not hold the deletion up. A Google Play refund in flight always counts (playOrders.ts: it settles with Google).
  */
 const IN_FLIGHT = `status IN ('confirming', 'refunding')
-  AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.order_id = orders.id AND p.mode <> COALESCE(?, p.mode))`;
+  AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.order_id = orders.id AND p.mode <> COALESCE(?, p.mode) AND p.mode <> 'play')`;
 
 async function count(db: D1Binding, sql: string, ...values: unknown[]): Promise<number> {
   return (await db.prepare(sql).bind(...values).first<{ n: number }>())?.n ?? 0;
@@ -49,9 +51,16 @@ async function count(db: D1Binding, sql: string, ...values: unknown[]): Promise<
 /**
  * 회원 탈퇴 (spec 5.8, M3): settle what is in flight, refuse while anything still is, refund every
  * unopened purchase (a set with one reading opened: the other's part, owner 2026-11-10), mark the account deleted with one
- * guarded statement, then erase.
+ * guarded statement, then erase. An unopened Google Play purchase (the Android app) is refunded through Google (`play`, this
+ * deploy's Play client by default); without Play, or when Google refuses, it is set aside for the operator like a payment
+ * under other keys, so the deletion still completes.
  */
-export async function deleteAccount(db: D1Binding, toss: TossClient | null, input: { userId: string; now: number }): Promise<DeleteOutcome> {
+export async function deleteAccount(
+  db: D1Binding,
+  toss: TossClient | null,
+  input: { userId: string; now: number },
+  play: PlayClient | null = playClient(),
+): Promise<DeleteOutcome> {
   const { userId, now } = input;
   await sweepUser(db, userId, now);
   const mode = toss?.mode ?? null;
@@ -71,6 +80,19 @@ export async function deleteAccount(db: D1Binding, toss: TossClient | null, inpu
   // after its client left (SEC-02) refunds nothing; it leaves use with the account (eraseDeletedAccount).
   for (const orderId of new Set(unused.filter((item) => item.refundable > 0).map((item) => item.orderId))) {
     const order = await orderForUser(db, orderId, userId);
+    if (order && (await paidWithPlay(db, order.id))) {
+      const played = play ? await refundUnusedPlayOrder(db, play, { order, now }) : null;
+      if (played?.ok) {
+        refunded++;
+        continue;
+      }
+      if (played?.code === "PAY_PENDING") return { ok: false, code: "PENDING" };
+      // Play not configured, Google refused, or a set with one reading opened: the reading leaves use, the order stays for
+      // the operator, who refunds it in Play Console (runbook 11).
+      console.warn(JSON.stringify({ evt: "account.delete_play_set_aside", orderId: order.id }));
+      await setAsideForOperator(db, order.id, now);
+      continue;
+    }
     if (order && toss && (await paidUnderOtherKeys(db, toss, order.id))) {
       // These keys cannot cancel it: the reading leaves use, the order stays for the operator (runbook 5).
       await setAsideForOperator(db, order.id, now);
@@ -168,6 +190,7 @@ async function eraseFriendStars(db: D1Binding, userId: string): Promise<void> {
  * - an unused signup gift is forfeited (its ledger rows stay), and so is a purchase given back after
  *   its client left (SEC-02: never refunded), or any other paid lot not untouched (deleteAccount refunded every untouched one);
  * - saved readings, share links, sessions and premium preview counts are deleted, and the account's reviews with their 도움돼요 and reports;
+ * - its 신고 on readings (reading_reports) stay without its user id;
  * - its gift claim is stamped with the deletion time (purged a year later, Task 13);
  * - its 오픈 기념 무료 claim stays, marked used, until the event's purge, first (sealOpeningClaim, owner 2026-10-28);
  * - orders that never reached Toss are closed;
@@ -189,6 +212,8 @@ export async function eraseDeletedAccount(db: D1Binding, userId: string, now: nu
   const results = await db.batch([
     ...forfeited.flatMap((lot) => forfeitStatements(db, lot, "revoked", now)),
     ...eraseReviewStatements(db, userId),
+    // 신고 on readings (W2.5) stay, without who sent them.
+    db.prepare(`UPDATE reading_reports SET user_id = NULL WHERE user_id = ? AND ${DELETED}`).bind(userId, userId),
     db.prepare(`DELETE FROM readings WHERE user_id = ? AND ${DELETED}`).bind(userId, userId),
     db.prepare(`DELETE FROM shares WHERE user_id = ? AND ${DELETED}`).bind(userId, userId),
     db.prepare(`DELETE FROM sessions WHERE user_id = ? AND ${DELETED}`).bind(userId, userId),

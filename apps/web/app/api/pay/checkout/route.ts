@@ -1,8 +1,10 @@
 import { openAccountRoute, requireSession } from "@/lib/account/request";
 import { isReviewer } from "@/lib/account/review";
 import { errorResponse, json } from "@/lib/api/http";
+import { isStarlogApp } from "@/lib/inApp";
 import { SET_PRODUCT_ID, productById, sellable } from "@/lib/pay/catalog";
 import { payProvider, paymentsMode, salesOpen, tossClientKey } from "@/lib/pay/mode";
+import { playClient, playProductId } from "@/lib/pay/play";
 import { tossClient } from "@/lib/pay/toss";
 import { premiumOpen, setOpen } from "@/lib/premium/flags";
 import { isPremiumId } from "@/lib/premium/products";
@@ -12,6 +14,8 @@ import { isPremiumId } from "@/lib/premium/products";
  * price, the buyer's Toss customerKey and the widget client key. The key is read at run time, so it
  * always pairs with TOSS_SECRET_KEY. No order exists until the buyer confirms the 청약철회 notice
  * (POST /api/pay/orders).
+ * From the Android app (isStarlogApp) it pays with Google Play instead: `provider: "play"`, no client key, and the Play
+ * product id to buy (lib/pay/play.ts); it needs this deploy's Play client, not Toss.
  */
 export async function GET(request: Request): Promise<Response> {
   const ctx = await openAccountRoute(request, { limiter: "PAY_LIMITER" });
@@ -20,12 +24,24 @@ export async function GET(request: Request): Promise<Response> {
   if (session instanceof Response) return session;
   // The review account buys like the owner pass (lib/account/review.ts), premium excepted.
   if (!salesOpen(paymentsMode(), ctx.owner || (await isReviewer(session.user, ctx.accountSecret)))) return errorResponse("NOT_AVAILABLE");
-  if (!tossClient()) return errorResponse("PAY_UNAVAILABLE");
+  const app = isStarlogApp(request.headers.get("user-agent") ?? "");
+  if (app ? !playClient() : !tossClient()) return errorResponse("PAY_UNAVAILABLE");
   const product = productById(new URL(request.url).searchParams.get("product") ?? "");
   if (!product || !sellable(product, ctx.now)) return errorResponse("NOT_AVAILABLE");
   // P5: like the order itself (orders/route.ts), a premium checkout also needs STARLOG_PREMIUM.
   if (isPremiumId(product.id) && !premiumOpen(product.id, ctx.owner, ctx.now)) return errorResponse("NOT_AVAILABLE");
   if (product.id === SET_PRODUCT_ID && !setOpen(ctx.owner, ctx.now)) return errorResponse("NOT_AVAILABLE");
+  if (app) {
+    return json({
+      productId: product.id,
+      name: product.name,
+      amount: product.krw,
+      customerKey: session.user.customer_key,
+      provider: "play",
+      clientKey: null,
+      playProductId: playProductId(product.id),
+    });
+  }
   const mock = payProvider() === "mock";
   return json({
     productId: product.id,

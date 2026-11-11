@@ -251,7 +251,8 @@ export type ReserveResult = { ok: true; unlockId: string; allocations: Allocatio
  * - The signup gift (`free`) opens a standard tarot reading only (GIFT_PRODUCT), whatever its lot
  *   says: a gift lot from before 2026-10-08 names no product.
  * - A lot bought with an order counts only when its payment was made under `payMode`, this deploy's
- *   Toss keys (mode.ts payKeyMode): test payments never pay for live readings; null takes none.
+ *   Toss keys (mode.ts payKeyMode): test payments never pay for live readings; null takes none of them.
+ *   A Google Play payment (`play`, the Android app) counts under any keys, none included: Google vouched for it.
  * - `earmarked` (premium readings, P5) takes only lots bought for `productId` itself.
  * - `partSeq` (premium readings): the part this reservation is taken for (extendUnlock).
  */
@@ -272,7 +273,7 @@ export async function reserveUnlock(
          FROM credit_lots
          WHERE user_id = ? AND currency = ? AND status = 'active' AND units_left > 0
            AND (expires_at IS NULL OR expires_at > ?) AND ${scope}
-           AND (order_id IS NULL OR EXISTS (SELECT 1 FROM payments p WHERE p.order_id = credit_lots.order_id AND p.mode = ?))
+           AND (order_id IS NULL OR EXISTS (SELECT 1 FROM payments p WHERE p.order_id = credit_lots.order_id AND p.mode IN (?, 'play')))
          ORDER BY product_id IS NULL,
            EXISTS (SELECT 1 FROM orders o WHERE o.id = credit_lots.order_id AND o.product_id IS NOT credit_lots.product_id),
            expires_at IS NULL, expires_at, created_at`,

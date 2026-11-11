@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { DEFAULT_REVERSAL_RATE, createDeck, getCard, type DeckState } from "@starlog/core";
+import { AppAdSignal } from "@/components/app/AppAdSignal";
 import { CardTable } from "@/components/tarot/CardTable";
 import { ShuffleStage } from "@/components/tarot/ShuffleStage";
 import { TarotCard } from "@/components/tarot/TarotCard";
@@ -58,6 +59,12 @@ function rememberHowtoSeen(): void {
     // Private mode or blocked storage: the steps simply open again next time.
   }
 }
+
+/**
+ * The Starlog app's banner (W2.6): only once the picked card has turned to its answer, and never on the care screen (crisis
+ * words: the helplines, no card line).
+ */
+export const nowAdOn = (revealed: boolean, turned: boolean, careOnly: boolean): boolean => revealed && turned && !careOnly;
 
 function randomSeed(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
@@ -209,6 +216,7 @@ export function NowOracle({ instant = false }: NowOracleProps) {
 
   return (
     <div className={s.screen}>
+      <AppAdSignal on={nowAdOn(phase === "reveal" && Boolean(draw && card), turned, careOnly)} />
       <header className={s.top}>
         <Link href="/" className={s.back} aria-label="홈으로">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">

@@ -23,7 +23,7 @@ import { signingSecret } from "@/lib/security/sign";
  *   its other reading was opened its own part; or `refundable: false` instead, with `noRefund` saying why unless it was given
  *   back after its client left (SEC-02, the meaning without it): `refunding` (its order is being refunded), `refunded` (what was
  *   cancelled already covers it) or `other`; `otherRefunded: true` on a set's reading whose other reading was refunded, not
- *   opened) and `opening`, the readings being opened right now
+ *   opened; `provider: "play"` on one paid with Google Play in the Starlog app) and `opening`, the readings being opened right now
  *   (a paid one is never also in `unused`); `review: true` only on the review account, `google: true`
  *   only on a Google account; `openingUsed: true` once the account took 오픈 기념 무료 (owner 2026-10-27), while it runs.
  * Without a session cookie it never touches D1, so the site works with no database. Rate-limited per
@@ -47,6 +47,18 @@ export async function GET(request: Request): Promise<Response> {
   // The review account buys like the owner pass (lib/account/review.ts); `owner` stays the device's pass.
   const review = await isReviewer(ctx.session.user, ctx.accountSecret);
   const openingUsed = openingFreeOn(now) && (await openingClaimed(ctx.db, ctx.session.user.kakao_key));
+  // Paid on Google Play in the Starlog app (payments.mode 'play', migration 0024): the screen words its refund for Google Play.
+  const orderIds = [...new Set(held.unused.map((item) => item.orderId))];
+  const onPlay = new Set(
+    orderIds.length
+      ? (
+          await ctx.db
+            .prepare(`SELECT order_id FROM payments WHERE mode = 'play' AND order_id IN (${orderIds.map(() => "?").join(", ")})`)
+            .bind(...orderIds)
+            .all<{ order_id: string }>()
+        ).results.map((row) => row.order_id)
+      : [],
+  );
   return json({
     payments: salesOpen(mode, owner || review),
     login: loginOpen(mode, owner || review),
@@ -63,6 +75,7 @@ export async function GET(request: Request): Promise<Response> {
           : { orderId, productId, refundable: false, ...(noRefund && noRefund !== "left" ? { noRefund } : {}) }),
         ...(set ? { set } : {}),
         ...(otherRefunded ? { otherRefunded } : {}),
+        ...(onPlay.has(orderId) ? { provider: "play" } : {}),
       })),
       opening: held.opening,
       ...(review ? { review: true } : {}),
