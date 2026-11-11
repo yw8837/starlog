@@ -8,6 +8,7 @@ import { createOrder, orderById } from "./orders";
 import { PlayError, mockPlay, playAccountTag } from "./play";
 import {
   PLAY_ORPHAN_MESSAGE,
+  PLAY_ORPHAN_REFUNDED_MESSAGE,
   PLAY_SET_PART_MESSAGE,
   PLAY_VOIDED_SINCE,
   applyVoidedPlay,
@@ -218,6 +219,64 @@ describe("verifyPlayPurchase", () => {
     );
   });
 
+  it("never reads a failure to get our own access token as a forged purchase token: PAY_PENDING and an error, nothing refunded", async () => {
+    const db = await setup();
+    const { order, token } = await bought(db);
+    vi.spyOn(mockPlay, "getPurchase").mockRejectedValueOnce(new PlayError(400, "TOKEN"));
+    const refund = vi.spyOn(mockPlay, "refund");
+    expect(await verify(db, token, "tarot")).toEqual({ ok: false, code: "PAY_PENDING" });
+    expect(events(logs.error)).toEqual([{ evt: "pay.play_verify_refused", status: 400, reason: "TOKEN", token: hex(token).slice(0, 12) }]);
+    expect(events(logs.warn)).toEqual([]);
+    expect(refund).not.toHaveBeenCalled();
+    expect(await row(db, "SELECT status FROM orders WHERE id = ?", order.id)).toEqual({ status: "created" });
+    // Once our credentials work again, the same purchase goes through.
+    expect((await verify(db, token, "tarot")).ok).toBe(true);
+  });
+
+  it("gives a purchase granted but not consumed another consume when the app sends it again (it found it owned)", async () => {
+    const db = await setup();
+    const { order, token } = await bought(db);
+    const consume = vi.spyOn(mockPlay, "consume").mockRejectedValueOnce(new PlayError(503, "UNAVAILABLE")).mockRejectedValueOnce(new PlayError(503, "UNAVAILABLE"));
+    expect((await verify(db, token, "tarot")).ok).toBe(true);
+    // Sent again while Google is still busy: answered paid, the consume left to the cron.
+    expect(await verify(db, token, "tarot", T0 + 2000)).toMatchObject({ ok: true, order: { id: order.id, status: "paid" } });
+    expect(await row(db, "SELECT consumed_at FROM play_purchases")).toEqual({ consumed_at: null });
+    expect(await verify(db, token, "tarot", T0 + 3000)).toMatchObject({ ok: true, order: { id: order.id } });
+    expect(consume).toHaveBeenCalledTimes(3);
+    expect(await row(db, "SELECT consumed_at FROM play_purchases")).toEqual({ consumed_at: T0 + 3000 });
+    expect(await mockPlay.getPurchase("tarot", token)).toMatchObject({ consumptionState: 1 });
+    // Consumed: a fourth answer asks Google nothing.
+    await verify(db, token, "tarot", T0 + 4000);
+    expect(consume).toHaveBeenCalledTimes(3);
+  });
+
+  it("refunds the second of two different purchases racing for one order, and keeps the first granted", async () => {
+    const db = await setup();
+    const { order, token: first } = await bought(db);
+    mockPlay.addPurchase({ token: "t_second", playProductId: "tarot", accountTag: await playAccountTag("u_1"), profileId: order.id });
+    // The second read the order still payable; the first is recorded right before the second's batch.
+    let raced = false;
+    const racing: D1Binding = {
+      prepare: (sql) => db.prepare(sql),
+      batch: async (statements) => {
+        if (!raced) {
+          raced = true;
+          expect((await verify(db, first, "tarot", T0 + 1000)).ok).toBe(true);
+        }
+        return db.batch(statements);
+      },
+    };
+    const refund = vi.spyOn(mockPlay, "refund");
+    expect(await verifyPlayPurchase(racing, mockPlay, { purchaseToken: "t_second", playProductId: "tarot", now: T0 + 1001 })).toEqual({
+      ok: false, code: "BAD_REQUEST", message: REFUNDED_REJECTED,
+    });
+    expect(raced).toBe(true);
+    expect(refund.mock.calls).toEqual([[await googleOrderOf("tarot", "t_second")]]);
+    expect(await row(db, "SELECT o.status AS o, l.status AS l FROM orders o JOIN credit_lots l ON l.order_id = o.id WHERE o.id = ?", order.id)).toEqual({ o: "paid", l: "active" });
+    expect((await db.prepare("SELECT purchase_token FROM play_purchases").all()).results).toEqual([{ purchase_token: first }]);
+    expect(events(logs.error).map((line: Record<string, unknown>) => line.evt)).not.toContain("pay.play_mark_paid_failed");
+  });
+
   it("refuses a token Google answers 400 for (malformed or forged): BAD_REQUEST and only a warning, never pending", async () => {
     const db = await setup();
     vi.spyOn(mockPlay, "getPurchase").mockRejectedValueOnce(new PlayError(400, "INVALID_ARGUMENT"));
@@ -277,7 +336,8 @@ describe("verifyPlayPurchase", () => {
     const consume = vi.spyOn(mockPlay, "consume");
     const refund = vi.spyOn(mockPlay, "refund");
     const outcome = await verify(db, token, "tarot");
-    expect(outcome).toEqual({ ok: false, code: "PAY_FAILED", message: PLAY_ORPHAN_MESSAGE });
+    expect(outcome).toEqual({ ok: false, code: "PAY_FAILED", message: PLAY_ORPHAN_REFUNDED_MESSAGE });
+    expect(PLAY_ORPHAN_REFUNDED_MESSAGE).toBe("탈퇴한 계정이라 이 결제는 바로 환불돼요.");
     expect(PLAY_ORPHAN_MESSAGE).not.toMatch(/카드/);
     expect(refund).toHaveBeenCalledWith(await googleOrderOf("tarot", token));
     expect(await row(db, "SELECT status, fail_code FROM orders WHERE id = ?", order.id)).toEqual({ status: "refunded", fail_code: "ACCOUNT_DELETED" });
@@ -286,7 +346,7 @@ describe("verifyPlayPurchase", () => {
     expect(await row(db, "SELECT consumed_at, voided_at FROM play_purchases")).toEqual({ consumed_at: null, voided_at: T0 + 1000 });
     expect(consume).not.toHaveBeenCalled();
     expect(events(logs.warn)).toContainEqual({ evt: "pay.play_for_deleted_account", orderId: order.id });
-    expect(await verify(db, token, "tarot")).toEqual({ ok: false, code: "PAY_FAILED", message: PLAY_ORPHAN_MESSAGE });
+    expect(await verify(db, token, "tarot")).toEqual({ ok: false, code: "PAY_FAILED", message: PLAY_ORPHAN_REFUNDED_MESSAGE });
     // The cron never consumes it either.
     expect(await consumePendingPlay(db, mockPlay, T0 + 2000, 10)).toBe(0);
   });
@@ -343,6 +403,28 @@ describe("consumePendingPlay", () => {
     expect(consume.mock.calls).toEqual([["tarot", "t_1"]]);
     expect(await consumePendingPlay(db, mockPlay, T0 + DAY, 10)).toBe(1);
     expect(consume.mock.calls.at(-1)).toEqual(["tarot", "t_2"]);
+  });
+
+  it("decides nothing about a purchase when our own credentials fail, and says so as an error (consume and refund checks)", async () => {
+    const db = await setup();
+    const { token } = await bought(db);
+    vi.spyOn(mockPlay, "consume").mockRejectedValueOnce(new PlayError(503, "UNAVAILABLE"));
+    await verify(db, token, "tarot");
+    const pending = await bought(db);
+    await verify(db, pending.token, "tarot");
+    vi.spyOn(mockPlay, "refund").mockRejectedValueOnce(new PlayError(503, "UNAVAILABLE"));
+    expect(await refundUnusedPlayOrder(db, mockPlay, { order: (await orderById(db, pending.order.id))!, now: T0 + 60_000 })).toEqual({ ok: false, code: "PAY_PENDING" });
+    vi.spyOn(mockPlay, "getPurchase").mockRejectedValue(new PlayError(400, "TOKEN"));
+    expect(await consumePendingPlay(db, mockPlay, T0 + DAY, 10)).toBe(0);
+    expect(await reconcilePlayRefunds(db, mockPlay, T0 + DAY, 10)).toBe(0);
+    expect(events(logs.error)).toEqual(
+      expect.arrayContaining([
+        { evt: "pay.play_consume_failed", orderId: expect.any(String), status: 400 },
+        { evt: "pay.play_refund_unknown", orderId: pending.order.id, status: 400 },
+      ]),
+    );
+    expect(await row(db, "SELECT consumed_at FROM play_purchases WHERE purchase_token = ?", token)).toEqual({ consumed_at: null });
+    expect(await row(db, "SELECT status FROM orders WHERE id = ?", pending.order.id)).toEqual({ status: "refunding" });
   });
 
   it("asks Google first: one consumed already (its answer lost) is only recorded, never consumed again", async () => {
@@ -492,6 +574,15 @@ describe("refundUnusedPlayOrder", () => {
     vi.spyOn(mockPlay, "refund").mockRejectedValueOnce(new PlayError(401, "UNAUTHENTICATED"));
     expect(await refund(db, order.id)).toMatchObject({ ok: false, code: "PAY_FAILED" });
     expect(events(logs.error)).toContainEqual({ evt: "pay.play_refund_refused", orderId: order.id, status: 401 });
+    expect(await state(db, order.id)).toEqual({ order: { status: "paid" }, lots: [{ status: "active", units_left: 1 }] });
+  });
+
+  it("gives the reading back at once when our own access token fails (nothing was sent), logged as an error", async () => {
+    const db = await setup();
+    const { order } = await paid(db);
+    vi.spyOn(mockPlay, "refund").mockRejectedValueOnce(new PlayError(400, "TOKEN"));
+    expect(await refund(db, order.id)).toMatchObject({ ok: false, code: "PAY_FAILED" });
+    expect(events(logs.error)).toContainEqual({ evt: "pay.play_refund_refused", orderId: order.id, status: 400 });
     expect(await state(db, order.id)).toEqual({ order: { status: "paid" }, lots: [{ status: "active", units_left: 1 }] });
   });
 

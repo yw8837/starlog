@@ -7,7 +7,8 @@ import { MOCK_CODE_PREFIX } from "./kakao";
  * must (developers.google.com/identity/gsi/web/guides/verify-google-id-token): it never came straight from Google's token
  * endpoint over our own TLS, so its signature is verified too, unlike the web callback's (google.ts).
  * - RS256 only; the header's `kid` picks the key from https://www.googleapis.com/oauth2/v3/certs, kept in memory for the
- *   response's Cache-Control max-age and fetched once more for a `kid` not seen yet (Google rotates its keys);
+ *   response's Cache-Control max-age and fetched once more for a `kid` not seen yet (Google rotates its keys), at most once a
+ *   minute;
  * - then `aud` is our GOOGLE_CLIENT_ID, `iss` accounts.google.com or https://accounts.google.com, `exp` not past (60 s of clock
  *   skew), `nonce` the one the native start handed out, and `sub` (the account id) is there.
  * STARLOG_GOOGLE=mock (refused in production) takes `mock:<name>` as the account `mock-<name>`, as the code flow does.
@@ -27,7 +28,9 @@ export class GoogleIdTokenError extends Error {
 
 type Jwk = { kty: string; n: string; e: string };
 
-let certs: { keys: Map<string, Jwk>; until: number } | null = null;
+let certs: { keys: Map<string, Jwk>; until: number; fetchedAt: number } | null = null;
+/** A key id not in the certs makes us ask Google again, at most this often (made-up ids must not cost a fetch each). */
+const REFETCH_FLOOR_MS = 60_000;
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
 
@@ -64,7 +67,7 @@ async function fetchCerts(fetchImpl: typeof fetch, now: number): Promise<Map<str
     if (isRecord(key) && typeof key.kid === "string" && key.kty === "RSA" && typeof key.n === "string" && typeof key.e === "string") keys.set(key.kid, { kty: "RSA", n: key.n, e: key.e });
   }
   const maxAge = Number(/max-age=(\d+)/.exec(response.headers.get("cache-control") ?? "")?.[1] ?? 0);
-  certs = { keys, until: now + maxAge * 1000 };
+  certs = { keys, until: now + maxAge * 1000, fetchedAt: now };
   return keys;
 }
 
@@ -72,6 +75,7 @@ async function fetchCerts(fetchImpl: typeof fetch, now: number): Promise<Map<str
 async function keyFor(kid: string, fetchImpl: typeof fetch, now: number): Promise<Jwk> {
   const cached = certs && certs.until > now ? certs.keys.get(kid) : undefined;
   if (cached) return cached;
+  if (certs && certs.until > now && now - certs.fetchedAt < REFETCH_FLOOR_MS) throw new GoogleIdTokenError("key");
   const key = (await fetchCerts(fetchImpl, now)).get(kid);
   if (!key) throw new GoogleIdTokenError("key");
   return key;

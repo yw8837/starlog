@@ -217,4 +217,28 @@ describe("AppMode (root layout, the Starlog app only)", () => {
       vi.useRealTimers();
     }
   });
+  it("does not send a purchase the server refused again for ten minutes (a refund that keeps failing must not be retried every minute)", async () => {
+    setUa(APP_UA);
+    vi.useFakeTimers();
+    try {
+      fakeShell(() => [{ purchaseToken: "tok-refused", productId: "tarot" }]);
+      const calls = stubServer(() => Response.json({ error: { code: "BAD_REQUEST", message: "x" } }, { status: 400 }));
+      const verifies = () => calls.filter((call) => call.url === "/api/pay/play/verify").length;
+      render(<AppMode />);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(verifies()).toBe(1);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(9 * 60_000);
+      });
+      expect(verifies()).toBe(1);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2 * 60_000);
+      });
+      expect(verifies()).toBe(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

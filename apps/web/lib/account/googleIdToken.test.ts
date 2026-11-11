@@ -80,10 +80,20 @@ describe("verifyGoogleIdToken", () => {
     const fetchImpl = jwks(() => kids) as unknown as typeof fetch;
     await verify(await sign(claims()), fetchImpl);
     kids = ["key-1", "key-2"];
-    await expect(verify(await sign(claims(), { kid: "key-2" }), fetchImpl)).resolves.toEqual({ sub: "109876543210987654321" });
+    await expect(verify(await sign(claims(), { kid: "key-2" }), fetchImpl, { now: NOW + 61_000 })).resolves.toEqual({ sub: "109876543210987654321" });
     expect(fetchImpl).toHaveBeenCalledTimes(2);
-    await failsAt(verify(await sign(claims(), { kid: "key-9" }), fetchImpl), "key");
+    await failsAt(verify(await sign(claims(), { kid: "key-9" }), fetchImpl, { now: NOW + 122_000 }), "key");
     expect(fetchImpl).toHaveBeenCalledTimes(3);
+  });
+
+  it("asks Google at most once a minute for key ids it does not know (made-up ids cannot make it fetch each time)", async () => {
+    const fetchImpl = jwks(["key-1"]) as unknown as typeof fetch;
+    await verify(await sign(claims()), fetchImpl);
+    await failsAt(verify(await sign(claims(), { kid: "made-up-1" }), fetchImpl, { now: NOW + 1_000 }), "key");
+    await failsAt(verify(await sign(claims(), { kid: "made-up-2" }), fetchImpl, { now: NOW + 59_000 }), "key");
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    await failsAt(verify(await sign(claims(), { kid: "made-up-3" }), fetchImpl, { now: NOW + 60_000 }), "key");
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 
   it("refuses a signature that is not Google's key", async () => {

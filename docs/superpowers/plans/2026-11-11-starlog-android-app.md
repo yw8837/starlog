@@ -72,7 +72,7 @@ Machine: JDK 21 (Adoptium), Android SDK platforms 35/36, build-tools 36.0.0, emu
 
 ### W1 — payments on the server (files: `migrations/0024_*`, `lib/pay/*`, `app/api/pay/**`, `lib/inApp.ts`, ops scripts)
 - [ ] W1.1 `isStarlogApp` in `lib/inApp.ts` + test.
-- [ ] W1.2 migration `0024_play_payments.sql`: rebuild `payments` with `mode CHECK IN ('test','live','mock','play')` (rows kept, as 0023 did for `credit_lots`); `play_purchases (purchase_token PK, order_id UNIQUE FK, play_product_id, google_order_id, test, purchased_at, consumed_at, voided_at, created_at)`; test DB helpers updated.
+- [ ] W1.2 migration `0024_play_payments.sql`: rebuild `payments` with `mode CHECK IN ('test','live','mock','play')` (rows kept, as 0023 did for `credit_lots`); `play_purchases (purchase_token PK, order_id UNIQUE FK, play_product_id, google_order_id, purchase_type, purchased_at, consumed_at, consume_tried_at, refund_sent_at, voided_at, created_at)`; test DB helpers updated.
 - [ ] W1.3 `lib/pay/play.ts`: `PlayClient {getPurchase, consume, listVoided}`, service-account token (WebCrypto RS256, cached), `playClient(env)` (null when not configured, mock outside production), `playProductId`/`productFromPlayId`, `playAccountTag`; tests with an injected fetch and a generated RSA key.
 - [ ] W1.4 `lib/pay/playOrders.ts`: `verifyPlayPurchase` (rules above, idempotent), `consumePending`, `applyVoided`; tests: paid once, repeat, wrong account tag, wrong product, pending, cancelled, deleted account, set → two lots, voided unopened → refunded, voided opened → revoked.
 - [ ] W1.5 `reserveUnlock` accepts `'play'`; contract test: a Play lot opens under test, live and no Toss keys.

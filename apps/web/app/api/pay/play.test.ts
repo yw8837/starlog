@@ -2,10 +2,10 @@ import { createHash } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { deleteAccount } from "@/lib/account/deletion";
 import { setTestDb } from "@/lib/db";
-import { reserveUnlock } from "@/lib/pay/ledger";
+import { releaseUnlock, reserveUnlock } from "@/lib/pay/ledger";
 import { payKeyMode } from "@/lib/pay/mode";
 import { PlayError, mockPlay } from "@/lib/pay/play";
-import { PLAY_ORPHAN_MESSAGE, reconcilePlayRefunds } from "@/lib/pay/playOrders";
+import { PLAY_ORPHAN_REFUNDED_MESSAGE, reconcilePlayRefunds } from "@/lib/pay/playOrders";
 import { mockToss } from "@/lib/pay/tossMock";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { browser, buy, loginAs, me, useTestDb, type Browser, type Handler } from "@/lib/testing/p4";
@@ -146,7 +146,7 @@ describe("POST /api/pay/play/verify", () => {
     await db.prepare("UPDATE users SET deleted_at = ?").bind(T0).run();
     const orphan = await verifyAs(browser("192.0.2.71"), { purchaseToken: token, productId: "tarot" });
     expect(orphan.status).toBe(402);
-    expect(await orphan.json()).toMatchObject({ code: "PAY_FAILED", message: PLAY_ORPHAN_MESSAGE });
+    expect(await orphan.json()).toMatchObject({ code: "PAY_FAILED", message: PLAY_ORPHAN_REFUNDED_MESSAGE });
   });
 });
 
@@ -286,6 +286,42 @@ describe("deleting an account that holds an unopened Play purchase", () => {
     expect(await reconcilePlayRefunds(db, mockPlay, T0 + 12 * MIN, 5)).toBe(1);
     expect(await deleteAccount(db, mockToss, { userId, now: T0 + 13 * MIN })).toEqual({ ok: true, refunded: 1 });
     expect(await orderAndLot(db, orderId)).toEqual({ o: "refunded", l: "refunded" });
+  });
+
+  it("leaves a refund stuck an hour exactly as it was when the deletion stops (a reading opening, another purchase pending), and sets it aside once deleted", async () => {
+    const { db, orderId, userId } = await playBuyer();
+    vi.spyOn(mockPlay, "refund").mockRejectedValueOnce(new PlayError(503, "UNAVAILABLE"));
+    expect(await deleteAccount(db, mockToss, { userId, now: T0 + MIN })).toEqual({ ok: false, code: "PENDING" });
+    const stuck = async () =>
+      db.prepare("SELECT o.status AS o, o.updated_at AS at, l.status AS l, l.units_left AS units FROM orders o JOIN credit_lots l ON l.order_id = o.id WHERE o.id = ?").bind(orderId).first();
+    const before = await stuck();
+    expect(before).toMatchObject({ o: "refunding", l: "refunding", units: 0 });
+    // An hour on, a second purchase is being opened: the deletion stops, and the stuck refund stays untouched.
+    vi.setSystemTime(T0 + 62 * MIN);
+    const owner = await loggedIn();
+    const second = await appPurchase(owner);
+    await verifyAs(owner, { purchaseToken: second.token, productId: "tarot" });
+    const opening = await reserveUnlock(db, { userId, productId: "tarot", currency: "paid", now: T0 + 62 * MIN, payMode: payKeyMode() });
+    if (!opening.ok) throw new Error("not reserved");
+    expect(await deleteAccount(db, mockToss, { userId, now: T0 + 62 * MIN })).toEqual({ ok: false, code: "IN_USE" });
+    expect(await stuck()).toEqual(before);
+    // The opening fails; a Toss payment of the account is still being confirmed: stopped again, still untouched.
+    expect(await releaseUnlock(db, { unlockId: opening.unlockId, now: T0 + 63 * MIN })).toBe(true);
+    await db
+      .prepare(
+        `INSERT INTO orders (id, user_id, product_id, amount_krw, order_name, status, return_to, withdrawal_ack_at, payment_key, created_at, updated_at)
+         VALUES ('order_confirming_0000001', ?, 'tarot', 2900, 'x', 'confirming', '/', 0, 'mock_confirming', ?, ?)`,
+      )
+      .bind(userId, T0 + 63 * MIN, T0 + 63 * MIN)
+      .run();
+    expect(await deleteAccount(db, mockToss, { userId, now: T0 + 63 * MIN })).toEqual({ ok: false, code: "PENDING" });
+    expect(await stuck()).toEqual(before);
+    // Nothing else in flight: deleted, and only then is the stuck refund set aside for the operator.
+    await db.prepare("UPDATE orders SET status = 'failed' WHERE id = 'order_confirming_0000001'").run();
+    expect(await deleteAccount(db, mockToss, { userId, now: T0 + 64 * MIN })).toEqual({ ok: true, refunded: 1 });
+    expect(await orderAndLot(db, orderId)).toEqual({ o: "paid", l: "revoked" });
+    expect(await orderAndLot(db, second.orderId)).toEqual({ o: "refunded", l: "refunded" });
+    expect(await deleted(db)).toBe(true);
   });
 
   it("is not held up for good by a refund stuck an hour: the reading leaves use, the order goes to the operator, the account is deleted", async () => {

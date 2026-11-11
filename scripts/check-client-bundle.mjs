@@ -6,6 +6,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { serviceAccountProbes } from "./secretProbes.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const staticDir = join(root, "apps/web/.next/static");
@@ -84,6 +85,8 @@ const secretProbes = [
     const value = process.env[name]?.trim();
     return value && value.length >= 8 ? [{ label: `value of ${name}`, value }] : [];
   }),
+  // The service account's key leaks in pieces too (scripts/secretProbes.mjs).
+  ...serviceAccountProbes(process.env.PLAY_SERVICE_ACCOUNT_JSON),
 ];
 
 if (!existsSync(staticDir)) {

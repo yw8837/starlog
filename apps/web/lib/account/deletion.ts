@@ -6,7 +6,7 @@ import type { D1Binding } from "@/lib/db/d1";
 import { LOT_UNTOUCHED_SQL, entitlements, forfeitStatements, sweepUser, type Lot } from "@/lib/pay/ledger";
 import { orderForUser, reconcileConfirming, type OrderRow } from "@/lib/pay/orders";
 import { playClient, type PlayClient } from "@/lib/pay/play";
-import { paidWithPlay, refundUnusedPlayOrder, setAsideStuckPlayRefunds } from "@/lib/pay/playOrders";
+import { PLAY_REFUND_STUCK_MS, PLAY_REFUND_STUCK_SQL, paidWithPlay, refundUnusedPlayOrder, setAsideStuckPlayRefunds } from "@/lib/pay/playOrders";
 import { paidUnderOtherKeys, reconcileRefunding, refundUnusedOrder, setAsideForOperator } from "@/lib/pay/refunds";
 import type { TossClient } from "@/lib/pay/tossTypes";
 import { signToken, signingSecret, verifyToken, type SignedPayload } from "@/lib/security/sign";
@@ -39,10 +39,13 @@ export type DeleteOutcome = { ok: true; refunded: number } | { ok: false; code: 
 /**
  * Orders still settling with Toss. One paid under other keys than this deploy's (`?`, the Toss mode;
  * null counts every order) never settles here: the operator does it by hand (runbook section 5), so it
- * does not hold the deletion up. A Google Play refund in flight always counts (playOrders.ts: it settles with Google).
+ * does not hold the deletion up. A Google Play refund in flight counts (playOrders.ts: it settles with Google), except one stuck
+ * past PLAY_REFUND_STUCK_MS (the second `?`: now less that), set aside for the operator once the account is deleted
+ * (eraseDeletedAccount).
  */
 const IN_FLIGHT = `status IN ('confirming', 'refunding')
-  AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.order_id = orders.id AND p.mode <> COALESCE(?, p.mode) AND p.mode <> 'play')`;
+  AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.order_id = orders.id AND p.mode <> COALESCE(?, p.mode) AND p.mode <> 'play')
+  AND NOT ${PLAY_REFUND_STUCK_SQL}`;
 
 async function count(db: D1Binding, sql: string, ...values: unknown[]): Promise<number> {
   return (await db.prepare(sql).bind(...values).first<{ n: number }>())?.n ?? 0;
@@ -63,21 +66,20 @@ export async function deleteAccount(
 ): Promise<DeleteOutcome> {
   const { userId, now } = input;
   await sweepUser(db, userId, now);
-  // A Play refund stuck an hour no longer holds the deletion up: set aside for the operator (playOrders.ts).
-  await setAsideStuckPlayRefunds(db, userId, now);
   const mode = toss?.mode ?? null;
+  const stuckBefore = now - PLAY_REFUND_STUCK_MS;
   if (toss) {
     // Play orders settle with Google (the cron), never with Toss.
     const { results } = await db
       .prepare(`SELECT * FROM orders WHERE user_id = ? AND ${IN_FLIGHT} AND NOT EXISTS (SELECT 1 FROM payments pm WHERE pm.order_id = orders.id AND pm.mode = 'play')`)
-      .bind(userId, mode)
+      .bind(userId, mode, stuckBefore)
       .all<OrderRow>();
     for (const order of results) {
       if (order.status === "confirming") await reconcileConfirming(db, toss, order, now, { force: true, confirmAgain: false });
       else await reconcileRefunding(db, toss, order, now);
     }
   }
-  if (await count(db, `SELECT COUNT(*) AS n FROM orders WHERE user_id = ? AND ${IN_FLIGHT}`, userId, mode)) return { ok: false, code: "PENDING" };
+  if (await count(db, `SELECT COUNT(*) AS n FROM orders WHERE user_id = ? AND ${IN_FLIGHT}`, userId, mode, stuckBefore)) return { ok: false, code: "PENDING" };
   if (await count(db, "SELECT COUNT(*) AS n FROM unlocks WHERE user_id = ? AND status = 'reserved'", userId)) return { ok: false, code: "IN_USE" };
 
   const { unused } = await entitlements(db, userId, now);
@@ -133,7 +135,7 @@ export async function deleteAccount(
          AND NOT EXISTS (SELECT 1 FROM credit_lots c WHERE c.user_id = ? AND c.currency = 'paid' AND ${LOT_UNTOUCHED_SQL("c")})
        RETURNING id`,
     )
-    .bind(now, userId, userId, userId, mode, userId)
+    .bind(now, userId, userId, userId, mode, stuckBefore, userId)
     .first();
   if (!marked) {
     const inUse = await count(db, "SELECT COUNT(*) AS n FROM unlocks WHERE user_id = ? AND status = 'reserved'", userId);
@@ -199,6 +201,8 @@ async function eraseFriendStars(db: D1Binding, userId: string): Promise<void> {
  * - its 신고 on readings (reading_reports) stay without its user id or note (free text may hold personal data);
  * - its gift claim is stamped with the deletion time (purged a year later, Task 13);
  * - its 오픈 기념 무료 claim stays, marked used, until the event's purge, first (sealOpeningClaim, owner 2026-10-28);
+ * - a Google Play refund stuck past PLAY_REFUND_STUCK_MS, which the deletion did not wait for, is set aside for the operator
+ *   (setAsideStuckPlayRefunds: here, so only ever once the deletion is certain);
  * - orders that never reached Toss are closed;
  * - kakao_key and nickname are blanked and erased_at set.
  * Orders, payments, lots and the ledger stay 5 years under the tombstone (전자상거래법 제6조).
@@ -206,6 +210,7 @@ async function eraseFriendStars(db: D1Binding, userId: string): Promise<void> {
  */
 export async function eraseDeletedAccount(db: D1Binding, userId: string, now: number): Promise<boolean> {
   await sealOpeningClaim(db, userId);
+  await setAsideStuckPlayRefunds(db, userId, now);
   const { results: forfeited } = await db
     .prepare(
       `SELECT * FROM credit_lots WHERE user_id = ? AND status = 'active' AND units_left > 0

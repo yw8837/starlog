@@ -12,6 +12,8 @@ type Unfinished = { purchases: Array<{ purchaseToken: string; productId: string 
 const HELLO_TIMEOUT_MS = 3_000;
 /** How often, while the app is in front, the shell is asked again for purchases that went through meanwhile. */
 const RECOVER_EVERY_MS = 60_000;
+/** A purchase the server refused is left alone this long before it is sent again. */
+const REFUSED_REST_MS = 10 * 60_000;
 
 /**
  * Mounted once in the root layout; renders nothing, and does nothing outside the Starlog app.
@@ -35,6 +37,8 @@ export function AppMode() {
       () => {},
     );
     let running = false;
+    /** Purchases the server refused (400): when each may be sent again. */
+    const refusedUntil = new Map<string, number>();
     const recover = async () => {
       if (running) return;
       running = true;
@@ -42,8 +46,11 @@ export function AppMode() {
         const { purchases } = await callNative<Unfinished>("unfinishedPurchases");
         let paid = false;
         for (const { purchaseToken, productId } of purchases ?? []) {
+          if ((refusedUntil.get(purchaseToken) ?? 0) > Date.now()) continue;
           const res = await postJson<{ status: string }>("/api/pay/play/verify", { purchaseToken, productId });
           if (res.ok && res.data.status === "paid") paid = true;
+          // Refused for good (the server refunds what it cannot match): not sent every minute while that refund is retried.
+          else if (!res.ok && res.error.status === 400) refusedUntil.set(purchaseToken, Date.now() + REFUSED_REST_MS);
         }
         if (paid) void refreshAccount();
       } catch {

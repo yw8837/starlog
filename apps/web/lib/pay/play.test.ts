@@ -4,6 +4,7 @@ import { PRODUCTS, productById } from "./catalog";
 import {
   PlayError,
   createPlayClient,
+  isCredentialsPlayError,
   isPendingPlayError,
   mockPlay,
   playAccountTag,
@@ -151,6 +152,26 @@ describe("Play client", () => {
     expect(isPendingPlayError(new PlayError(429, "RESOURCE_EXHAUSTED"))).toBe(true);
     // Never the token in what an error says.
     for (const error of errors) expect(String((error as Error).message)).not.toContain(TOKEN);
+  });
+
+  it("marks a failure to get our own access token as our credentials failing, never as an answer about a purchase", async () => {
+    const tokenAnswer = (status: number, body: unknown) =>
+      (async (url: string | URL | Request) => {
+        if (String(url) !== "https://oauth2.googleapis.com/token") throw new Error("no purchase call expected");
+        return Response.json(body, { status });
+      }) as typeof fetch;
+    // A deleted or rotated key, or a clock off: Google's token endpoint answers 400 invalid_grant.
+    const refused = await createPlayClient(account(), tokenAnswer(400, { error: "invalid_grant" })).getPurchase("tarot", TOKEN).catch((e: unknown) => e);
+    expect([refused instanceof PlayError, isCredentialsPlayError(refused), isPendingPlayError(refused)]).toEqual([true, true, false]);
+    const busy = await createPlayClient(account(), tokenAnswer(503, {})).getPurchase("tarot", TOKEN).catch((e: unknown) => e);
+    expect([isCredentialsPlayError(busy), isPendingPlayError(busy)]).toEqual([false, true]);
+    // A key that cannot sign at all is ours too.
+    const broken = { ...account(), privateKeyPem: "-----BEGIN PRIVATE KEY-----\nbm90IGEga2V5\n-----END PRIVATE KEY-----\n" };
+    const unsigned = await createPlayClient(broken, tokenAnswer(200, {})).getPurchase("tarot", TOKEN).catch((e: unknown) => e);
+    expect([unsigned instanceof PlayError, isCredentialsPlayError(unsigned), isPendingPlayError(unsigned)]).toEqual([true, true, false]);
+    // Google refusing our credentials on a purchase call is ours too; refusing the purchase token itself is not.
+    expect([isCredentialsPlayError(new PlayError(401, "UNAUTHENTICATED")), isCredentialsPlayError(new PlayError(403, "PERMISSION_DENIED"))]).toEqual([true, true]);
+    expect([isCredentialsPlayError(new PlayError(400, "INVALID_ARGUMENT")), isCredentialsPlayError(new Error("x"))]).toEqual([false, false]);
   });
 
   it("refuses a token request Google turns down, without the key in the error", async () => {

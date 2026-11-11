@@ -99,6 +99,15 @@ export function isPendingPlayError(error: unknown): boolean {
   return error.status === 0 || error.status === 429 || error.status >= 500;
 }
 
+/**
+ * Our own credentials failed: no access token could be had (Google's token endpoint refused us, e.g. 400 invalid_grant for a
+ * deleted key or a clock off, or the key cannot sign: reason TOKEN), or Google refused the one we sent (401, 403). Never an
+ * answer about a purchase: ours to fix, logged as an error.
+ */
+export function isCredentialsPlayError(error: unknown): boolean {
+  return error instanceof PlayError && !isPendingPlayError(error) && (error.status === 401 || error.status === 403 || error.reason === "TOKEN");
+}
+
 export interface PlayConfig {
   packageName: string;
   clientEmail: string;
@@ -157,7 +166,13 @@ export function createPlayClient(config: PlayConfig, fetchImpl: typeof fetch = f
   const accessToken = async (): Promise<string> => {
     const cached = accessTokens.get(config.clientEmail);
     if (cached && Date.now() < cached.expiresAt - TOKEN_MARGIN_MS) return cached.token;
-    const assertion = await serviceAccountJwt(config, Date.now());
+    let assertion: string;
+    try {
+      assertion = await serviceAccountJwt(config, Date.now());
+    } catch {
+      // The key cannot sign (its body is not a usable PKCS8 key): our credentials, never an unknown answer.
+      throw new PlayError(401, "TOKEN");
+    }
     const response = await send(
       fetchImpl,
       PLAY_TOKEN_URL,

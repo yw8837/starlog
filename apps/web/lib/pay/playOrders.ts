@@ -1,10 +1,20 @@
 import "server-only";
 import type { D1Binding } from "@/lib/db/d1";
 import { isConstraintError } from "@/lib/db/sqlErrors";
-import { lockPaidLotForRefund, paidLotStatements, revertRefund } from "./ledger";
+import { forfeitStatements, lockPaidLotForRefund, paidLotStatements, revertRefund, type Lot } from "./ledger";
 import { LIVE_ACCOUNT, orderById, type ConfirmOutcome, type OrderRow } from "./orders";
-import { PlayError, isPendingPlayError, playAccountTag, playProductId, productFromPlayId, sha256Hex, type PlayClient, type PlayPurchase } from "./play";
-import { REFUND_RECONCILE_AFTER_MS, applyCancel, setAsideForOperator, type RefundOutcome } from "./refunds";
+import {
+  PlayError,
+  isCredentialsPlayError,
+  isPendingPlayError,
+  playAccountTag,
+  playProductId,
+  productFromPlayId,
+  sha256Hex,
+  type PlayClient,
+  type PlayPurchase,
+} from "./play";
+import { REFUND_RECONCILE_AFTER_MS, applyCancel, type RefundOutcome } from "./refunds";
 import type { TossPayment } from "./tossTypes";
 
 /**
@@ -24,7 +34,9 @@ export const PLAY_METHOD = "Google Play";
  */
 export const PLAY_SET_PART_MESSAGE = "세트 중 하나를 이미 열어서 앱에서는 바로 환불할 수 없어요. 문의해 주시면 확인하고 처리해 드릴게요.";
 const PLAY_REFUND_FAILED_MESSAGE = "환불하지 못했어요. 문의해 주세요.";
-/** A Play purchase that arrives for an account deleted meanwhile: never granted nor consumed, and refunded at once. */
+/** A Play purchase that arrives for an account deleted meanwhile: never granted nor consumed, and refunded by us at once. */
+export const PLAY_ORPHAN_REFUNDED_MESSAGE = "탈퇴한 계정이라 이 결제는 바로 환불돼요.";
+/** The same when our refund did not go through: Google refunds a purchase never consumed by itself (three days). */
 export const PLAY_ORPHAN_MESSAGE = "탈퇴한 계정이라 이 결제는 Google Play에서 자동으로 환불돼요.";
 /** A purchase we would not grant, refunded at once (H1). Without the refund the answer says nothing more. */
 const PLAY_REJECTED_REFUNDED_MESSAGE = "결제를 확인하지 못해 환불했어요. 다시 시도해 주세요.";
@@ -51,7 +63,9 @@ const VOIDED_OVERLAP_MS = 60 * 60_000;
 async function recordedOutcome(db: D1Binding, token: string): Promise<ConfirmOutcome | null> {
   const order = await db.prepare("SELECT o.* FROM play_purchases pp JOIN orders o ON o.id = pp.order_id WHERE pp.purchase_token = ?").bind(token).first<OrderRow>();
   if (!order) return null;
-  if (order.fail_code === "ACCOUNT_DELETED") return { ok: false, code: "PAY_FAILED", message: PLAY_ORPHAN_MESSAGE };
+  if (order.fail_code === "ACCOUNT_DELETED") {
+    return { ok: false, code: "PAY_FAILED", message: order.status === "refunded" ? PLAY_ORPHAN_REFUNDED_MESSAGE : PLAY_ORPHAN_MESSAGE };
+  }
   if (order.status === "refunded") return { ok: false, code: "PAY_FAILED", message: PLAY_REFUNDED_MESSAGE };
   if (order.status === "refunding") return { ok: false, code: "PAY_PENDING" };
   return { ok: true, order };
@@ -79,33 +93,60 @@ async function consume(db: D1Binding, play: PlayClient, purchase: { token: strin
   try {
     await play.consume(purchase.playProductId, purchase.token);
   } catch (error) {
-    console.warn(JSON.stringify({ evt: "pay.play_consume_failed", orderId: purchase.orderId, status: error instanceof PlayError ? error.status : 0 }));
+    logPlayFailure("pay.play_consume_failed", purchase.orderId, error);
     return false;
   }
   await db.prepare("UPDATE play_purchases SET consumed_at = ? WHERE purchase_token = ? AND consumed_at IS NULL").bind(now, purchase.token).run();
   return true;
 }
 
+/** A Play call that failed, by its order and status: an error when our own credentials failed (ours to fix), else a warning. */
+function logPlayFailure(evt: string, orderId: string, error: unknown): void {
+  const line = JSON.stringify({ evt, orderId, status: error instanceof PlayError ? error.status : 0 });
+  if (isCredentialsPlayError(error)) console.error(line);
+  else console.warn(line);
+}
+
+/**
+ * A token recorded and granted earlier whose purchase was not consumed yet (the app found it owned and sends it again): the
+ * consume is tried right here, so the product can be bought again at once; a failure is left to the cron.
+ */
+async function consumeRecorded(db: D1Binding, play: PlayClient, token: string, now: number): Promise<void> {
+  const held = await db
+    .prepare(
+      `SELECT pp.play_product_id AS playProductId, pp.order_id AS orderId FROM play_purchases pp JOIN orders o ON o.id = pp.order_id
+       WHERE pp.purchase_token = ? AND pp.consumed_at IS NULL AND pp.voided_at IS NULL AND o.status = 'paid'`,
+    )
+    .bind(token)
+    .first<{ playProductId: string; orderId: string }>();
+  if (held) await consume(db, play, { token, ...held }, now);
+}
+
 /**
  * POST /api/pay/play/verify: the purchase the app made for one of our orders (the order id rode as obfuscatedProfileId, the
  * account's playAccountTag as obfuscatedAccountId). Safe to repeat.
- * - A token recorded before → its order as it is now (recordedOutcome), nothing changes.
- * - Google does not know the token, could not be asked, or refused our credentials → PAY_PENDING (never a guess); Google
- *   refused the token itself (a 4xx: malformed or forged) → BAD_REQUEST, only a warning; pending (2) → PAY_PENDING;
- *   canceled (1) → PAY_FAILED.
+ * - A token recorded before → its order as it is now (recordedOutcome), nothing else changes, except that a granted purchase
+ *   not consumed yet is consumed right there (the app found it owned and sends it again).
+ * - Google does not know the token, could not be asked, or our own credentials failed (isCredentialsPlayError: no access
+ *   token, or Google refused it) → PAY_PENDING (never a guess); Google refused the token itself (another 4xx: malformed or
+ *   forged) → BAD_REQUEST, only a warning; pending (2) → PAY_PENDING; canceled (1) → PAY_FAILED.
  * - Purchased (0): the order must exist, be for this product and this account, be bought once (quantity 1), and not be paid
  *   already (created, confirming or failed, as markPaid: the cron closes an order left `created` an hour, and a pending
  *   purchase may land later). Otherwise, unless a verify of this same token recorded it meanwhile (its answer then), the
  *   purchase is refunded at once and nothing is recorded: BAD_REQUEST, saying it was refunded when it was. Then one batch: the
  *   order paid (or `refunding` + ACCOUNT_DELETED for a deleted account), the payment (mode 'play'), the token, the paid lots.
- *   A constraint failure is "already" only when the token is recorded; anything else is logged and thrown.
+ *   A constraint failure is "already" when the token is recorded, a second purchase for a paid order (refunded as above) when
+ *   another purchase paid the order meanwhile; anything else is logged and thrown.
  * - Then the purchase is consumed (a failure leaves it to the cron; the grant stands). A deleted account's is refunded at
  *   once instead (applied like a voided one); if that fails, Google's voided list closes it later (applyVoidedPlay).
  */
 export async function verifyPlayPurchase(db: D1Binding, play: PlayClient, input: { purchaseToken: string; playProductId: string; now: number }): Promise<ConfirmOutcome> {
   const { purchaseToken: token, playProductId: playId, now } = input;
   const recorded = await recordedOutcome(db, token);
-  if (recorded) return recorded;
+  if (recorded) {
+    if (recorded.ok) await consumeRecorded(db, play, token, now);
+    return recorded;
+  }
   const product = productFromPlayId(playId);
   if (!product) return { ok: false, code: "BAD_REQUEST" };
   const tokenHash = await sha256Hex(token);
@@ -122,8 +163,9 @@ export async function verifyPlayPurchase(db: D1Binding, play: PlayClient, input:
       console.warn(JSON.stringify({ evt: "pay.play_verify_unknown", status, reason, token: tokenId }));
       return { ok: false, code: "PAY_PENDING" };
     }
-    // Our credentials refused: ours to fix; the purchase stays unfinished in the app, which sends it again.
-    if (status === 401 || status === 403) {
+    // Our own credentials failed (no access token, or Google refused it): ours to fix, never an answer about this purchase;
+    // it stays unfinished in the app, which sends it again.
+    if (isCredentialsPlayError(error)) {
       console.error(JSON.stringify({ evt: "pay.play_verify_refused", status, reason, token: tokenId }));
       return { ok: false, code: "PAY_PENDING" };
     }
@@ -137,6 +179,12 @@ export async function verifyPlayPurchase(db: D1Binding, play: PlayClient, input:
   }
   if (purchase.purchaseState === 2) return { ok: false, code: "PAY_PENDING" };
   if (purchase.purchaseState === 1) return { ok: false, code: "PAY_FAILED" };
+  const held = purchase;
+  /** A purchased one we do not grant: refunded at once (H1), nothing recorded. */
+  const reject = async (orderId: string | null): Promise<ConfirmOutcome> => {
+    console.warn(JSON.stringify({ evt: "pay.play_mismatch", orderId }));
+    return (await refundRejected(play, held, orderId)) ? { ok: false, code: "BAD_REQUEST", message: PLAY_REJECTED_REFUNDED_MESSAGE } : { ok: false, code: "BAD_REQUEST" };
+  };
   const order = purchase.obfuscatedProfileId ? await orderById(db, purchase.obfuscatedProfileId) : null;
   if (
     !order ||
@@ -148,10 +196,7 @@ export async function verifyPlayPurchase(db: D1Binding, play: PlayClient, input:
     // A verify of this same token that won the race recorded it meanwhile (its order is then paid): its answer, never a refund.
     const raced = await recordedOutcome(db, token);
     if (raced) return raced;
-    console.warn(JSON.stringify({ evt: "pay.play_mismatch", orderId: order?.id ?? null }));
-    return (await refundRejected(play, purchase, order?.id ?? null))
-      ? { ok: false, code: "BAD_REQUEST", message: PLAY_REJECTED_REFUNDED_MESSAGE }
-      : { ok: false, code: "BAD_REQUEST" };
+    return reject(order?.id ?? null);
   }
   const paymentKey = `play_${tokenHash}`;
   try {
@@ -177,6 +222,10 @@ export async function verifyPlayPurchase(db: D1Binding, play: PlayClient, input:
     if (!isConstraintError(error)) throw error;
     const already = await recordedOutcome(db, token);
     if (already) return already;
+    // Another purchase paid this order between the read and this batch (two purchases racing for one order): this one is a
+    // second purchase for a paid order, refunded like one.
+    const current = await orderById(db, order.id);
+    if (current && !["created", "confirming", "failed"].includes(current.status)) return reject(order.id);
     console.error(JSON.stringify({ evt: "pay.play_mark_paid_failed", orderId: order.id, message: error instanceof Error ? error.message : String(error) }));
     throw error;
   }
@@ -187,6 +236,7 @@ export async function verifyPlayPurchase(db: D1Binding, play: PlayClient, input:
     if (await refundRejected(play, purchase, order.id)) {
       await applyCancel(db, after, voidedAsCancel(after), now);
       await db.prepare("UPDATE play_purchases SET voided_at = ? WHERE purchase_token = ? AND voided_at IS NULL").bind(now, token).run();
+      return { ok: false, code: "PAY_FAILED", message: PLAY_ORPHAN_REFUNDED_MESSAGE };
     }
     return { ok: false, code: "PAY_FAILED", message: PLAY_ORPHAN_MESSAGE };
   }
@@ -225,7 +275,7 @@ export async function consumePendingPlay(db: D1Binding, play: PlayClient, now: n
     try {
       held = await play.getPurchase(purchase.playProductId, purchase.token);
     } catch (error) {
-      console.warn(JSON.stringify({ evt: "pay.play_consume_failed", orderId: purchase.orderId, status: error instanceof PlayError ? error.status : 0 }));
+      logPlayFailure("pay.play_consume_failed", purchase.orderId, error);
       continue;
     }
     if (held?.consumptionState === 1) {
@@ -329,12 +379,10 @@ export async function refundUnusedPlayOrder(db: D1Binding, play: PlayClient, inp
       console.warn(JSON.stringify({ evt: "pay.play_refund_unknown", orderId: order.id, status }));
       return { ok: false, code: "PAY_PENDING" };
     }
-    // Refused, our own credentials included (401/403: an error to fix, logged below): nothing was refunded, so the reading
-    // comes back at once and is never left locked while a secret is wrong.
+    // Refused, our own credentials included (no access token, 401/403: an error to fix, logged so): nothing was refunded, so
+    // the reading comes back at once and is never left locked while a secret is wrong.
     await revertRefund(db, order.id, now, { nextKey: false });
-    const refused = JSON.stringify({ evt: "pay.play_refund_refused", orderId: order.id, status });
-    if (status === 401 || status === 403) console.error(refused);
-    else console.warn(refused);
+    logPlayFailure("pay.play_refund_refused", order.id, error);
     return { ok: false, code: "PAY_FAILED", message: PLAY_REFUND_FAILED_MESSAGE };
   }
   await applyCancel(db, order, voidedAsCancel(order), now);
@@ -373,7 +421,7 @@ export async function reconcilePlayRefunds(db: D1Binding, play: PlayClient, now:
     try {
       purchase = await play.getPurchase(order.play_product_id, order.play_token);
     } catch (error) {
-      console.warn(JSON.stringify({ evt: "pay.play_refund_unknown", orderId: order.id, status: error instanceof PlayError ? error.status : 0 }));
+      logPlayFailure("pay.play_refund_unknown", order.id, error);
     }
     if (purchase?.purchaseState === 0 && (await revertRefund(db, order.id, now, { nextKey: false }))) {
       console.info(JSON.stringify({ evt: "pay.play_refund_reverted", orderId: order.id }));
@@ -396,22 +444,37 @@ export async function reconcilePlayRefunds(db: D1Binding, play: PlayClient, now:
 }
 
 /**
- * Account deletion: a Play refund of this account stuck past PLAY_REFUND_STUCK_MS (reconcilePlayRefunds) does not hold the
- * deletion up for good. Its reading leaves use without coming back (put back, then revoked: setAsideForOperator), and its
- * order goes back to `paid` for the operator, who settles it in Play Console (logged `account.delete_play_set_aside`). Should
- * Google list it voided later, the cron still records the refund (applyVoidedPlay).
+ * True for a Play order (aliased `orders`) whose refund has been stuck past PLAY_REFUND_STUCK_MS before `?` (now − that):
+ * account deletion no longer waits for it (lib/account/deletion.ts IN_FLIGHT).
+ */
+export const PLAY_REFUND_STUCK_SQL =
+  "EXISTS (SELECT 1 FROM play_purchases ps WHERE ps.order_id = orders.id AND ps.voided_at IS NULL AND ps.refund_sent_at IS NOT NULL AND ps.refund_sent_at <= ?)";
+
+/**
+ * Account deletion, once the account is marked deleted (eraseDeletedAccount): a Play refund of it stuck past
+ * PLAY_REFUND_STUCK_MS (reconcilePlayRefunds), which the deletion did not wait for, is set aside for the operator. In one batch
+ * per order: the order goes back to `paid` and its locked reading leaves use for good (put back, then forfeited `revoked`
+ * with its ledger row, as setAsideForOperator does); the operator settles it in Play Console (logged
+ * `account.delete_play_set_aside`). Only for a deleted account: a deletion that stops never touches it. Should Google list
+ * it voided later, the cron still records the refund (applyVoidedPlay). Idempotent.
  */
 export async function setAsideStuckPlayRefunds(db: D1Binding, userId: string, now: number): Promise<void> {
   const { results } = await db
     .prepare(
       `SELECT o.id FROM orders o JOIN play_purchases pp ON pp.order_id = o.id
        WHERE o.user_id = ? AND o.status = 'refunding' AND COALESCE(o.fail_code, '') <> 'ACCOUNT_DELETED' AND pp.voided_at IS NULL
-         AND pp.refund_sent_at IS NOT NULL AND pp.refund_sent_at <= ?`,
+         AND pp.refund_sent_at IS NOT NULL AND pp.refund_sent_at <= ?
+         AND EXISTS (SELECT 1 FROM users u WHERE u.id = o.user_id AND u.deleted_at IS NOT NULL)`,
     )
     .bind(userId, now - PLAY_REFUND_STUCK_MS)
     .all<{ id: string }>();
   for (const { id } of results) {
-    if (await revertRefund(db, id, now, { nextKey: false })) await setAsideForOperator(db, id, now);
+    const { results: locked } = await db.prepare("SELECT * FROM credit_lots WHERE order_id = ? AND status = 'refunding'").bind(id).all<Lot>();
+    await db.batch([
+      db.prepare("UPDATE orders SET status = 'paid', updated_at = ? WHERE id = ? AND status = 'refunding'").bind(now, id),
+      db.prepare("UPDATE credit_lots SET units_left = units_total, status = 'active' WHERE order_id = ? AND status = 'refunding'").bind(id),
+      ...locked.flatMap((lot) => forfeitStatements(db, { ...lot, status: "active", units_left: lot.units_total }, "revoked", now)),
+    ]);
     console.warn(JSON.stringify({ evt: "account.delete_play_set_aside", orderId: id }));
   }
 }
