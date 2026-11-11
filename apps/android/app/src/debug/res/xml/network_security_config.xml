@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug builds only (src/debug). Cleartext is needed for a local web dev server over http.
+     A base-config is used because the dev host is whatever -PstarlogUrl names (10.0.2.2, a LAN IP, ...). -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

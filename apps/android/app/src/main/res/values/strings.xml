@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">스타로그</string>
+    <string name="offline_title">인터넷에 연결되어 있지 않아요</string>
+    <string name="offline_body">연결 상태를 확인한 뒤 다시 시도해 주세요.</string>
+    <string name="retry">다시 시도</string>
+</resources>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Brand colours from the site: theme colour #0D0A26 (apps/web/app/layout.tsx viewport.themeColor),
+     star gold #F3DCA1 and star white #F1ECFF (scripts/build-icons.mjs). -->
+<resources>
+    <color name="site_background">#0D0A26</color>
+    <color name="brand_gold">#F3DCA1</color>
+    <color name="text_primary">#F1ECFF</color>
+    <color name="text_secondary">#B3F1ECFF</color>
+    <color name="ad_divider">#33F1ECFF</color>
+    <color name="ic_launcher_background">#0D0A26</color>
+</resources>

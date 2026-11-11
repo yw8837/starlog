@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Splash icon: the brand star and its glow, drawn as a vector so it stays sharp at 288dp on every density
+     (the 512px logo.png would be upscaled). Same path and colours as the logo in scripts/build-icons.mjs
+     (WORDMARK_STAR_PATH, #F3DCA1). Splash rule: 288x288dp, content inside a 192dp circle. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="288dp"
+    android:height="288dp"
+    android:viewportWidth="288"
+    android:viewportHeight="288">
+
+    <path android:pathData="M59,147 a85,85 0 1,1 170,0 a85,85 0 1,1 -170,0 z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:centerX="144"
+                android:centerY="147"
+                android:gradientRadius="85"
+                android:type="radial">
+                <item android:color="#59F3DCA1" android:offset="0" />
+                <item android:color="#00F3DCA1" android:offset="1" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- star centre (12, 11.4) of the 24-unit path lands on (144, 147); max radius 10.7 units x 6.5 = 70dp < 96dp -->
+    <group
+        android:scaleX="6.5"
+        android:scaleY="6.5"
+        android:translateX="66"
+        android:translateY="72.9">
+        <path
+            android:fillColor="#F3DCA1"
+            android:pathData="M12,2.5 l2.8,6.2 l6.7,0.6 l-5.1,4.4 l1.6,6.6 L12,16.8 L6,20.3 l1.6,-6.6 l-5.1,-4.4 l6.7,-0.6 z" />
+    </group>
+</vector>
