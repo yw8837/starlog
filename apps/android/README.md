@@ -15,13 +15,19 @@ AdMob banner under free results. This folder is outside the pnpm workspace on pu
   Google refund help, receipts) opens in the user's browser; `javascript:`/`file:`/`data:`/`content:`,
   userinfo URLs and `http:` (release) are blocked.
 - **Payments**: the app launches the Play purchase and returns `{purchaseToken, productId}`; the server
-  verifies, grants and consumes. The app never acknowledges, consumes or grants anything.
+  verifies, grants and consumes. The app never acknowledges, consumes or grants anything. Failure codes:
+  `CANCELED`, `PENDING`, `UNAVAILABLE`, `ERROR`, and `OWNED` (Play still holds an unconsumed purchase of that
+  product; the web then asks `unfinishedPurchases`). The account tag must be 64 lowercase hex (sha256).
+- **Google sign-in**: the token's audience is `GOOGLE_WEB_CLIENT_ID` from the build; the page's `clientId` is
+  ignored, and a different one is refused (`ERROR client_mismatch`). Only a build without the property (debug,
+  local dev) uses the page's value, and only if it looks like `<digits>-<id>.apps.googleusercontent.com`.
 - **Banner**: at launch only the UMP consent-information update runs (Google: "at every app launch"); `hello`
   waits for it up to 2.5 s to report `privacyOptionsRequired`. On the web's first `ad {show:true}`: the
   consent form if required → `MobileAds.initialize` (background thread) → one large anchored adaptive banner
-  in a slot under the WebView, visible only while the signal is on, the path is `/now`, `/saju/grade` or
-  `/today` (and below), consent allows ads and the ad has loaded. Hidden on every page start and while
-  paused. The large size (50-150dp; about 128dp on a Pixel 7 emulator) is used because 25.x deprecates every
+  under the WebView. Its slot is reserved at the ad's height (dark, empty) as soon as the signal is on, the
+  path is `/now`, `/saju/grade` or `/today` (and below) and consent allows ads, so the page does not jump when
+  the ad arrives ("allocate a fixed space for the banner ad"); a failed load collapses it, as do `show:false`,
+  every page start and pausing. The large size (50-150dp; about 128dp on a Pixel 7 emulator) is used because 25.x deprecates every
   standard-height anchored adaptive size in favour of it (AdSize reference). The non-adaptive `AdSize.BANNER`
   (320x50) is the only non-deprecated short option.
 
@@ -62,7 +68,10 @@ does not apply today; re-check if an SDK update adds any (`unzip -l app-release.
 ```sh
 ./gradlew testDebugUnitTest   # URL rules, bridge messages, billing result codes
 ./gradlew assembleDebug       # app/build/outputs/apk/debug/app-debug.apk
-./gradlew bundleRelease       # app/build/outputs/bundle/release/app-release.aab (unsigned without keystore.properties)
+./gradlew bundleRelease -PADMOB_APP_ID=... -PADMOB_BANNER_ID=... -PGOOGLE_WEB_CLIENT_ID=...
+                              # app/build/outputs/bundle/release/app-release.aab (unsigned without keystore.properties)
+./gradlew bundleRelease -PallowTestAds=true -PallowNoGoogleClientId=true
+                              # on purpose: an internal-testing AAB with test ads and no fixed client id
 ./gradlew lintDebug           # app/build/reports/lint-results-debug.html
 python tools/make_icons.py    # re-generate launcher icons from apps/web/public/logo.png (Pillow)
 ```
@@ -74,10 +83,19 @@ python tools/make_icons.py    # re-generate launcher icons from apps/web/public/
 | `starlogUrl` | `https://starlog.yeolmaeapps.kr` | Debug builds only: the site to load, e.g. `-PstarlogUrl=http://10.0.2.2:3100`. Release always loads production. |
 | `ADMOB_APP_ID` | Google's **test** app id | Goes into the manifest (`com.google.android.gms.ads.APPLICATION_ID`). |
 | `ADMOB_BANNER_ID` | Google's **test** adaptive banner id | `BuildConfig.ADMOB_BANNER_ID`. |
+| `GOOGLE_WEB_CLIENT_ID` | empty | `BuildConfig.GOOGLE_WEB_CLIENT_ID`: the Google web OAuth client id, the same public value as the web's `GOOGLE_CLIENT_ID`. **Release builds must set it.** |
+| `allowTestAds` | unset | `true` lets a release build use Google's test AdMob ids (internal testing only). |
+| `allowNoGoogleClientId` | unset | `true` lets a release build go without `GOOGLE_WEB_CLIENT_ID`. |
 
 The AdMob defaults in `gradle.properties` are placeholders. For a production build pass the real ids on the
 command line (`-PADMOB_APP_ID=... -PADMOB_BANNER_ID=...`) or put them in `~/.gradle/gradle.properties`;
-never commit them.
+never commit them. `assembleRelease` / `bundleRelease` fail ("Release build refused: ...", task
+`checkReleaseIds`) while the AdMob ids are Google's test ids or `GOOGLE_WEB_CLIENT_ID` is empty, unless the
+matching `allow...` flag is passed. Debug builds are not checked.
+
+Backups: `allowBackup="false"` plus `dataExtractionRules` (`res/xml/data_extraction_rules.xml`) keep the WebView
+session out of cloud backups and device-to-device transfers on Android 12+; `fullBackupContent`
+(`res/xml/backup_rules.xml`) repeats the same exclusions for Android 11 and lower.
 
 ### Release signing (upload key)
 

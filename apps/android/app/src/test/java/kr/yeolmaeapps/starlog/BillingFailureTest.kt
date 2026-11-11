@@ -20,8 +20,13 @@ class BillingFailureTest {
         )) assertEquals(code.toString(), BridgeProtocol.UNAVAILABLE, billingFailure(code).code)
     }
 
+    /** The web then asks unfinishedPurchases and sends them to the server (review M6). */
+    @Test fun alreadyOwnedIsOwned() {
+        assertEquals(BridgeResult.Fail(BridgeProtocol.OWNED), billingFailure(BillingResponseCode.ITEM_ALREADY_OWNED))
+        assertEquals("OWNED", BridgeProtocol.OWNED)
+    }
+
     @Test fun everythingElseIsAnErrorWithTheCode() {
-        assertEquals(BridgeResult.Fail(BridgeProtocol.ERROR, "billing_7"), billingFailure(BillingResponseCode.ITEM_ALREADY_OWNED))
         assertEquals(BridgeResult.Fail(BridgeProtocol.ERROR, "billing_12"), billingFailure(BillingResponseCode.NETWORK_ERROR))
         assertEquals(BridgeResult.Fail(BridgeProtocol.ERROR, "billing_6"), billingFailure(BillingResponseCode.ERROR))
         assertEquals(BridgeResult.Fail(BridgeProtocol.ERROR, "billing_5"), billingFailure(BillingResponseCode.DEVELOPER_ERROR))

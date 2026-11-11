@@ -18,6 +18,22 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
 import org.json.JSONObject
 
+private val WEB_CLIENT_ID = Regex("^[0-9]+-[a-z0-9]+\\.apps\\.googleusercontent\\.com$")
+
+/**
+ * The Google web client id to sign in with (review M5: a script on the page must not choose the token's audience).
+ * When the build has one ([configured], BuildConfig.GOOGLE_WEB_CLIENT_ID) it is used and the page's value is ignored,
+ * except that a different non-empty page value is refused (`client_mismatch`). Without one (debug, local dev) the
+ * page's value is used only if it looks like a web client id (`bad_client_id` otherwise).
+ */
+internal fun chooseGoogleClientId(configured: String, fromPage: String?): Result<String> = when {
+    configured.isNotEmpty() && !fromPage.isNullOrEmpty() && fromPage != configured ->
+        Result.failure(IllegalArgumentException("client_mismatch"))
+    configured.isNotEmpty() -> Result.success(configured)
+    fromPage != null && WEB_CLIENT_ID.matches(fromPage) -> Result.success(fromPage)
+    else -> Result.failure(IllegalArgumentException("bad_client_id"))
+}
+
 /**
  * Native "Sign in with Google" (Credential Manager). Returns the ID token to the web, which sends it
  * to the server for verification (signature, aud, iss, exp, nonce). The token is never logged.
@@ -28,11 +44,13 @@ class GoogleSignIn(private val activity: Activity) {
     private var busy = false
 
     fun signIn(args: BridgeProtocol.SignInArgs, done: (BridgeResult) -> Unit) {
+        val clientId = chooseGoogleClientId(BuildConfig.GOOGLE_WEB_CLIENT_ID, args.clientId)
+            .getOrElse { return done(BridgeResult.Fail(BridgeProtocol.ERROR, it.message)) }
         if (busy) return done(BridgeResult.Fail(BridgeProtocol.ERROR, "sign_in_in_progress"))
         busy = true
 
         val option = GetGoogleIdOption.Builder()
-            .setServerClientId(args.clientId)
+            .setServerClientId(clientId)
             .setNonce(args.nonce)
             .setFilterByAuthorizedAccounts(false)
             .setAutoSelectEnabled(false)

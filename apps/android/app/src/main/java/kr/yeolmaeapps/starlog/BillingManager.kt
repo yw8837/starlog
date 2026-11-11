@@ -19,6 +19,7 @@ import org.json.JSONObject
 /** Bridge code for a failed Play Billing call. */
 internal fun billingFailure(responseCode: Int): BridgeResult.Fail = when (responseCode) {
     BillingResponseCode.USER_CANCELED -> BridgeResult.Fail(BridgeProtocol.CANCELED)
+    BillingResponseCode.ITEM_ALREADY_OWNED -> BridgeResult.Fail(BridgeProtocol.OWNED)
     BillingResponseCode.BILLING_UNAVAILABLE,
     BillingResponseCode.SERVICE_UNAVAILABLE,
     BillingResponseCode.SERVICE_DISCONNECTED,
@@ -92,6 +93,9 @@ class BillingManager(private val activity: Activity) : PurchasesUpdatedListener 
 
     override fun onPurchasesUpdated(result: BillingResult, purchases: List<Purchase>?) {
         main.post {
+            // No flow in progress (e.g. a PENDING purchase that went through later): there is no request to answer and
+            // the bridge has no shell-initiated messages. Play keeps it as PURCHASED and unacknowledged, and the web's
+            // AppMode asks `unfinishedPurchases` on every page load and whenever the page becomes visible again.
             val wanted = pending?.productId ?: return@post
             if (result.responseCode != BillingResponseCode.OK) return@post finish(billingFailure(result.responseCode))
             val purchase = purchases?.firstOrNull { wanted in it.products }

@@ -100,11 +100,24 @@ class BridgeProtocolTest {
         )) assertNull(bad, BridgeProtocol.purchaseArgs(JSONObject(bad)))
     }
 
+    /** The account tag is sha256 hex of the user id (review M5): anything else is refused before Play is asked. */
+    @Test fun accountTagMustBe64LowercaseHex() {
+        val hex = "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+        fun args(tag: String) = BridgeProtocol.purchaseArgs(JSONObject("""{"playProductId":"tarot","orderId":"o1","accountTag":"$tag"}"""))
+        assertNotNull(args(hex))
+        for (bad in listOf(hex.uppercase(), hex.dropLast(1), hex + "0", "g" + hex.drop(1), "u_AbC123", "t")) {
+            assertNull(bad, args(bad))
+        }
+    }
+
     @Test fun signInArgs() {
-        val ok = BridgeProtocol.signInArgs(JSONObject("""{"clientId":"123.apps.googleusercontent.com","nonce":"n0"}"""))
-        assertEquals("123.apps.googleusercontent.com", ok!!.clientId)
+        val ok = BridgeProtocol.signInArgs(JSONObject("""{"clientId":"123-abc.apps.googleusercontent.com","nonce":"n0"}"""))
+        assertEquals("123-abc.apps.googleusercontent.com", ok!!.clientId)
         assertEquals("n0", ok.nonce)
-        for (bad in listOf("""{}""", """{"clientId":"c"}""", """{"nonce":"n"}""", """{"clientId":" ","nonce":"n"}""", """{"clientId":"c","nonce":null}""")) {
+        // clientId is optional here: chooseGoogleClientId decides (the build's own id wins).
+        assertNull(BridgeProtocol.signInArgs(JSONObject("""{"nonce":"n"}"""))!!.clientId)
+        assertNull(BridgeProtocol.signInArgs(JSONObject("""{"clientId":" ","nonce":"n"}"""))!!.clientId)
+        for (bad in listOf("""{}""", """{"clientId":"c"}""", """{"clientId":"c","nonce":null}""", """{"clientId":"c","nonce":" "}""")) {
             assertNull(bad, BridgeProtocol.signInArgs(JSONObject(bad)))
         }
     }
@@ -149,7 +162,8 @@ class BridgeProtocolTest {
     @Test fun realSignInValuesPass() {
         val raw = """{"id":"k1-4","type":"googleSignIn","payload":{"clientId":"123456789012-abcdefghijklmnopqrstuvwxyz012345.apps.googleusercontent.com","nonce":"q8Zx_3-LmN0pQrStUvWxYz"}}"""
         val args = BridgeProtocol.signInArgs(BridgeProtocol.parse(raw)!!.payload)!!
-        assertTrue(args.clientId.endsWith(".apps.googleusercontent.com"))
+        assertTrue(args.clientId!!.endsWith(".apps.googleusercontent.com"))
+        assertEquals("use:${args.clientId}", chooseGoogleClientId("", args.clientId).fold({ "use:$it" }, { "fail" }))
         assertEquals(22, args.nonce.length)
     }
 

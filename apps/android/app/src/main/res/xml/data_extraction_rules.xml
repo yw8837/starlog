@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+ (API 31+): nothing of this app leaves the device. Its only data is the WebView's (cookies with the
+     login session, storage, cache) plus SDK state; the site is the source of truth. allowBackup="false" alone does not
+     stop device-to-device transfers on some devices (developer.android.com/identity/data/autobackup), so both modes
+     exclude the whole app data directory, credential- and device-protected. On Android 11 and lower
+     allowBackup="false" already disables backup and transfer; backup_rules.xml repeats these rules there anyway. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" path="." />
+        <exclude domain="device_root" path="." />
+        <exclude domain="external" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" path="." />
+        <exclude domain="device_root" path="." />
+        <exclude domain="external" path="." />
+    </device-transfer>
+</data-extraction-rules>

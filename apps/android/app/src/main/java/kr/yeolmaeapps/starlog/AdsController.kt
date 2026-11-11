@@ -23,10 +23,10 @@ import org.json.JSONObject
  * - On the web's first `ad {show:true}`, once per process: after that update, the consent form if required →
  *   canRequestAds() → MobileAds.initialize (background thread) → one anchored adaptive banner.
  *
- * The banner container is VISIBLE only while all hold: the web's last signal is show:true, the
- * current URL is a free-result path ([pathAllowed]), consent allows ad requests (the AdView only
- * exists then), the ad has loaded, and the activity is resumed. Otherwise it is GONE and paused,
- * so there is never an empty gap or a banner over content.
+ * The banner slot ([BannerSlot]) is reserved at the ad's height while all hold: the web's last signal is show:true,
+ * the current URL is a free-result path ([pathAllowed]), consent allows ad requests, and the activity is resumed;
+ * the ad loads into that fixed space, so the page does not jump when it arrives. A failed load collapses it (no empty
+ * gap); otherwise it is GONE, and a loaded banner is paused while hidden. It never covers the page.
  */
 class AdsController(
     private val activity: Activity,
@@ -38,9 +38,10 @@ class AdsController(
 ) {
     private val consent: ConsentInformation by lazy { UserMessagingPlatform.getConsentInformation(activity) }
 
-    private var wantShow = false
+    private val slotState = BannerSlot()
     private var resumed = false
     private var loaded = false
+    private var loading = false
     private var shown = false
     private var adView: AdView? = null
     private var adPaused = false
@@ -80,14 +81,20 @@ class AdsController(
         consent.privacyOptionsRequirementStatus == ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED
 
     fun setSignal(show: Boolean) {
-        wantShow = show
+        val newResult = slotState.signal(show)
         if (show) start()
+        // A new result after a failed load: load again so the reserved slot is "reserve while loading".
+        val view = adView
+        if (newResult && view != null && !loaded && !loading) {
+            loading = true
+            view.loadAd(AdRequest.Builder().build())
+        }
         update()
     }
 
     /** Every new page starts without a banner; the page must signal again. */
     fun onPageStarted() {
-        wantShow = false
+        slotState.pageStarted()
         update()
     }
 
@@ -135,7 +142,9 @@ class AdsController(
     }
 
     private fun afterConsent() {
-        if (activity.isDestroyed || !consent.canRequestAds()) return
+        if (activity.isDestroyed) return
+        update() // consent may now allow ads: reserve the slot while the SDK starts
+        if (!consent.canRequestAds()) return
         if (sdkReady) return createBanner()
         if (sdkStarting) return
         sdkStarting = true
@@ -152,21 +161,22 @@ class AdsController(
     private fun createBanner() {
         if (adView != null) return
         bannerWidthPx = contentWidthPx()
-        val widthDp = (bannerWidthPx / activity.resources.displayMetrics.density).toInt()
+        val size = bannerSize(bannerWidthPx)
+        slot.minimumHeight = size.getHeightInPixels(activity) + slot.paddingTop
         val view = AdView(activity)
         view.adUnitId = bannerId
-        // 25.x: every standard-height anchored adaptive size is deprecated ("Use getLarge...AnchoredAdaptiveBannerAdSize
-        // instead", developers.google.com/android/reference/com/google/android/gms/ads/AdSize); large is 50-150dp.
-        view.setAdSize(AdSize.getLargeAnchoredAdaptiveBannerAdSize(activity, widthDp))
+        view.setAdSize(size)
         view.adListener = object : AdListener() {
             override fun onAdLoaded() {
                 loaded = true
+                loading = false
                 update()
             }
 
             override fun onAdFailedToLoad(error: LoadAdError) {
-                // Collapse; with refresh configured on the ad unit the SDK tries again by itself.
-                loaded = false
+                loading = false
+                // Nothing on screen yet: give the reserved space back (no empty gap). A failed refresh keeps the old ad.
+                if (!loaded) slotState.loadFailed()
                 update()
             }
         }
@@ -174,13 +184,21 @@ class AdsController(
         slot.addView(view)
         adView = view
         adPaused = false
+        loading = true
         view.loadAd(AdRequest.Builder().build())
     }
+
+    // 25.x: every standard-height anchored adaptive size is deprecated ("Use getLarge...AnchoredAdaptiveBannerAdSize
+    // instead", developers.google.com/android/reference/com/google/android/gms/ads/AdSize); large is 50-150dp. Its height
+    // is known before any ad loads, which is what the reserved slot uses.
+    private fun bannerSize(widthPx: Int): AdSize =
+        AdSize.getLargeAnchoredAdaptiveBannerAdSize(activity, (widthPx / activity.resources.displayMetrics.density).toInt())
 
     private fun destroyBanner() {
         val view = adView ?: return
         adView = null
         loaded = false
+        loading = false
         update()
         slot.removeView(view)
         view.destroy()
@@ -192,9 +210,12 @@ class AdsController(
 
     private fun update() {
         val view = adView
-        val visible = wantShow && resumed && loaded && view != null && pathAllowed()
+        val adsAllowed = gate.isOpen && consent.canRequestAds()
+        val visible = slotState.isOpen(resumed, pathAllowed(), adsAllowed)
         if (visible != shown) {
             shown = visible
+            // Reserve the ad's height before it loads (the banner itself sets it again when created).
+            if (visible && view == null) slot.minimumHeight = bannerSize(contentWidthPx()).getHeightInPixels(activity) + slot.paddingTop
             container.visibility = if (visible) View.VISIBLE else View.GONE
         }
         // Pause a loaded banner while hidden (no refresh off-screen); an unloaded one keeps loading.

@@ -22,6 +22,9 @@ object BridgeProtocol {
     const val UNAVAILABLE = "UNAVAILABLE"
     const val ERROR = "ERROR"
 
+    /** `purchase` only: Play still holds an unconsumed purchase of this product; the web then asks `unfinishedPurchases`. */
+    const val OWNED = "OWNED"
+
     val TYPES = setOf("hello", "purchase", "unfinishedPurchases", "googleSignIn", "ad", "privacyOptions")
 
     /** [id] is the caller's string or number, echoed back unchanged. */
@@ -29,7 +32,8 @@ object BridgeProtocol {
 
     class PurchaseArgs(val productId: String, val orderId: String, val accountTag: String)
 
-    class SignInArgs(val clientId: String, val nonce: String)
+    /** [clientId] is the page's (optional); [chooseGoogleClientId] decides which one is used. */
+    class SignInArgs(val clientId: String?, val nonce: String)
 
     /** Null (ignore, no reply possible) for malformed JSON or a missing/invalid id. */
     fun parse(raw: String?): Request? {
@@ -61,23 +65,24 @@ object BridgeProtocol {
     }
 
     /** Our Play product ids are the web ids with `-` → `_` (`tarot_deep`, `newyear_2027`); this is only a sanity
-     *  check. Order id and account tag ride as obfuscated ids, which Play limits to 64 characters. */
+     *  check. Order id and account tag ride as obfuscated ids, which Play limits to 64 characters; the account tag
+     *  is the sha256 hex of the user id (apps/web lib/pay/play.ts playAccountTag). */
     fun purchaseArgs(payload: JSONObject): PurchaseArgs? {
         val productId = string(payload, "playProductId")?.takeIf { PRODUCT_ID.matches(it) } ?: return null
         val orderId = string(payload, "orderId")?.takeIf { it.length <= 64 } ?: return null
-        val accountTag = string(payload, "accountTag")?.takeIf { it.length <= 64 } ?: return null
+        val accountTag = string(payload, "accountTag")?.takeIf { ACCOUNT_TAG.matches(it) } ?: return null
         return PurchaseArgs(productId, orderId, accountTag)
     }
 
     fun signInArgs(payload: JSONObject): SignInArgs? {
-        val clientId = string(payload, "clientId") ?: return null
         val nonce = string(payload, "nonce") ?: return null
-        return SignInArgs(clientId, nonce)
+        return SignInArgs(string(payload, "clientId"), nonce)
     }
 
     fun adShow(payload: JSONObject): Boolean? = payload.opt("show") as? Boolean
 
     private val PRODUCT_ID = Regex("^[a-z0-9][a-z0-9_.]{0,63}$")
+    private val ACCOUNT_TAG = Regex("^[0-9a-f]{64}$")
 
     /** A non-blank string value; `opt` + type check behaves the same on Android's and Maven's org.json. */
     private fun string(obj: JSONObject, key: String): String? = (obj.opt(key) as? String)?.takeIf { it.isNotBlank() }
