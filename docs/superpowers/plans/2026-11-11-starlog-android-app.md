@@ -109,7 +109,7 @@ Machine: JDK 21 (Adoptium), Android SDK platforms 35/36, build-tools 36.0.0, emu
 1. Back up D1, apply 0024 and 0025 to production (0024 rebuilds `payments`: same steps as 0023 in the payments runbook), deploy the web.
 2. Owner checklist (final report) → secrets, real AdMob ids, release keystore → signed AAB.
 3. Play Console → internal testing: test-card purchase and refund, Kakao and Google login, banner per screen, deletion, 신고.
-4. **Account created after 2023-11-13:** closed testing with at least 12 testers opted in for 14 days in a row, then apply for production access, then production review. **Created before that date:** production review directly. (support.google.com/googleplay/android-developer/answer/14151465)
+4. Confirmed in Play Console on 2026-11-13 (main session, owner logged in): the developer account "Yeolmae_STUDIO" is a personal account and the app's dashboard requires a closed test with 12 or more opted-in testers for 14 days before production access can be requested. The app exists: `kr.yeolmaeapps.starlog`, "스타로그: 타로와 사주 풀이". Steps: `apps/android/store/owner-checklist.md` section 10. (support.google.com/googleplay/android-developer/answer/14151465)
 
 ## Review (2026-11-11, independent reviewer; notes file `android-review-1.md`)
 0 critical, 1 high, 9 medium, 21 low. Fixed: H1 (a purchase the server rejects, or one for a deleted account, is refunded at once through `orders.refund`, never left to the 3-day expiry), M1–M6, M8, M9 and the low items except L10 (accepted: a normal browser receives one head script, hidden app-only markup and a `provider` field; nothing visible changes). Open for the owner: M7 (terms and refund pages name Toss and cards only) and the set sentences below.
