@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BusinessFacts, LegalNote, LegalPage, LegalSection } from "@/components/legal/LegalPage";
-import { PremiumChangeNotice, PremiumLegalNotice, PremiumTerms, PremiumUpcoming, SetRuleNotice } from "@/components/legal/PremiumLegal";
+import { PremiumChangeNotice, PremiumLegalNotice, PremiumTerms, PremiumUpcoming, SetRuleNotice, playSetPartRule } from "@/components/legal/PremiumLegal";
 import s from "@/components/legal/legal.module.css";
 import { OPENING_LAST_DATE, SITE, openingFreeOn } from "@/lib/config";
 import {
-  BOND_LOGIN_DATE, KEPT_RULE_DATE, LOGIN_RULE_DATE, OPENING_ACCOUNT_DATE, SYNC_REVISION_DATE, bondLoginNoticeShown, contactChannels, keptRuleNoticeShown, koreanDate, loginRuleNoticeShown,
-  premiumChangeNoticeShown, premiumLegalInForce, setRuleNoticeShown, syncRevisionInForce, termsEffectiveDate,
+  APP_REVISION_DATE, BOND_LOGIN_DATE, KEPT_RULE_DATE, LOGIN_RULE_DATE, OPENING_ACCOUNT_DATE, SYNC_REVISION_DATE, appRevisionNoticeShown, bondLoginNoticeShown, contactChannels, keptRuleNoticeShown, koreanDate,
+  loginRuleNoticeShown, premiumChangeNoticeShown, premiumLegalInForce, setRuleNoticeShown, syncRevisionInForce, termsEffectiveDate,
 } from "@/lib/legal";
 import { REFUND_DAYS } from "@/lib/pay/catalog";
 import { appHref } from "@/lib/hosts";
@@ -109,6 +109,22 @@ function BondLoginNotice() {
   );
 }
 
+/**
+ * The Android app (lib/legal.ts APP_REVISION_DATE, owner 2026-11-13): what changed in 제7조 2호 and 8호, and how a set paid
+ * with Google Play has its part refunded, on top for 30 days, as the AI 풀이 login was.
+ */
+function AppRevisionNotice() {
+  return (
+    <aside className={s.note} aria-labelledby="app-revision-title">
+      <h2 id="app-revision-title" className={s.noteTitle}>{`${koreanDate(APP_REVISION_DATE)} 바뀐 내용 · 안드로이드 앱`}</h2>
+      <ul className={s.list}>
+        <li>안드로이드 앱에서는 Google Play 결제로 결제할 수 있고, Google Play로 결제한 건의 영수증은 Google Play가 보냅니다(제7조 2호, 8호).</li>
+        <li>{playSetPartRule(false)}</li>
+      </ul>
+    </aside>
+  );
+}
+
 /** Rendered per request: the premium clauses come in force at a KST midnight with no deploy (lib/legal.ts). */
 export const dynamic = "force-dynamic";
 
@@ -125,6 +141,7 @@ export default function TermsPage() {
       {premiumChangeNoticeShown(now) ? <PremiumChangeNotice /> : null}
       {/* The 2027 신년운세 + 프리미엄 궁합 set (lib/legal.ts SET_RULE_DATE): from the deploy until 30 days after 12/1. */}
       {setRuleNoticeShown(now) ? <SetRuleNotice now={now} /> : null}
+      {appRevisionNoticeShown(now) ? <AppRevisionNotice /> : null}
       {BONDS && bondLoginNoticeShown(now) ? <BondLoginNotice /> : null}
       {keptRuleNoticeShown(now) ? <KeptRuleNotice /> : null}
       {loginRuleNoticeShown(now) ? <LoginRuleNotice /> : null}
@@ -242,7 +259,7 @@ export default function TermsPage() {
             </Link>
             {"에 게시합니다. 이용자는 전체 풀이를 건별로 결제하며, 결제 금액은 운영자가 상품별로 정한 금액입니다."}
           </li>
-          <li>결제는 토스페이먼츠를 통해 카드와 간편결제로 할 수 있습니다. 결제하려면 회원으로 로그인해야 합니다.</li>
+          <li>결제는 웹에서는 토스페이먼츠를 통해 카드와 간편결제로, 안드로이드 앱에서는 Google Play 결제로 할 수 있습니다. 결제하려면 회원으로 로그인해야 합니다.</li>
           <li>운영자는 결제 전에 가격, 포함 내용, 청약철회가 제한되는 경우를 알리고 이용자의 확인을 받습니다.</li>
           <li>
             {`결제한 풀이는 풀이를 적기 시작한 때 제공이 시작된 것으로 보며, 풀이는 결제 직후 자동으로 적기 시작합니다. 다 나오기 전에 이용자가 화면을 닫거나 연결이 끊긴 풀이는 3번까지 다시 열어 받을 수 있고, 환불 대상이 아닙니다. 네 번째로 끊긴 때에는 그 결제 풀이를 쓴 것으로 봅니다. 운영자 쪽 문제로 완성되지 않은 풀이는 쓰이지 않습니다. 열기 전의 결제 풀이는 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있으며, 그 밖의 청약철회와 환불은 `}
@@ -254,7 +271,7 @@ export default function TermsPage() {
           <li>{`오픈 기념 무료로 연 풀이에는 제4조에서 정한 대로 이어서 물어보기${revised ? "를" : "와 결과 공유를"} 제공하지 않습니다.`}</li>
           <li>가격 안내에 준비 중으로 표시한 풀이는 판매를 시작하기 전에 가격과 제공 내용을 알리며, 그 전에는 결제를 받지 않습니다.</li>
           <li>풀이가 완성되어 저장되지 않으면 결제한 풀이를 쓰지 않습니다.</li>
-          <li>영수증은 내 정보의 결제 내역에서 확인할 수 있습니다.</li>
+          <li>영수증은 내 정보의 결제 내역에서 확인할 수 있습니다. 안드로이드 앱에서 Google Play로 결제한 건의 영수증은 Google Play가 보냅니다.</li>
         </ol>
       </LegalSection>
 

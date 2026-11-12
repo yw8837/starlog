@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import PrivacyPage from "@/app/privacy/page";
 import RefundPage from "@/app/refund/page";
 import TermsPage from "@/app/terms/page";
-import { BOND_LOGIN_DATE, KEPT_RULE_DATE, LOGIN_RULE_DATE, koreanDate } from "@/lib/legal";
+import { APP_REVISION_DATE, BOND_LOGIN_DATE, KEPT_RULE_DATE, LOGIN_RULE_DATE, koreanDate } from "@/lib/legal";
 
 /**
  * Every AI reading result needs a login (owner 2026-11-04, final): the terms (제6조 1호) and the privacy policy change only
@@ -198,5 +198,106 @@ describe("a friend logs in to join 별자리 인연, in the policies", () => {
     vi.setSystemTime(Date.parse("2026-12-11T00:00:00+09:00"));
     container = render(<PrivacyPage />).container;
     expect([...container.querySelectorAll("aside")].some((aside) => aside.querySelector("h2")?.textContent === BOND_NOTICE)).toBe(false);
+  });
+});
+
+/**
+ * The Android app (owner 2026-11-13, apps/android/store/wording-proposals.md 1–5 and 10–13 as written): the terms, the refund
+ * policy and the privacy policy say Google Play 결제와 환불, the app's AdMob banner and 풀이 신고 (kept 1 year), and say what
+ * changed, dated by lib/legal.ts APP_REVISION_DATE, on top for 30 days, as with LOGIN_RULE_DATE; the 시행일 shown stays.
+ */
+describe("the Android app, in the policies", () => {
+  const APP_NOTICE = `${koreanDate(APP_REVISION_DATE)} 바뀐 내용`;
+  const appNotice = (container: HTMLElement, title = APP_NOTICE) => [...container.querySelectorAll("aside")].find((aside) => aside.querySelector("h2")?.textContent === title);
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.parse("2026-11-13T12:00:00+09:00"));
+  });
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+  });
+
+  it("terms 제7조 2호 and 8호: Google Play 결제 in the app and its receipts from Google Play; a dated notice for 30 days; the 시행일 stays", () => {
+    let container = render(<TermsPage />).container;
+    const paid = [...container.querySelectorAll("#paid ol > li")].map((li) => li.textContent);
+    expect(paid[1]).toBe("결제는 웹에서는 토스페이먼츠를 통해 카드와 간편결제로, 안드로이드 앱에서는 Google Play 결제로 할 수 있습니다. 결제하려면 회원으로 로그인해야 합니다.");
+    expect(paid[7]).toBe("영수증은 내 정보의 결제 내역에서 확인할 수 있습니다. 안드로이드 앱에서 Google Play로 결제한 건의 영수증은 Google Play가 보냅니다.");
+    const notice = appNotice(container, `${APP_NOTICE} · 안드로이드 앱`);
+    expect(notice).toBeTruthy();
+    expect([...notice!.querySelectorAll("li")].map((li) => li.textContent)).toEqual([
+      "안드로이드 앱에서는 Google Play 결제로 결제할 수 있고, Google Play로 결제한 건의 영수증은 Google Play가 보냅니다(제7조 2호, 8호).",
+      "안드로이드 앱에서 Google Play로 결제한 세트는 하나를 연 뒤 남은 풀이 몫을 문의로 접수하면 같은 금액을 환불합니다.",
+    ]);
+    expect(container.textContent).toContain("이 약관은 2026년 10월 31일부터 시행합니다.");
+    cleanup();
+    vi.setSystemTime(Date.parse("2026-12-13T00:00:00+09:00"));
+    container = render(<TermsPage />).container;
+    expect(appNotice(container, `${APP_NOTICE} · 안드로이드 앱`)).toBeUndefined();
+    expect(container.querySelector("#paid")?.textContent).toContain("안드로이드 앱에서는 Google Play 결제로 할 수 있습니다.");
+  });
+
+  it("refund: a Google Play payment by the same rule through 환불받기, the bank account when Google Play cannot refund, Google Play's days; a dated notice", () => {
+    let container = render(<RefundPage />).container;
+    const before = [...container.querySelectorAll("#before-open p")].map((p) => p.textContent);
+    expect(before[1]).toBe("안드로이드 앱에서 Google Play로 결제한 풀이도 같은 기준으로 ‘환불받기’에서 환불돼요. 환불금은 Google Play를 통해 결제한 수단으로 돌아가요.");
+    expect(before[3]).toBe("카드사가 결제를 취소해 주는 기간이 지났거나 Google Play에서 환불이 되지 않으면, 알려 주신 본인 명의 계좌로 환불해 드려요.");
+    expect([...container.querySelectorAll("#how li")].map((li) => li.textContent)).toContain("카드사나 결제사, Google Play 사정에 따라 실제로 반영되기까지 며칠 더 걸릴 수 있어요.");
+    expect(container.textContent).not.toMatch(/기간이 지났다면,|카드사나 결제사 사정에/);
+    expect(appNotice(container)?.textContent).toBe(
+      `${APP_NOTICE}안드로이드 앱에서 Google Play로 결제한 풀이도 같은 기준으로 ‘환불받기’에서 환불돼요. 안드로이드 앱에서 Google Play로 결제한 세트는 하나를 연 뒤 남은 풀이 몫을 문의로 접수하면 같은 금액을 환불해 드려요.`,
+    );
+    expect(container.querySelector("time")?.getAttribute("datetime")).toBe("2026-10-20");
+    cleanup();
+    vi.setSystemTime(Date.parse("2026-12-13T00:00:00+09:00"));
+    container = render(<RefundPage />).container;
+    expect(appNotice(container)).toBeUndefined();
+  });
+
+  it("privacy: Google Play 결제 and AdMob abroad (after 토스페이먼츠), the payment record, 풀이 신고 kept 1 year, the app's ads; a dated notice", () => {
+    let container = render(<PrivacyPage />).container;
+    expect([...container.querySelectorAll("#processors h3")].map((h) => h.textContent)).toEqual([
+      "Anthropic, PBC", "Cloudflare, Inc.", "토스페이먼츠 주식회사", "Google LLC (Google Play 결제)", "Google LLC (AdMob)", "Google LLC",
+    ]);
+    const rowsOf = (name: string) =>
+      Object.fromEntries([...container.querySelector(`[aria-label="${name}"]`)!.querySelectorAll("dt")].map((dt) => [dt.textContent, dt.nextElementSibling?.textContent ?? ""]));
+    expect(rowsOf("Google LLC (Google Play 결제)")).toEqual({
+      "국가": "미국",
+      "맡기는 일": "안드로이드 앱의 결제 처리(Google Play 결제 승인과 환불)",
+      "처리 항목": "결제와 환불에 필요한 구매 식별값(구매 토큰, Google 주문번호), 계정을 가린 값",
+      "이전 시기와 방법": "안드로이드 앱에서 결제할 때 앱이 계정을 가린 값을 Google Play에 함께 보내고, 결제를 확인하거나 환불할 때 운영자의 서버가 구매 토큰으로 Google Play에 요청하며, 모두 암호화된 연결(HTTPS)로 전송",
+      "보유·이용 기간": "Google의 개인정보처리방침과 관련 법령에서 정한 기간 동안 Google이 보관합니다.",
+      "거부 방법과 거부 시 불이익": "안드로이드 앱에서 결제하지 않으면 이전되지 않습니다. 거부하시면 앱에서는 유료 풀이를 결제할 수 없습니다.",
+      "개인정보 문의": "policies.google.com/privacy",
+    });
+    expect(rowsOf("Google LLC (AdMob)")).toEqual({
+      "국가": "미국",
+      "맡기는 일": "안드로이드 앱의 무료 결과 화면(지금의 한 장, 사주 등급 카드, 오늘의 한 장) 아래 광고 게재",
+      "처리 항목": "광고 ID, 기기·앱 정보, IP 주소(광고 게재와 부정 사용 방지)",
+      "이전 시기와 방법":
+        "안드로이드 앱이 무료 결과 화면에서 광고를 불러오고 보여 주는 동안 Google 모바일 광고 SDK가 기기에서 Google로 암호화된 연결(TLS)로 바로 보냅니다. Google은 이때 앱 실행·탭 같은 상호작용, 앱과 SDK의 성능 정보, 앱 세트 ID, 기기에 로그인한 계정과 관련된 식별자도 수집하며, IP 주소로 기기의 대략적 위치를 추정할 수 있다고 밝히고 있습니다.",
+      "보유·이용 기간": "Google의 개인정보처리방침에서 정한 기간 동안 Google이 보관합니다.",
+      "거부 방법과 거부 시 불이익":
+        "맞춤 광고는 기기의 설정 > Google > 광고에서 끌 수 있고, 유럽경제지역·영국·스위스에서는 앱의 내 정보 > 광고 개인정보 설정에서 동의를 바꿀 수 있습니다. 꺼도 앱 이용에 제한은 없으며, 광고 수는 줄지 않고 관심사와 관계없는 광고가 보입니다.",
+      "개인정보 문의": "policies.google.com/privacy",
+    });
+    const items = [...container.querySelectorAll("#items li")].map((li) => li.textContent);
+    expect(items).toContain(
+      "결제 기록: 주문번호, 상품, 금액, 결제수단 종류, 승인·취소 시각과 영수증 링크(앱 결제는 Google Play 구매 식별값). 카드번호 등 결제 정보는 토스페이먼츠(웹)나 Google Play(안드로이드 앱)가 처리하며 운영자는 받지 않습니다",
+    );
+    expect(items).toContain("풀이 신고(안드로이드 앱): 신고한 풀이의 종류와 번호, 고른 사유, 직접 적은 메모, 로그인한 경우 계정. 풀이 내용은 저장하지 않으며, 탈퇴하면 계정과 메모를 지웁니다. 보관 기간: 1년");
+    expect(container.textContent).not.toContain("카드번호 등 결제 정보는 토스페이먼츠가 처리하며");
+    expect([...container.querySelectorAll("#cookies p")].map((p) => p.textContent)).toContain(
+      "안드로이드 앱의 무료 결과 화면 아래에는 Google AdMob 광고가 실립니다. 맞춤 광고는 기기의 설정 > Google > 광고에서 끌 수 있고, 유럽경제지역·영국·스위스에서는 앱의 내 정보 > 광고 개인정보 설정에서 동의를 바꿀 수 있습니다.",
+    );
+    expect(appNotice(container)?.textContent).toBe(
+      `${APP_NOTICE}안드로이드 앱의 Google Play 결제와 환불, 무료 결과 화면 아래의 Google AdMob 광고, 풀이 신고 기록에 관한 내용을 더했어요.처리를 맡기는 곳에 Google LLC(Google Play 결제, AdMob)를 더했고, 풀이 신고 기록은 1년 동안 보관해요.`,
+    );
+    expect(container.querySelector("time")?.getAttribute("datetime")).toBe("2026-10-31");
+    cleanup();
+    vi.setSystemTime(Date.parse("2026-12-13T00:00:00+09:00"));
+    container = render(<PrivacyPage />).container;
+    expect(appNotice(container)).toBeUndefined();
+    expect(container.querySelector('[aria-label="Google LLC (AdMob)"]')).not.toBeNull();
   });
 });

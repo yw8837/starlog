@@ -8,6 +8,7 @@ import { adsConfig } from "@/lib/ads";
 import { GA_MEASUREMENT_ID } from "@/lib/analytics";
 import { OPENING_LAST_DATE, SITE, openingFreeOn } from "@/lib/config";
 import {
+  APP_REVISION_DATE,
   BOND_LOGIN_DATE,
   GA_REVISION_DATE,
   KEPT_RULE_DATE,
@@ -17,6 +18,7 @@ import {
   OPENING_RETENTION_DATE,
   PRIVACY_REVISION_DATE,
   SYNC_REVISION_DATE,
+  appRevisionNoticeShown,
   bondLoginNoticeShown,
   contactChannels,
   gaRevisionInForce,
@@ -131,6 +133,39 @@ const processors = (premium: boolean, ga: boolean, synced: boolean): readonly Pr
       ["보유·이용 기간", "관련 법령과 해당 사업자의 정책에 따름"],
     ],
   },
+  // The Android app (owner 2026-11-13): Google Play billing (lib/pay/play.ts: the purchase token and Google's order id; the app
+  // gives Google playAccountTag as obfuscatedAccountId, BillingManager.kt) and the AdMob banner (AdsController.kt; what the SDK
+  // collects as Google publishes it: developers.google.com/admob/android/privacy/play-data-disclosure).
+  {
+    name: "Google LLC (Google Play 결제)",
+    rows: [
+      ["국가", "미국"],
+      ["맡기는 일", "안드로이드 앱의 결제 처리(Google Play 결제 승인과 환불)"],
+      ["처리 항목", "결제와 환불에 필요한 구매 식별값(구매 토큰, Google 주문번호), 계정을 가린 값"],
+      ["이전 시기와 방법", "안드로이드 앱에서 결제할 때 앱이 계정을 가린 값을 Google Play에 함께 보내고, 결제를 확인하거나 환불할 때 운영자의 서버가 구매 토큰으로 Google Play에 요청하며, 모두 암호화된 연결(HTTPS)로 전송"],
+      ["보유·이용 기간", "Google의 개인정보처리방침과 관련 법령에서 정한 기간 동안 Google이 보관합니다."],
+      ["거부 방법과 거부 시 불이익", "안드로이드 앱에서 결제하지 않으면 이전되지 않습니다. 거부하시면 앱에서는 유료 풀이를 결제할 수 없습니다."],
+      ["개인정보 문의", <a href="https://policies.google.com/privacy">policies.google.com/privacy</a>],
+    ],
+  },
+  {
+    name: "Google LLC (AdMob)",
+    rows: [
+      ["국가", "미국"],
+      ["맡기는 일", "안드로이드 앱의 무료 결과 화면(지금의 한 장, 사주 등급 카드, 오늘의 한 장) 아래 광고 게재"],
+      ["처리 항목", "광고 ID, 기기·앱 정보, IP 주소(광고 게재와 부정 사용 방지)"],
+      [
+        "이전 시기와 방법",
+        "안드로이드 앱이 무료 결과 화면에서 광고를 불러오고 보여 주는 동안 Google 모바일 광고 SDK가 기기에서 Google로 암호화된 연결(TLS)로 바로 보냅니다. Google은 이때 앱 실행·탭 같은 상호작용, 앱과 SDK의 성능 정보, 앱 세트 ID, 기기에 로그인한 계정과 관련된 식별자도 수집하며, IP 주소로 기기의 대략적 위치를 추정할 수 있다고 밝히고 있습니다.",
+      ],
+      ["보유·이용 기간", "Google의 개인정보처리방침에서 정한 기간 동안 Google이 보관합니다."],
+      [
+        "거부 방법과 거부 시 불이익",
+        "맞춤 광고는 기기의 설정 > Google > 광고에서 끌 수 있고, 유럽경제지역·영국·스위스에서는 앱의 내 정보 > 광고 개인정보 설정에서 동의를 바꿀 수 있습니다. 꺼도 앱 이용에 제한은 없으며, 광고 수는 줄지 않고 관심사와 관계없는 광고가 보입니다.",
+      ],
+      ["개인정보 문의", <a href="https://policies.google.com/privacy">policies.google.com/privacy</a>],
+    ],
+  },
   ...(ga
     ? [
         {
@@ -225,6 +260,14 @@ export default function PrivacyPage() {
           <h2 id="meta-privacy-title" className={s.noteTitle}>{`${koreanDate(META_REVISION_DATE)}${meta ? " 바뀐 내용" : "부터 바뀌는 내용"}`}</h2>
           <p>광고 성과를 재려고, 방문 통계와 광고 측정을 허용한 분에 한해 Meta 픽셀로 번호나 결제 정보가 없는 페이지 방문과 결제 금액, 기기·브라우저 정보, IP 주소, 쿠키 식별값을 Meta Platforms, Inc.(미국)로 보내요.</p>
           <p>전에 방문 통계만 허용하셨다면 한 번 더 여쭤봐요. 거부해도 이용에 제한은 없어요.</p>
+        </aside>
+      ) : null}
+      {/* The Android app (owner 2026-11-13): in force from this deploy, said on top for 30 days (lib/legal.ts APP_REVISION_DATE). */}
+      {appRevisionNoticeShown(now) ? (
+        <aside className={s.note} aria-labelledby="app-revision-privacy-title">
+          <h2 id="app-revision-privacy-title" className={s.noteTitle}>{`${koreanDate(APP_REVISION_DATE)} 바뀐 내용`}</h2>
+          <p>안드로이드 앱의 Google Play 결제와 환불, 무료 결과 화면 아래의 Google AdMob 광고, 풀이 신고 기록에 관한 내용을 더했어요.</p>
+          <p>처리를 맡기는 곳에 Google LLC(Google Play 결제, AdMob)를 더했고, 풀이 신고 기록은 1년 동안 보관해요.</p>
         </aside>
       ) : null}
       {/* A friend logs in to join 별자리 인연 (owner 2026-11-10): in force from this deploy, said on top for 30 days (lib/legal.ts BOND_LOGIN_DATE). */}
@@ -329,7 +372,7 @@ export default function PrivacyPage() {
           <li>닉네임(카카오 동의 항목. Google로 로그인한 경우 ‘별손님’), 만 14세 이상 확인 시각, 로그인 세션</li>
           <li>{`오픈 기념 무료를 받았는지와 받은 시각(${OPENING_LAST_DATE}까지 진행하는 오픈 기념 무료를 계정마다 한 번만 드리기 위해)`}</li>
           <li>그날 본 맛보기와 새로 쓴 오늘의 한 장의 횟수, 오늘의 한 장(고른 카드와 운세, 고른 자리): 계정 식별값을 되돌릴 수 없는 값(HMAC)으로 바꾼 값과 날짜로 묶어 둡니다. 맛보기에 입력한 질문과 출생 정보는 저장하지 않습니다</li>
-          <li>결제 기록: 주문번호, 상품, 금액, 결제수단 종류, 승인·취소 시각과 영수증 링크. 카드번호 등 결제 정보는 토스페이먼츠가 처리하며 운영자는 받지 않습니다</li>
+          <li>결제 기록: 주문번호, 상품, 금액, 결제수단 종류, 승인·취소 시각과 영수증 링크(앱 결제는 Google Play 구매 식별값). 카드번호 등 결제 정보는 토스페이먼츠(웹)나 Google Play(안드로이드 앱)가 처리하며 운영자는 받지 않습니다</li>
           {synced ? (
             <li>
               로그인한 상태로 연 풀이(오픈 기념 무료 포함)와 이 기기에만 보관된 풀이 가운데 골라 계정으로 옮긴 풀이: 질문, 상황, 메모 또는 출생 정보와 풀이 결과, 이어서 물어본 내용.
@@ -349,6 +392,11 @@ export default function PrivacyPage() {
           <li>공유 링크를 만들면 풀이의 공개용 사본(뽑은 카드와 풀이 본문)을 저장합니다. 질문, 직접 쓴 말과 메모, 고른 상황, 생년월일과 태어난 시각, 명식, 이어서 물어본 내용은 넣지 않고, 풀이 본문에 옮겨진 직접 쓴 말과 고른 상황, 생년월일·태어난 시각·나이는 가리며, 연락처나 링크가 들어간 문장은 빼고 저장합니다. 로그인한 상태로 만든 공유에는 계정을 함께 기록합니다.</li>
           <li>무료로 본 맛보기(타로와 사주)를 공유하면 뽑은 카드와 화면에 무료로 보인 부분만 위와 같이 가려 저장하고, 결제해야 보이는 부분은 넣지 않습니다. 프리미엄 풀이를 공유하면 상품 이름과 공유 이미지에 들어가는 것(카드, 관계, 한 해의 제목)만 저장하고 풀이 본문은 넣지 않습니다.</li>
           <li>지금의 한 장을 공유하면 뽑은 카드와 방향, 카드가 건넨 문장과 그 이유만 저장합니다. 적은 고민은 보내지 않으며, 같은 카드의 같은 문장은 누가 공유해도 같은 링크라 계정도 기록하지 않습니다.</li>
+        </ul>
+        {/* 신고 from the Android app (owner 2026-11-13): app/api/readings/report, migrations/0025; purged after a year (lib/pay/maintenance.ts). */}
+        <h3 className={s.sub}>풀이를 신고할 때</h3>
+        <ul className={s.list}>
+          <li>풀이 신고(안드로이드 앱): 신고한 풀이의 종류와 번호, 고른 사유, 직접 적은 메모, 로그인한 경우 계정. 풀이 내용은 저장하지 않으며, 탈퇴하면 계정과 메모를 지웁니다. 보관 기간: 1년</li>
         </ul>
         {/* 프리미엄 풀이와 궁합의 상대방 정보: 개정 예정 until it comes in force (lib/legal.ts), then part of the text. */}
         {inForce ? (
@@ -518,6 +566,11 @@ export default function PrivacyPage() {
           {BONDS ? <li>별자리 인연과 행운 번호의 표시용 정보(내 태양 별자리, 새 별을 마지막으로 본 시각, 이번 주 번호)도 브라우저 저장소에 둡니다. 생년월일은 두지 않습니다.</li> : null}
           <li>브라우저 설정에서 쿠키 저장을 거부하거나 저장된 쿠키와 사이트 데이터를 지울 수 있습니다. 거부하시면 하루 이용 횟수가 맞게 표시되지 않거나 오늘의 한 장을 다시 열 수 없는 등 일부 기능을 쓰기 어려울 수 있습니다.</li>
         </ul>
+        {/* The Android app's banner (owner 2026-11-13); the 광고 개인정보 설정 row is app/me/MeView.tsx. */}
+        <p>
+          안드로이드 앱의 무료 결과 화면 아래에는 Google AdMob 광고가 실립니다. 맞춤 광고는 기기의 설정 &gt; Google &gt; 광고에서 끌 수 있고, 유럽경제지역·영국·스위스에서는 앱의 내 정보 &gt;
+          광고 개인정보 설정에서 동의를 바꿀 수 있습니다.
+        </p>
         <h3 className={s.sub}>카카오톡 공유</h3>
         <ul className={s.list}>
           <li>카카오톡으로 보내기를 누를 때만 카카오의 공유 스크립트를 불러옵니다. 이때 카카오에는 공유할 문구(뽑은 카드 이름 등)와 서비스 링크가 전달되고, 카카오의 개인정보처리방침이 적용됩니다.</li>

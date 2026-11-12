@@ -10,7 +10,7 @@ import { appGoogleSignIn } from "@/lib/app/googleSignIn";
 import { OPENING_LAST_DAY, openingFreeOn, won } from "@/lib/config";
 import { DEEP_TAROT_HREF } from "@/lib/freshStart";
 import { REFUND_DAYS, productById } from "@/lib/pay/catalog";
-import { PLAY_SET_PART_LINE } from "@/lib/premium/offer";
+import { PLAY_SET_PART_LINE, PLAY_SET_TOGETHER_LINE } from "@/lib/premium/offer";
 import { premiumPath } from "@/lib/premium/products";
 import { postJson, type ApiError } from "@/lib/reading/api";
 import { describeApiError } from "@/lib/reading/errors";
@@ -261,7 +261,7 @@ export function AccountPanel({ account, navigate = (url) => window.location.assi
                       ) : null}
                     </p>
                   ) : null}
-                  {item.set && !left ? <p className={s.refundLine}>{whole ? SET_TOGETHER : setPart(item)}</p> : null}
+                  {item.set && !left ? <p className={s.refundLine}>{whole ? (item.provider === "play" ? PLAY_SET_TOGETHER_LINE : SET_TOGETHER) : setPart(item)}</p> : null}
                   {item.refundUntil ? <p className={s.refundLine}>{open ? `${lastDay(item.refundUntil)}까지 환불할 수 있어요` : WINDOW_CLOSED}</p> : null}
                 </li>
               );
@@ -356,6 +356,8 @@ export function AccountPanel({ account, navigate = (url) => window.location.assi
             {wholeCount > 0 ? <li>{`열지 않은 결제 ${wholeCount}건은 전액 환불돼요`}</li> : null}
             {parts.length > 0 ? <li>{`풀이 하나를 연 세트 결제 ${parts.length}건은 열지 않은 풀이 몫만 환불돼요${partsKrw ? `(${won(partsKrw)})` : ""}`}</li> : null}
             {forfeitedCount > 0 ? <li>{`환불할 수 없는 풀이 ${forfeitedCount}개는 사라져요`}</li> : null}
+            {/* owner 2026-11-13: the deletion sets it aside for the operator (docs/runbook-payments.md section 11) */}
+            {user.unused.some((item) => item.noRefund === "play-part") ? <li>앱에서 결제한 세트의 남은 풀이는 탈퇴 뒤 확인해서 환불해 드려요.</li> : null}
             {user.gift?.status === "unused" ? <li>쓰지 않은 가입 선물은 사라져요</li> : null}
             <li>계정에 보관한 풀이가 지워져요</li>
             <li>결제 기록은 법에 따라 5년 동안 보관돼요</li>

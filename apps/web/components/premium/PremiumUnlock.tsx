@@ -7,7 +7,7 @@ import { loginHref, type AccountState } from "@/lib/account/client";
 import { SITE, won } from "@/lib/config";
 import { REFUND_DAYS, SET_PRODUCT_ID, refundAmount } from "@/lib/pay/catalog";
 import { checkoutHref } from "@/lib/pay/offer";
-import { PLAY_SET_PART_LINE, opensAtText, premiumOffer } from "@/lib/premium/offer";
+import { PLAY_SET_PART_LINE, PLAY_SET_TOGETHER_LINE, opensAtText, premiumOffer } from "@/lib/premium/offer";
 import { PREMIUM, type PremiumId } from "@/lib/premium/products";
 import { refreshPremiumStatus } from "@/lib/premium/status";
 import type { ErrorView } from "@/lib/reading/errors";
@@ -61,6 +61,8 @@ const CheckIcon = () => (
 export function PremiumUnlock({ id, account, status, returnTo, onOpen, resumable = false, error, refundHref, redrawHref, openedHref, checking = false, onCheck, now, setOpen = false }: PremiumUnlockProps) {
   const spec = PREMIUM[id];
   const offer = premiumOffer(account, id, status, now);
+  // A set of this reading paid with Google Play in the Starlog app (/api/me provider play): its part is refunded through 문의.
+  const playSet = Boolean(account?.user?.unused.some((item) => item.productId === id && item.set && item.provider === "play"));
   const checkAgain = onCheck ? (
     <Button variant="secondary" block onClick={onCheck}>
       다시 확인하기
@@ -96,7 +98,9 @@ export function PremiumUnlock({ id, account, status, returnTo, onOpen, resumable
                 ? "이 결제는 환불할 수 없어요. 문제가 있으면 문의해 주세요"
                 : "풀이를 받던 중에 끊긴 결제라 환불은 할 수 없어요. 다시 열어 끝까지 받을 수 있어요"
           : offer.set && offer.pair
-            ? `세트는 결제일로부터 ${REFUND_DAYS}일 안에 둘 다 열지 않았으면 전액, 하나를 열었으면 열지 않은 풀이 몫을 환불받을 수 있어요. 이 풀이를 열면 ${PREMIUM[setOther(id)].name} 몫 ${won(refundAmount(SITE.price.set.krw, [id]))}만 환불받을 수 있어요`
+            ? playSet
+              ? PLAY_SET_TOGETHER_LINE
+              : `세트는 결제일로부터 ${REFUND_DAYS}일 안에 둘 다 열지 않았으면 전액, 하나를 열었으면 열지 않은 풀이 몫을 환불받을 수 있어요. 이 풀이를 열면 ${PREMIUM[setOther(id)].name} 몫 ${won(refundAmount(SITE.price.set.krw, [id]))}만 환불받을 수 있어요`
             : offer.set && offer.otherRefunded && offer.refundAmount
               ? `세트의 다른 풀이는 환불했어요. 결제일로부터 ${REFUND_DAYS}일 안에 이 풀이 몫 ${won(offer.refundAmount)}을 환불받을 수 있어요. 이 풀이를 열면 환불되지 않아요`
               : offer.set

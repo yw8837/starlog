@@ -103,6 +103,30 @@ describe("AccountPanel: a purchase paid with Google Play", () => {
     expect(within(item).getByRole("link", { name: "문의하기" }).getAttribute("href")).toBe("/contact");
   });
 
+  it("a Play set with neither reading opened: whole through the one 환불받기, and its part through 문의 once one is opened (owner 2026-11-13)", () => {
+    const set = [
+      { orderId: "o-set", productId: "newyear-2027", refundUntil: UNTIL, refundAmount: 18900, set: true as const, provider: "play" as const },
+      { orderId: "o-set", productId: "match", refundUntil: UNTIL, refundAmount: 18900, set: true as const, provider: "play" as const },
+    ];
+    render(<AccountPanel account={account(set)} />);
+    expect(screen.getAllByText("세트로 산 풀이예요. 둘 다 열지 않았으면 전액 환불되고, 하나를 열면 남은 풀이 몫은 문의로 환불해 드려요.")).toHaveLength(2);
+    expect(document.body.textContent).not.toContain("하나를 열면 열지 않은 풀이 몫만 환불돼요");
+    expect(within(document.getElementById("purchases")!).getAllByRole("button", { name: "환불받기" })).toHaveLength(1);
+  });
+
+  it("deleting the account: a Play set's remaining reading keeps the line it had, and is refunded once the deletion is checked (owner 2026-11-13)", () => {
+    render(<AccountPanel account={account([{ orderId: "o-set", productId: "newyear-2027", refundable: false, noRefund: "play-part", set: true, provider: "play" }])} />);
+    fireEvent.click(screen.getByRole("button", { name: "회원 탈퇴" }));
+    expect(screen.getByText("환불할 수 없는 풀이 1개는 사라져요")).toBeTruthy();
+    expect(screen.getByText("앱에서 결제한 세트의 남은 풀이는 탈퇴 뒤 확인해서 환불해 드려요.")).toBeTruthy();
+    cleanup();
+    // A purchase given back after its reading was cut off: no such line.
+    render(<AccountPanel account={account([{ orderId: "o-cut", productId: "saju", refundable: false }])} />);
+    fireEvent.click(screen.getByRole("button", { name: "회원 탈퇴" }));
+    expect(screen.getByText("환불할 수 없는 풀이 1개는 사라져요")).toBeTruthy();
+    expect(screen.queryByText("앱에서 결제한 세트의 남은 풀이는 탈퇴 뒤 확인해서 환불해 드려요.")).toBeNull();
+  });
+
   it("keeps the web purchase's line as it was, and shows the server's own refusal as it is", async () => {
     answers["/api/pay/refund"] = () => Response.json({ ok: true, status: "refunded", amount: 2900 });
     const { unmount } = render(<AccountPanel account={account(BOTH)} />);

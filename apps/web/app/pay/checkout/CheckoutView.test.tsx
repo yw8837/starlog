@@ -131,7 +131,9 @@ describe("CheckoutView", () => {
     expect(within(match).getAllByRole("listitem")[0]!.textContent).toBe("한 줄로 보면");
     const rule =
       "결제일로부터 7일 안에 두 풀이를 모두 열지 않았으면 18,900원 전액을, 하나만 열었으면 열지 않은 풀이 몫을 환불받을 수 있어요(2027 신년운세를 열었으면 4,000원, 프리미엄 궁합을 열었으면 11,000원). 두 풀이를 모두 열면 환불되지 않아요.";
-    expect(screen.getByText(`한 번 결제로 2027 신년운세와 프리미엄 궁합이 하나씩 열려요. 자동결제는 없어요. ${rule}`)).toBeTruthy();
+    // owner 2026-11-13 (wording-proposals 6): how a set paid with Google Play has its part refunded ends the rule.
+    const play = "안드로이드 앱에서 Google Play로 결제한 세트는 하나를 연 뒤 남은 풀이 몫을 문의로 접수하면 같은 금액을 환불해 드려요.";
+    expect(screen.getByText(`한 번 결제로 2027 신년운세와 프리미엄 궁합이 하나씩 열려요. 자동결제는 없어요. ${rule} ${play}`)).toBeTruthy();
     const actions = screen.getByRole("button", { name: "18,900원 결제하기" }).closest("div")!;
     expect(actions.textContent).toContain(rule);
     expect(document.body.textContent).not.toContain("열기 전에는 결제일로부터 7일 안에");

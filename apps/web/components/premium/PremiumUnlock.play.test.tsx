@@ -29,4 +29,20 @@ describe("PremiumUnlock: a Play set's part", () => {
     expect(screen.queryByRole("link", { name: "환불받기" })).toBeNull();
     expect(document.body.textContent).not.toMatch(/몫만 환불받을 수 있어요|하나를 열었으면 열지 않은 풀이 몫/);
   });
+
+  it("a Play set with neither reading opened: the same line as 내 정보, not the web set's part amounts (owner 2026-11-13)", () => {
+    const both: AccountState = {
+      ...account,
+      user: {
+        ...account.user!,
+        unused: [
+          { orderId: "o-set", productId: "newyear-2027", refundUntil: "2099-12-08T14:59:59.999Z", refundAmount: 18900, set: true, provider: "play" },
+          { orderId: "o-set", productId: "match", refundUntil: "2099-12-08T14:59:59.999Z", refundAmount: 18900, set: true, provider: "play" },
+        ],
+      },
+    };
+    render(<PremiumUnlock id="newyear-2027" account={both} status={OPEN} returnTo="/x" onOpen={vi.fn()} />);
+    expect(screen.getByText("세트로 산 풀이예요. 둘 다 열지 않았으면 전액 환불되고, 하나를 열면 남은 풀이 몫은 문의로 환불해 드려요.")).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/몫 [\d,]+원만 환불받을 수 있어요|하나를 열었으면 열지 않은 풀이 몫/);
+  });
 });

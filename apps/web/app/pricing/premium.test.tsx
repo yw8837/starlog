@@ -57,7 +57,8 @@ describe("/pricing's 2027 신년운세 + 프리미엄 궁합 set (owner 2026-11-
     // Review LOW 4: the tier's closing line speaks of readings paid for alone and sends the set to its own rule.
     const premium = document.getElementById("premium")!;
     expect(premium.textContent).toContain("따로 결제한 풀이는 열기 전에는 결제일로부터 7일 안에 전액 환불받을 수 있어요. 세트의 환불 기준은 세트 안내에 있어요.");
-    expect(card.textContent).not.toMatch(/지금만|마감|할인|남은/);
+    // "남은 풀이 몫" is the approved app-set sentence (owner 2026-11-13, wording-proposals 6), not a countdown.
+    expect(card.textContent).not.toMatch(/지금만|마감|할인|남은(?! 풀이 몫)/);
     expect(within(card).getByRole("link").getAttribute("href")).toMatch(/^\/pay\/checkout\?product=set-2027&/);
     cleanup();
     resetPremiumStatusForTests();

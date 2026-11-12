@@ -34,6 +34,12 @@ export type PremiumOffer =
  */
 export const PLAY_SET_PART_LINE = "앱에서 결제한 세트는 하나를 열면 남은 풀이를 문의로 환불해 드려요.";
 
+/**
+ * Instead of the web set's line on a set paid with Google Play (/api/me `provider: "play"`) while neither reading is opened (owner
+ * 2026-11-13): refunded whole by 환불받기, its part through 문의 once one is opened. 내 정보 and the premium preview say the same.
+ */
+export const PLAY_SET_TOGETHER_LINE = "세트로 산 풀이예요. 둘 다 열지 않았으면 전액 환불되고, 하나를 열면 남은 풀이 몫은 문의로 환불해 드려요.";
+
 export function premiumOffer(
   account: AccountState | null | undefined,
   id: PremiumId,

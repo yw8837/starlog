@@ -278,14 +278,18 @@ describe("/faq", () => {
     expect(entries(false).flatMap((entry) => [entry.q, ...entry.a]).join(" ")).not.toContain("별자리 인연");
   });
 
-  it("says ads appear on guide articles only, and that there are none while AdSense is off", () => {
+  it("says ads appear on the web's guide articles only and under the app's free result screens only, and that the web has none while AdSense is off", () => {
     const ads = (on: boolean) => faqGroups({ ads: on }).flatMap((group) => group.entries).find((entry) => entry.id === "ads")?.a.join(" ") ?? "";
     expect(ads(true)).toContain("가이드 글 페이지에만");
     expect(ads(true)).toContain("풀이");
-    expect(ads(false)).toContain("지금은 광고가 없어요");
+    // owner 2026-11-13 (apps/android/store/wording-proposals.md 14, 15)
+    expect(ads(true)).toBe(
+      "웹에서는 가이드 글 페이지에만 광고가 실려요. 안드로이드 앱에서는 무료 결과 화면(지금의 한 장, 사주 등급 카드, 오늘의 한 장) 아래에만 배너가 하나 있어요. 결제한 풀이와 맛보기, 내 기록 화면에는 광고를 싣지 않아요. 가이드 글의 광고는 Google이 쿠키를 써서 보여 줘요. 맞춤 광고를 끄는 방법은 개인정보처리방침에 적어 두었어요.",
+    );
+    expect(ads(false)).toBe("웹에는 지금 광고가 없어요. 안드로이드 앱에서는 무료 결과 화면 아래에만 배너가 하나 있어요. 결제한 풀이와 맛보기, 내 기록 화면에는 싣지 않아요.");
 
     vi.stubEnv("ADSENSE_CLIENT", "");
-    expect(render(<FaqPage />).container.textContent).toContain("지금은 광고가 없어요");
+    expect(render(<FaqPage />).container.textContent).toContain("웹에는 지금 광고가 없어요");
   });
 
   it("gives the contact email from SITE", () => {

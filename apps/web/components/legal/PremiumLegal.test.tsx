@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import PrivacyPage from "@/app/privacy/page";
 import RefundPage from "@/app/refund/page";
 import TermsPage from "@/app/terms/page";
+import { setRefundRule } from "@/components/legal/PremiumLegal";
 import { resetPremiumStatusForTests } from "@/lib/premium/status";
 
 /**
@@ -104,5 +105,14 @@ describe("the policies' premium text", () => {
     // the 궁합 shows its two charts and the summary first: no cards (owner 2026-10-17)
     expect(text).toContain("프리미엄 궁합은 두 사람의 명식과 한눈에 보는 요약");
     expect(text).not.toContain("카드 5장");
+  });
+
+  it("the set's refund rule says how a set paid with Google Play in the app has its part refunded: through 문의, the same amount (owner 2026-11-13), in both voices", () => {
+    expect(setRefundRule()).toBe(
+      "결제일로부터 7일 안에 두 풀이를 모두 열지 않았으면 18,900원 전액을, 하나만 열었으면 열지 않은 풀이 몫을 환불받을 수 있어요(2027 신년운세를 열었으면 4,000원, 프리미엄 궁합을 열었으면 11,000원). 두 풀이를 모두 열면 환불되지 않아요. 안드로이드 앱에서 Google Play로 결제한 세트는 하나를 연 뒤 남은 풀이 몫을 문의로 접수하면 같은 금액을 환불해 드려요.",
+    );
+    expect(setRefundRule(false)).toBe(
+      "결제일로부터 7일 안에 두 풀이를 모두 열지 않았으면 18,900원 전액을, 하나만 열었으면 열지 않은 풀이 몫을 환불받을 수 있습니다(2027 신년운세를 열었으면 4,000원, 프리미엄 궁합을 열었으면 11,000원). 두 풀이를 모두 열면 환불되지 않습니다. 안드로이드 앱에서 Google Play로 결제한 세트는 하나를 연 뒤 남은 풀이 몫을 문의로 접수하면 같은 금액을 환불합니다.",
+    );
   });
 });

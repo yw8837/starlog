@@ -70,16 +70,26 @@ const PART_AFTER_NEWYEAR = won(refundAmount(SITE.price.set.krw, ["newyear-2027"]
 const PART_AFTER_MATCH = won(refundAmount(SITE.price.set.krw, ["match"]));
 
 /**
+ * A set paid with Google Play in the Android app (owner 2026-11-13): Google refunds a Play order whole only, so once one reading
+ * is opened the other's part, the same amount, is refunded through 문의 (docs/runbook-payments.md section 11). `haeyo`: 해요체,
+ * otherwise 합니다체.
+ */
+export const playSetPartRule = (haeyo = true): string =>
+  `안드로이드 앱에서 Google Play로 결제한 세트는 하나를 연 뒤 남은 풀이 몫을 문의로 접수하면 같은 금액을 환불${haeyo ? "해 드려요" : "합니다"}.`;
+
+/**
  * The set's refund rule (owner 2026-11-10; 전자상거래법 제17조 제2항 제5호 단서: its two readings are divisible), one
  * sentence for every place that states it (checkout, /pricing, the terms, the refund policy and their notice): within
  * REFUND_DAYS of the payment, neither reading opened → the whole price; one opened → the unopened one's part (the amounts
- * from the catalog); both opened → nothing. `haeyo`: 해요체, otherwise 합니다체.
+ * from the catalog); both opened → nothing. Then how a set paid with Google Play has that part refunded (playSetPartRule).
+ * `haeyo`: 해요체, otherwise 합니다체.
  */
 export function setRefundRule(haeyo = true): string {
   const end = (plain: string, polite: string) => (haeyo ? polite : plain);
   return (
     `결제일로부터 ${REFUND_DAYS}일 안에 두 풀이를 모두 열지 않았으면 ${won(SITE.price.set.krw)} 전액을, 하나만 열었으면 열지 않은 풀이 몫을 환불받을 수 있${end("습니다", "어요")}` +
-    `(${PREMIUM["newyear-2027"].name}를 열었으면 ${PART_AFTER_NEWYEAR}, ${PREMIUM.match.name}을 열었으면 ${PART_AFTER_MATCH}). 두 풀이를 모두 열면 환불되지 않${end("습니다", "아요")}.`
+    `(${PREMIUM["newyear-2027"].name}를 열었으면 ${PART_AFTER_NEWYEAR}, ${PREMIUM.match.name}을 열었으면 ${PART_AFTER_MATCH}). 두 풀이를 모두 열면 환불되지 않${end("습니다", "아요")}. ` +
+    playSetPartRule(haeyo)
   );
 }
 

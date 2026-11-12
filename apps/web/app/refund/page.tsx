@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BusinessFacts, LegalNote, LegalPage, LegalSection } from "@/components/legal/LegalPage";
-import { PremiumChangeNotice, PremiumLegalNotice, PremiumRefund, PremiumUpcoming, SetRuleNotice } from "@/components/legal/PremiumLegal";
+import { PremiumChangeNotice, PremiumLegalNotice, PremiumRefund, PremiumUpcoming, SetRuleNotice, playSetPartRule } from "@/components/legal/PremiumLegal";
 import s from "@/components/legal/legal.module.css";
 import { SITE } from "@/lib/config";
-import { LOGIN_RULE_DATE, contactChannels, koreanDate, legalEffectiveDate, loginRuleNoticeShown, premiumChangeNoticeShown, premiumLegalInForce, setRuleNoticeShown } from "@/lib/legal";
+import {
+  APP_REVISION_DATE, LOGIN_RULE_DATE, appRevisionNoticeShown, contactChannels, koreanDate, legalEffectiveDate, loginRuleNoticeShown, premiumChangeNoticeShown, premiumLegalInForce, setRuleNoticeShown,
+} from "@/lib/legal";
 import { REFUND_DAYS } from "@/lib/pay/catalog";
 import { pageMetadata } from "@/lib/seo";
 
@@ -16,6 +18,9 @@ export const metadata: Metadata = pageMetadata({
 
 /** Rendered per request: the premium clauses come in force at a KST midnight with no deploy (lib/legal.ts). */
 export const dynamic = "force-dynamic";
+
+/** A purchase paid with Google Play in the Android app (owner 2026-11-13): refunded by the same rule, through 환불받기. */
+const PLAY_REFUND = "안드로이드 앱에서 Google Play로 결제한 풀이도 같은 기준으로 ‘환불받기’에서 환불돼요.";
 
 export default function RefundPage() {
   const contacts = contactChannels();
@@ -33,6 +38,13 @@ export default function RefundPage() {
       {premiumChangeNoticeShown(now) ? <PremiumChangeNotice haeyo /> : null}
       {/* The 2027 신년운세 + 프리미엄 궁합 set (lib/legal.ts SET_RULE_DATE): from the deploy until 30 days after 12/1. */}
       {setRuleNoticeShown(now) ? <SetRuleNotice haeyo now={now} /> : null}
+      {/* The Android app (owner 2026-11-13): Google Play 결제의 환불, said on top for 30 days (lib/legal.ts APP_REVISION_DATE). */}
+      {appRevisionNoticeShown(now) ? (
+        <aside className={s.note} aria-labelledby="app-revision-refund-title">
+          <h2 id="app-revision-refund-title" className={s.noteTitle}>{`${koreanDate(APP_REVISION_DATE)} 바뀐 내용`}</h2>
+          <p>{`${PLAY_REFUND} ${playSetPartRule()}`}</p>
+        </aside>
+      ) : null}
       {/* AI 풀이 needs a login (owner 2026-11-04): the free part's new name, said on top for 30 days (lib/legal.ts LOGIN_RULE_DATE). */}
       {loginRuleNoticeShown(now) ? (
         <aside className={s.note} aria-labelledby="login-rule-refund-title">
@@ -63,8 +75,9 @@ export default function RefundPage() {
         <p>
           {`결제한 풀이를 열기 전에는 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있어요. ${REFUND_DAYS}일째 되는 날 밤 12시(한국 시간)까지예요(10월 6일에 결제했다면 10월 ${6 + REFUND_DAYS}일까지). 내 정보 > 결제한 풀이에서 ‘환불받기’를 누르면 바로 처리돼요.`}
         </p>
+        <p>{`${PLAY_REFUND} 환불금은 Google Play를 통해 결제한 수단으로 돌아가요.`}</p>
         <p>{`${REFUND_DAYS}일이 지난 뒤에도 풀이는 그대로 열 수 있어요.`}</p>
-        <p>카드사가 결제를 취소해 주는 기간이 지났다면, 알려 주신 본인 명의 계좌로 환불해 드려요.</p>
+        <p>카드사가 결제를 취소해 주는 기간이 지났거나 Google Play에서 환불이 되지 않으면, 알려 주신 본인 명의 계좌로 환불해 드려요.</p>
       </LegalSection>
 
       <LegalSection id="failure" title="생성 실패와 오류">
@@ -99,7 +112,7 @@ export default function RefundPage() {
         <ul className={s.list}>
           <li>{`열지 않은 결제는 결제일로부터 ${REFUND_DAYS}일 안에 내 정보 > 결제한 풀이의 ‘환불받기’로 바로 환불돼요.`}</li>
           <li>그 밖의 환불은 아래 문의처로 결제일, 결제 금액, 로그인한 계정의 닉네임, 환불 사유를 알려 주세요. 확인한 날부터 3영업일 안에 결제를 취소하고 결제한 수단으로 환불해 드려요.</li>
-          <li>카드사나 결제사 사정에 따라 실제로 반영되기까지 며칠 더 걸릴 수 있어요.</li>
+          <li>카드사나 결제사, Google Play 사정에 따라 실제로 반영되기까지 며칠 더 걸릴 수 있어요.</li>
         </ul>
       </LegalSection>
 

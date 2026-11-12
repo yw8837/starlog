@@ -18,6 +18,8 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export const GIFT_CLAIM_KEEP_MS = 365 * DAY_MS;
 /** 전자상거래법 제6조: contract, withdrawal and payment records 5 years (plus a day of margin). */
 export const RECORD_KEEP_MS = 1827 * DAY_MS;
+/** 풀이 신고 from the Android app (migrations/0025_reading_reports.sql) are kept a year, then purged (owner 2026-11-13; app/privacy). */
+export const READING_REPORT_KEEP_MS = 365 * DAY_MS;
 /** An order still `created` after this never reached Toss's confirm: it is closed (ABANDONED). */
 export const ABANDON_AFTER_MS = 60 * 60_000;
 /**
@@ -65,6 +67,8 @@ export interface MaintenanceReport {
   shares: number;
   /** an account's day counts of 맛보기 and 오늘의 한 장 (lib/api/member.ts), deleted once noon KST of the next day passed */
   accountCounts: number;
+  /** 풀이 신고 older than READING_REPORT_KEEP_MS */
+  readingReports: number;
   purgedAccounts: number;
   /** Google Play purchases granted and consumed only now (their consume at the purchase failed) */
   playConsumed: number;
@@ -138,7 +142,7 @@ export async function runMaintenance(
 ): Promise<MaintenanceReport> {
   const clock = options.clock ?? Date.now;
   const report: MaintenanceReport = {
-    confirming: 0, refunding: 0, released: 0, expired: 0, abandoned: 0, erased: 0, sessions: 0, giftClaims: 0, openingClaims: 0, chapterTurns: 0, shares: 0, accountCounts: 0, purgedAccounts: 0,
+    confirming: 0, refunding: 0, released: 0, expired: 0, abandoned: 0, erased: 0, sessions: 0, giftClaims: 0, openingClaims: 0, chapterTurns: 0, shares: 0, accountCounts: 0, readingReports: 0, purgedAccounts: 0,
     playConsumed: 0, playVoided: 0, playRefunds: 0, failed: 0,
   };
   /** One item or step: its result, or null when it threw (logged, counted, and the run goes on). */
@@ -204,6 +208,13 @@ export async function runMaintenance(
       (await db
         .prepare("DELETE FROM account_day_counts WHERE rowid IN (SELECT rowid FROM account_day_counts WHERE kst_day < ? LIMIT ?)")
         .bind(kstDay(now - 12 * 60 * 60 * 1000), ROWS_PER_PURGE)
+        .run()).meta?.changes ?? 0;
+  });
+  await attempt("cron.purge_failed", async () => {
+    report.readingReports =
+      (await db
+        .prepare("DELETE FROM reading_reports WHERE id IN (SELECT id FROM reading_reports WHERE created_at < ? LIMIT ?)")
+        .bind(now - READING_REPORT_KEEP_MS, ROWS_PER_PURGE)
         .run()).meta?.changes ?? 0;
   });
   await attempt("cron.purge_failed", async () => {

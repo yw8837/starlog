@@ -116,6 +116,18 @@ const BOND_LOGIN_NOTICE_UNTIL_AT = Date.parse(`${BOND_LOGIN_DATE}T00:00:00+09:00
 export const bondLoginNoticeShown = (now: number = Date.now()): boolean => now < BOND_LOGIN_NOTICE_UNTIL_AT;
 
 /**
+ * The Android app (owner 2026-11-13, apps/android/store/wording-proposals.md items 1–15 as written): Google Play 결제와 환불 in
+ * the terms and the refund policy, how a set paid with Google Play has its part refunded (문의), and in the privacy policy Google
+ * Play and AdMob as processors, the app's ads and 풀이 신고 (kept 1 year). In force from the deploy, before the notice the terms
+ * and the privacy policy promise, so, as with LOGIN_RULE_DATE, the three say what changed, dated, at their top for 30 days from
+ * this day. The 시행일 shown stays. The day this goes live: move it (and the end with it) if the deploy goes out on another day.
+ */
+export const APP_REVISION_DATE = "2026-11-13";
+const APP_REVISION_NOTICE_UNTIL_AT = Date.parse(`${APP_REVISION_DATE}T00:00:00+09:00`) + 30 * 24 * 60 * 60 * 1000;
+
+export const appRevisionNoticeShown = (now: number = Date.now()): boolean => now < APP_REVISION_NOTICE_UNTIL_AT;
+
+/**
  * The 개인정보처리방침 revision that adds the Meta pixel (owner 2026-11-10 "동의한 방문자만"): the consent banner names Meta
  * and the pixel loads for a visitor who allowed it from this KST midnight, 7 days after the notice the policy promises
  * (as GA_REVISION_DATE). Before it the policy shows it as 바뀌는 내용; from it, as 바뀐 내용 for 30 days. Only where a pixel

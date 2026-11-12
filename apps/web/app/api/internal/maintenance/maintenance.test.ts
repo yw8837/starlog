@@ -6,7 +6,7 @@ import { accountSecret } from "@/lib/account/secrets";
 import { setTestDb } from "@/lib/db";
 import type { D1Binding } from "@/lib/db/d1";
 import { RESERVATION_MS, reserveUnlock } from "@/lib/pay/ledger";
-import { GIFT_CLAIM_KEEP_MS, PLAY_DEADLINE_MS, RECORD_KEEP_MS, TOSS_CALLS_PER_RUN, TOSS_DEADLINE_MS, runMaintenance } from "@/lib/pay/maintenance";
+import { GIFT_CLAIM_KEEP_MS, PLAY_DEADLINE_MS, READING_REPORT_KEEP_MS, RECORD_KEEP_MS, TOSS_CALLS_PER_RUN, TOSS_DEADLINE_MS, runMaintenance } from "@/lib/pay/maintenance";
 import { PlayError, mockPlay, playAccountTag } from "@/lib/pay/play";
 import { orderById } from "@/lib/pay/orders";
 import { refundUnusedPlayOrder, verifyPlayPurchase } from "@/lib/pay/playOrders";
@@ -413,5 +413,18 @@ describe("the account's day counts (migrations/0021_account_day_counts.sql)", ()
     for (const name of readdirSync(migrations).filter((file) => /^\d{4}_.+\.sql$/.test(file)).sort()) sqlite.exec(readFileSync(`${migrations}${name}`, "utf8"));
     const steps = sqlite.prepare("EXPLAIN QUERY PLAN SELECT rowid FROM account_day_counts WHERE kst_day < ? LIMIT ?").all("2026-10-01", 500).map((row) => String((row as { detail: string }).detail));
     expect(steps.join(" | ")).toMatch(/^SEARCH account_day_counts USING (COVERING )?INDEX account_day_counts_by_day \(kst_day<\?\)$/);
+  });
+});
+
+describe("풀이 신고 (migrations/0025_reading_reports.sql)", () => {
+  it("deletes reports older than a year (owner 2026-11-13: the privacy policy keeps them 1년), and keeps a younger one", async () => {
+    expect(READING_REPORT_KEEP_MS).toBe(365 * 24 * 60 * MIN);
+    const db = useTestDb();
+    await db
+      .prepare("INSERT INTO reading_reports (id, user_id, reading_id, kind, reason, note, created_at) VALUES ('rep_old', NULL, NULL, 'tarot', 'misleading', NULL, ?), ('rep_kept', NULL, NULL, 'saju', 'misleading', NULL, ?)")
+      .bind(T0 - READING_REPORT_KEEP_MS - 1, T0 - READING_REPORT_KEEP_MS)
+      .run();
+    expect(await report()).toMatchObject({ readingReports: 1, failed: 0 });
+    expect((await db.prepare("SELECT id FROM reading_reports").all()).results).toEqual([{ id: "rep_kept" }]);
   });
 });
