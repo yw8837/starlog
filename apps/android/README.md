@@ -127,32 +127,37 @@ emulator's alias for the host:
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
+Run `./gradlew clean` when changing `-PstarlogUrl`: an incremental build kept the old URL inlined (found by searching the dex).
+
 Cleartext http is allowed only in debug builds (`src/debug` network security config). Debug builds also
 enable WebView remote debugging (`chrome://inspect`, or `adb forward tcp:9222 localabstract:webview_devtools_remote_<pid>`).
 
 ## Environment notes (this Windows machine)
 
 The Windows user folder has non-ASCII characters, which three tools could not handle. Everything is
-redirected to ASCII paths under `C:\starlog-ops\android` (nothing installed; one directory junction):
+redirected to ASCII paths (nothing installed; one directory junction): the small ones under `C:\starlog-ops\android`,
+the large ones (Gradle user home, emulator AVD) on `E:`, moved off C: on 2026-11-12 (owner's rule: nothing over 1 GB on C:).
 
 - **Gradle**: with the default `GRADLE_USER_HOME` (`C:\Users\<user>\.gradle`) the build compiled, but every
   JVM unit-test worker died with `ClassNotFoundException: worker.org.gradle.process.internal.worker.GradleWorkerMain`.
-  Run Gradle with `GRADLE_USER_HOME=C:\starlog-ops\android\gradle-home` (PowerShell:
-  `$env:GRADLE_USER_HOME='C:\starlog-ops\android\gradle-home'`; Git Bash: `export GRADLE_USER_HOME='C:\starlog-ops\android\gradle-home'`).
+  Run Gradle with `GRADLE_USER_HOME=E:\AndroidBuild\gradle-home` (PowerShell:
+  `$env:GRADLE_USER_HOME='E:\AndroidBuild\gradle-home'`; Git Bash: `export GRADLE_USER_HOME='E:\AndroidBuild\gradle-home'`).
 - **SDK path**: `C:\starlog-ops\android\sdk` is a junction to `%LOCALAPPDATA%\Android\Sdk`
   (`New-Item -ItemType Junction -Path C:\starlog-ops\android\sdk -Target "$env:LOCALAPPDATA\Android\Sdk"`).
   `local.properties` uses it: `sdk.dir=C\:\\starlog-ops\\android\\sdk` (lint rejects a `\u`-escaped user path).
 - **Emulator**: started from the real SDK path it exited (code 21) after
-  `Could not open C:\Users\<user>\...\VerifiedBootParams.textproto`. Through the junction it boots:
+  `Could not open C:\Users\<user>\...\VerifiedBootParams.textproto`. Through the junction it boots. The AVD lives in
+  `E:\AndroidAVD`; set `ANDROID_AVD_HOME` on the emulator / avdmanager command only (never as a user or system variable):
 
 ```powershell
 $env:ANDROID_HOME='C:\starlog-ops\android\sdk'; $env:ANDROID_SDK_ROOT=$env:ANDROID_HOME
-$env:ANDROID_AVD_HOME='C:\starlog-ops\android\avd'; $env:ANDROID_USER_HOME='C:\starlog-ops\android\user'
-& C:\starlog-ops\android\sdk\emulator\emulator.exe -avd starlog35 -no-snapshot -no-boot-anim -gpu swiftshader_indirect -no-window -no-audio
+$env:ANDROID_USER_HOME='C:\starlog-ops\android\user'
+$env:ANDROID_AVD_HOME='E:\AndroidAVD'; & C:\starlog-ops\android\sdk\emulator\emulator.exe -avd starlog35 -no-snapshot -no-boot-anim -gpu swiftshader_indirect -no-window -no-audio; Remove-Item Env:ANDROID_AVD_HOME
 ```
 
   The AVD `starlog35` (Pixel 7 profile, `system-images;android-35;google_apis;x86_64`) was created with
   `avdmanager create avd -n starlog35 -k "system-images;android-35;google_apis;x86_64" -d pixel_7` using the
-  same variables. Stop it with `adb -s emulator-5554 emu kill`.
+  same variables, `ANDROID_AVD_HOME=E:\AndroidAVD` on that command. Stop it with `adb -s emulator-5554 emu kill`.
+  If E: is not connected, do not create an AVD on C: (`starlog35.avd` takes about 15 GB); connect E: first.
 
 On a machine whose user folder is ASCII none of this is needed.

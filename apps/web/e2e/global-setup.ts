@@ -1,4 +1,5 @@
 import type { FullConfig } from "@playwright/test";
+import { retryFetch } from "./retryFetch";
 
 /**
  * `next dev` compiles a route on its first request. On this repo's disk that takes longer than an
@@ -41,7 +42,8 @@ const ROUTES = [
  */
 async function assertMockProvider(baseURL: string) {
   if (process.env.E2E_ALLOW_LIVE === "1") return;
-  const response = await fetch(new URL("/", baseURL));
+  // Only a network failure is tried again (e2e/retryFetch.ts); a wrong or missing header below is refused at once.
+  const response = await retryFetch(new URL("/", baseURL));
   await response.arrayBuffer();
   const provider = response.headers.get("x-starlog-dev-provider");
   if (provider !== "mock") {
@@ -57,7 +59,7 @@ export default async function globalSetup(config: FullConfig) {
   if (!baseURL) throw new Error("global-setup: no baseURL in playwright.config.ts");
   await assertMockProvider(baseURL);
   for (const route of ROUTES) {
-    const response = await fetch(new URL(route, baseURL));
+    const response = await retryFetch(new URL(route, baseURL));
     await response.arrayBuffer();
     // Warm-up only: a production build answers 404 for dev-only routes (/dev/characters); only a
     // server error means the server is unusable.

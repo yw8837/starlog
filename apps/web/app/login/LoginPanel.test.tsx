@@ -153,6 +153,22 @@ describe("LoginPanel", () => {
     expect(screen.getByRole("link", { name: "돌아가기" }).getAttribute("href")).toBe("/tarot/result");
   });
 
+  // Google Play review (11/12): reviewers cannot use Kakao or Google, so the app links the ID/password review login. It is
+  // drawn only while review login is on (app/login/page.tsx), and only the app shows it (.app-only, app/globals.css).
+  it("links Reviewer sign-in to /login/review only while review login is on, inside an app-only element", () => {
+    render(<LoginPanel next="/tarot/result" status={null} navigate={() => {}} />);
+    expect(screen.queryByRole("link", { name: "Reviewer sign-in" })).toBeNull();
+    cleanup();
+    render(<LoginPanel next="/tarot/result" status={null} reviewLoginOn={false} navigate={() => {}} />);
+    expect(screen.queryByRole("link", { name: "Reviewer sign-in" })).toBeNull();
+    cleanup();
+    render(<LoginPanel next="/tarot/result" status={null} reviewLoginOn navigate={() => {}} />);
+    const link = screen.getByRole("link", { name: "Reviewer sign-in" });
+    // /login/review takes no ?next= (it always goes home after the login), so none is passed.
+    expect(link.getAttribute("href")).toBe("/login/review");
+    expect(link.closest(".app-only")).toBeTruthy();
+  });
+
   it("goes home from a checkout without a page to return to, and back to `next` otherwise", () => {
     render(<LoginPanel next="/pay/checkout?product=tarot" status={null} />);
     expect(screen.getByRole("link", { name: "돌아가기" }).getAttribute("href")).toBe("/");

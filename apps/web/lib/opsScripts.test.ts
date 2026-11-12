@@ -54,6 +54,31 @@ describe("scripts/ops/gate3-lite.sh: pages that read a runtime setting are never
   });
 });
 
+describe("scripts/ops/gate3-lite.sh: memory before the dev e2e (11/12)", () => {
+  // next dev's commit jumps to about 10 GB for a few seconds when the first page loads; with less free it died mid-run.
+  it("waits for 12000 MB of free commit right before the pay-flow + @login run, and stops with exit 6 without it", () => {
+    const gate = ops("gate3-lite.sh");
+    const guard = gate.indexOf("Get-CimInstance Win32_OperatingSystem");
+    const pay = gate.indexOf('step "e2e pay-flow + @login');
+    const sleep3 = gate.search(/^sleep 3\r?$/m);
+    expect(sleep3).toBeGreaterThan(0);
+    expect(guard).toBeGreaterThan(sleep3);
+    expect(guard).toBeLessThan(pay);
+    const block = gate.slice(guard, pay);
+    expect(block).toContain("FreePhysicalMemory");
+    expect(block).toContain("FreeVirtualMemory");
+    expect(block).toMatch(/-ge 12000\b/);
+    expect(block).toMatch(/step "STOP: not enough memory for the dev e2e \(commit free [^"]*< 12000\)[^"]*"; exit 6; \}/);
+    // exit 6 means this stop only
+    expect(gate.match(/\bexit 6\b/g)).toHaveLength(1);
+  });
+
+  it("says in the pay step's line when the dev server ran out of memory", () => {
+    const line = ops("gate3-lite.sh").split(/\r?\n/).find((l) => l.includes('step "e2e pay-flow + @login exit=$?'));
+    expect(line).toContain(`$(grep -q 'memory allocation of' "$LOG/e2e-pay.log" && echo ' (the dev server ran out of memory)')"`);
+  });
+});
+
 describe("scripts/ops/deploy.sh: the remote D1's pending migrations", () => {
   it("counts every 4-digit migration name, 0010 and later included, and no header", () => {
     const pattern = /grep -cE '([^']+)' "\$LOG\/migrations\.log"/.exec(ops("deploy.sh"))?.[1];

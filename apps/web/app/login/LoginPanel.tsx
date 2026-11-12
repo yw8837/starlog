@@ -20,6 +20,8 @@ type LoginPanelProps = {
   status: string | null;
   /** 오픈 기념 무료 still runs, by the server's clock (app/login/page.tsx): only then does its login say so. */
   opening?: boolean;
+  /** Review login (lib/account/review.ts) is on now, decided on the server as /login/review decides its 404 (app/login/page.tsx). */
+  reviewLoginOn?: boolean;
   /** tests: replaces the browser navigation */
   navigate?: (url: string) => void;
 };
@@ -61,7 +63,7 @@ function purpose(next: string, opening: boolean): { bubble: string; title: strin
  * POST (/api/auth/age) then hands back that provider's start URL with a signed 5-minute token for it,
  * and the check is recorded on the account.
  */
-export function LoginPanel({ next, status, opening = false, navigate = (url) => window.location.assign(url) }: LoginPanelProps) {
+export function LoginPanel({ next, status, opening = false, reviewLoginOn = false, navigate = (url) => window.location.assign(url) }: LoginPanelProps) {
   const [adult, setAdult] = useState(false);
   const [showError, setShowError] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
@@ -161,6 +163,17 @@ export function LoginPanel({ next, status, opening = false, navigate = (url) => 
         <p className={s.consent}>
           계속하면 <Link href="/terms">이용약관</Link>과 <Link href="/privacy">개인정보처리방침</Link>에 동의하게 돼요
         </p>
+        {/*
+          Google Play 심사자는 카카오·Google 로그인을 쓸 수 없어서 아이디·비밀번호 심사용 로그인(/login/review)으로 들어간다
+          (apps/android/store/reviewer-access.md). 심사자는 영어로 안내를 읽으니 문구는 일부러 영어다. 심사용 로그인이 켜져 있을
+          때만 그리고(page.tsx), .app-only라 Starlog 앱에서만 보인다. 일반 브라우저의 HTML에도 들어가지만 CSS로 숨고 이 페이지는
+          noindex라 괜찮다. /login/review는 next=를 받지 않고 로그인 뒤 홈으로 가므로 next를 넘기지 않는다.
+        */}
+        {reviewLoginOn ? (
+          <p className={`app-only ${s.consent}`}>
+            <Link href="/login/review">Reviewer sign-in</Link>
+          </p>
+        ) : null}
       </div>
     </div>
   );

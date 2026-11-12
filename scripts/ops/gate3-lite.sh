@@ -44,6 +44,16 @@ kill $PREV 2>/dev/null; taskkill //F //T //PID $PREV > /dev/null 2>&1
 powershell -NoProfile -Command "for (\$i = 0; \$i -lt 6; \$i++) { \$ps = Get-CimInstance Win32_Process -Filter \"Name='workerd.exe' or Name='node.exe' or Name='esbuild.exe'\" | Where-Object { \$_.CommandLine -and (\$_.CommandLine -like '*starlog-ops\deploy*' -or \$_.CommandLine -like '*starlog-ops/deploy*') }; if (-not \$ps) { break }; \$ps | ForEach-Object { Stop-Process -Id \$_.ProcessId -Force -ErrorAction SilentlyContinue }; Start-Sleep -Seconds 1 }"
 for port in ${PREVIEW_PORT:-8787} 3100; do for p in $(netstat -ano | grep -E "[:.]$port[[:space:]].*LISTENING" | awk '{print $NF}' | sort -u); do [ "$p" != "0" ] && taskkill //F //T //PID $p > /dev/null 2>&1; done; done
 sleep 3
+# next dev's memory commit jumps to about 10 GB for a few seconds when the first browser page loads (Turbopack compiling the
+# client chunks), then settles at 2-2.5 GB. With less free commit the dev server died ("memory allocation of N bytes failed",
+# exit -1073740791) and every later test was refused (11/12). Free commit (KB from Windows) is checked every 20 s for 5 minutes.
+for w in $(seq 0 20 300); do
+  [ "$w" -gt 0 ] && sleep 20
+  read -r FREE COMMIT <<< "$(powershell -NoProfile -Command "\$o = Get-CimInstance Win32_OperatingSystem; '{0} {1}' -f [int](\$o.FreePhysicalMemory / 1024), [int](\$o.FreeVirtualMemory / 1024)" | tr -d '\r')"
+  [ "$w" -eq 0 ] && step "memory before the dev e2e: free $FREE MB, commit free $COMMIT MB"
+  [ "${COMMIT:-0}" -ge 12000 ] && { [ "$w" -gt 0 ] && step "memory before the dev e2e: free $FREE MB, commit free $COMMIT MB after waiting $w s"; break; }
+done
+[ "${COMMIT:-0}" -ge 12000 ] || { step "STOP: not enough memory for the dev e2e (commit free ${COMMIT:-?} MB < 12000): the dev server needs about 10 GB for a few seconds when the first page loads. Close other apps and run the gate again."; exit 6; }
 # Each e2e run has its own results folder: Playwright empties its folder when a run starts, and the dev run used to take the
 # preview run's traces with it (the [narrow] @screens "Target page ... closed" failure, twice with no trace).
 # The dev server (mock Kakao, owner mode): all of pay-flow, and every test tagged @login (오픈 기념 무료 logged in, owner 2026-10-27).
@@ -51,7 +61,7 @@ LOGIN_SPECS="e2e/pay-flow.spec.ts $(grep -l '@login' e2e/*.spec.ts | grep -v pay
 # Both servers share this clone's local D1, and D1 pins the first account secret it sees (lib/account/secretCheck.ts): on a
 # fresh D1 the preview pinned the .dev.vars one, next dev fell back to its dev secret, and every account route answered
 # 503 PAY_UNAVAILABLE (11/04: 96 failed). next dev gets the preview's secret (never printed); Playwright passes it through.
-STARLOG_ACCOUNT_SECRET="$(grep -E '^STARLOG_ACCOUNT_SECRET=' .dev.vars | cut -d= -f2- | tr -d '\r\"')" STARLOG_AI=mock pnpm e2e $LOGIN_SPECS --grep "pay-flow|@login" --workers=1 --project=desktop --project=mobile --output=test-results/dev --reporter=line > "$LOG/e2e-pay.log" 2>&1; step "e2e pay-flow + @login exit=$? $(grep -E '[0-9]+ (passed|failed|skipped|flaky)' "$LOG/e2e-pay.log" | tr '\n' ' ')"
+STARLOG_ACCOUNT_SECRET="$(grep -E '^STARLOG_ACCOUNT_SECRET=' .dev.vars | cut -d= -f2- | tr -d '\r\"')" STARLOG_AI=mock pnpm e2e $LOGIN_SPECS --grep "pay-flow|@login" --workers=1 --project=desktop --project=mobile --output=test-results/dev --reporter=line > "$LOG/e2e-pay.log" 2>&1; step "e2e pay-flow + @login exit=$? $(grep -E '[0-9]+ (passed|failed|skipped|flaky)' "$LOG/e2e-pay.log" | tr '\n' ' ')$(grep -q 'memory allocation of' "$LOG/e2e-pay.log" && echo ' (the dev server ran out of memory)')"
 step "DONE"
 # A failed step used to end the script with 0 (11/06: "e2e preview exit=1", and the shell saw success).
 if grep -qE ' exit=[1-9]' "$LOG/summary.log"; then step "FAILED: $(grep -cE ' exit=[1-9]' "$LOG/summary.log") step(s) did not pass"; exit 1; fi

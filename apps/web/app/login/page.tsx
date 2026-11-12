@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { NightSky } from "@/components/sky/NightSky";
 import { safeReturnTo } from "@/lib/account/returnTo";
+import { reviewLogin } from "@/lib/account/review";
 import { openingFreeOn } from "@/lib/config";
 import { paymentsMode } from "@/lib/pay/mode";
 import { NOINDEX } from "@/lib/seo";
@@ -17,11 +18,14 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   // Dark deploy (STARLOG_PAYMENTS=off): no login anywhere, as before P4.
   if (paymentsMode() === "off") notFound();
   const query = await searchParams;
+  // The Reviewer sign-in link (Google Play review): the very test /login/review and POST /api/auth/review answer 404 by.
+  const mode = paymentsMode();
+  const reviewLoginOn = reviewLogin() !== null && (mode === "owner" || mode === "on");
   return (
     <div className="page-shell">
       <NightSky fixed glow="center" />
       <main className="page-col">
-        <LoginPanel next={safeReturnTo(typeof query.next === "string" ? query.next : null)} status={typeof query.login === "string" ? query.login : null} opening={openingFreeOn()} />
+        <LoginPanel next={safeReturnTo(typeof query.next === "string" ? query.next : null)} status={typeof query.login === "string" ? query.login : null} opening={openingFreeOn()} reviewLoginOn={reviewLoginOn} />
       </main>
     </div>
   );
