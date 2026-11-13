@@ -184,7 +184,7 @@ export function sitemapEntries({ premium = false, now = Date.now() }: { premium?
     { path: "/pricing", lastModified: PAGE_UPDATED["/pricing"], changeFrequency: "monthly", priority: 0.5 },
     ...(premium ? PREMIUM_IDS.map((id): SitemapEntry => ({ path: premiumPath(id), changeFrequency: "monthly", priority: 0.5 })) : []),
     // No lastModified: the only date the policies carry is their 시행일, which can be ahead of today and is not when the text changed.
-    ...["/refund", "/terms", "/privacy"].map((path): SitemapEntry => ({ path, changeFrequency: "yearly", priority: 0.2 })),
+    ...["/refund", "/terms", "/privacy", "/account-deletion"].map((path): SitemapEntry => ({ path, changeFrequency: "yearly", priority: 0.2 })),
     // 문의: who runs the sites and where to write (no date of its own).
     { path: "/contact", changeFrequency: "yearly", priority: 0.3 },
   ];

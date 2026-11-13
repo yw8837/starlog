@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { metadata as keywordMeta } from "@/app/2027-keyword/page";
 import { generateMetadata as keywordResultMeta } from "@/app/2027-keyword/[ilju]/page";
 import { metadata as aboutMeta } from "@/app/about/page";
+import { metadata as accountDeletionMeta } from "@/app/account-deletion/page";
 import { metadata as bInviteIndexMeta } from "@/app/b/page";
 import { generateMetadata as bInviteMeta } from "@/app/b/[code]/page";
 import { metadata as birthCardMeta } from "@/app/birth-card/page";
@@ -104,6 +105,7 @@ const INDEXABLE: Array<[path: string, meta: Metadata]> = [
   ["/faq", faqMeta],
   ["/pricing", pricingMeta],
   ["/refund", refundMeta],
+  ["/account-deletion", accountDeletionMeta],
   ["/terms", await servedOn("starlog.yeolmaeapps.kr", "/terms")],
   ["/privacy", await servedOn("starlog.yeolmaeapps.kr", "/privacy")],
   ["/contact", await servedOn("starlog.yeolmaeapps.kr", "/contact")],

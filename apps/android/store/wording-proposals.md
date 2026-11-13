@@ -4,7 +4,7 @@
 - 시행: 배포일 2026-11-13. 약관·환불 정책·개인정보처리방침 맨 위에 "2026년 11월 13일 바뀐 내용"을 30일 동안(2026-12-13 0시 전까지)
   보이고, 화면의 시행일은 그대로 둔다 — `lib/legal.ts:118-128` APP_REVISION_DATE. LOGIN_RULE_DATE·KEPT_RULE_DATE·BOND_LOGIN_DATE와
   같은 방식(`lib/legal.ts:84-116`, `lib/legal.test.ts:52` "The 시행일 shown stays"). 공지: 약관 `app/terms/page.tsx:112-126,144`,
-  환불 정책 `app/refund/page.tsx:41-47`, 개인정보처리방침 `app/privacy/page.tsx:265-272`.
+  환불 정책 `app/refund/page.tsx:41-47`, 개인정보처리방침 `app/privacy/page.tsx:266-273`.
 - 아래 "→ 반영" 줄 번호는 반영한 작업 트리 기준이다(8a6c887 기준이 아님). 고정 테스트: `components/legal/loginRule.test.tsx:209-303`
   (1~5, 10~13과 공지), `lib/legal.test.ts:71-81`(공지 기간).
 
@@ -60,7 +60,7 @@
     - 이름: "Google LLC (Google Play 결제)" / 국가: 미국 / 맡기는 일: "안드로이드 앱의 결제 처리(Google Play 결제 승인과 환불)" / 처리 항목: "결제와 환불에 필요한 구매 식별값(구매 토큰, Google 주문번호), 계정을 가린 값"
     - 이름: "Google LLC (AdMob)" / 국가: 미국 / 맡기는 일: "안드로이드 앱의 무료 결과 화면(지금의 한 장, 사주 등급 카드, 오늘의 한 장) 아래 광고 게재" / 처리 항목: "광고 ID, 기기·앱 정보, IP 주소(광고 게재와 부정 사용 방지)"
     - 국외 이전 고지 형식은 기존 Google LLC(애널리틱스) 항목과 같은 틀로.
-    - → 반영: `app/privacy/page.tsx:136-168` (토스페이먼츠 다음, 애널리틱스 Google LLC 앞). 이름·국가·맡기는 일·처리 항목은 위 문장 그대로,
+    - → 반영: `app/privacy/page.tsx:137-169` (토스페이먼츠 다음, 애널리틱스 Google LLC 앞). 이름·국가·맡기는 일·처리 항목은 위 문장 그대로,
       나머지 칸(이전 시기와 방법, 보유·이용 기간, 거부 방법과 거부 시 불이익, 개인정보 문의)은 코드(`lib/pay/play.ts:46`,
       `android/.../BillingManager.kt:85`, `AdsController.kt`)와 Google 공식 공개 표
       (developers.google.com/admob/android/privacy/play-data-disclosure, 2026-11-13 확인)로 채움. 보유 기간은 "Google의 개인정보처리방침에서
@@ -68,14 +68,14 @@
 11. **332줄**
     - 지금: "결제 기록: 주문번호, 상품, 금액, 결제수단 종류, 승인·취소 시각과 영수증 링크. 카드번호 등 결제 정보는 토스페이먼츠가 처리하며 운영자는 받지 않습니다"
     - 제안: "결제 기록: 주문번호, 상품, 금액, 결제수단 종류, 승인·취소 시각과 영수증 링크(앱 결제는 Google Play 구매 식별값). 카드번호 등 결제 정보는 토스페이먼츠(웹)나 Google Play(안드로이드 앱)가 처리하며 운영자는 받지 않습니다"
-    - → 반영: `app/privacy/page.tsx:375`
+    - → 반영: `app/privacy/page.tsx:376`
 12. **수집 항목 목록에 한 줄 추가**
     - 추가: "풀이 신고(안드로이드 앱): 신고한 풀이의 종류와 번호, 고른 사유, 직접 적은 메모, 로그인한 경우 계정. 풀이 내용은 저장하지 않으며, 탈퇴하면 계정과 메모를 지웁니다. 보관 기간: (사장님 결정: 예 1년)"
-    - → 반영: `app/privacy/page.tsx:399` ("보관 기간: 1년"), 소제목 "풀이를 신고할 때" `:397`을 붙여 1항에 둠. 1년 뒤 삭제
+    - → 반영: `app/privacy/page.tsx:400` ("보관 기간: 1년"), 소제목 "풀이를 신고할 때" `:397`을 붙여 1항에 둠. 1년 뒤 삭제
       `lib/pay/maintenance.ts:22,213-219` (고정 테스트 `app/api/internal/maintenance/maintenance.test.ts:419`)
 13. **앱 광고 안내 문단 추가** (쿠키·광고 절)
     - 추가: "안드로이드 앱의 무료 결과 화면 아래에는 Google AdMob 광고가 실립니다. 맞춤 광고는 기기의 설정 > Google > 광고에서 끌 수 있고, 유럽경제지역·영국·스위스에서는 앱의 내 정보 > 광고 개인정보 설정에서 동의를 바꿀 수 있습니다."
-    - → 반영: `app/privacy/page.tsx:570-573` (쿠키와 브라우저 저장소 절, 카카오톡 공유 앞). 설정 행 `app/me/MeView.tsx:208`
+    - → 반영: `app/privacy/page.tsx:571-574` (쿠키와 브라우저 저장소 절, 카카오톡 공유 앞). 설정 행 `app/me/MeView.tsx:208`
 
 ## E. FAQ (`lib/faq.ts` 256~263줄 "광고가 있나요?")
 14. 광고 켜짐 답변

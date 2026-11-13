@@ -15,7 +15,7 @@
 | 앱이 필수 사용자 데이터 유형을 수집하거나 공유하나요? | 예 | 아래 2 |
 | 수집하는 모든 사용자 데이터가 전송 중에 암호화되나요? | 예 | HSTS `web/next.config.ts:7,34`; 릴리스 빌드는 http 차단 `android/app/src/main/java/kr/yeolmaeapps/starlog/MainActivity.kt:63`; 평문은 debug 전용 `android/app/src/debug/res/xml/network_security_config.xml` |
 | 사용자가 데이터 삭제를 요청할 방법을 제공하나요? | 예 | 내 정보 → 회원 탈퇴 `web/app/me/AccountPanel.tsx:302-373`, `web/lib/account/deletion.ts:196-239` |
-| 계정 삭제 URL | https://starlog.yeolmaeapps.kr/privacy#rights | "7. 이용자의 권리와 행사 방법" `web/app/privacy/page.tsx:594-600`. 양식의 정확한 칸 이름은 공식 도움말에서 확인하지 못함 |
+| 계정 삭제 URL | https://starlog.yeolmaeapps.kr/account-deletion | 전용 안내 페이지 `web/app/account-deletion/page.tsx` (로그인 없이 열림: 앱 이름·운영자, 내 정보 > 회원 탈퇴, 개인정보 보호책임자 이메일·전화, 지워지는 것·남는 것과 보관 기간). 개인정보처리방침 권리 절에서도 링크. **배포 뒤 주소가 열리는지 확인**. 양식의 정확한 칸 이름은 공식 도움말에서 확인하지 못함 |
 
 ## 2. 데이터 유형별 답
 "공유"는 Google 정의상 제3자에게 넘기는 것이다. 서비스 제공자(우리 대신 처리하는 곳)에게 보내는 것과 사용자가 직접 시작한 이전은
@@ -34,7 +34,7 @@
 | 앱 활동 > 앱 상호작용 | 예 | 예(광고) | 선택(통계) / 필수(광고 SDK) | 분석, 광고 또는 마케팅 | 동의한 사람의 페이지 조회(GA4) `web/lib/analytics.ts:18,43-49`, `web/components/seo/GoogleAnalytics.tsx:80`; AdMob "User product interactions" |
 | 앱 정보 및 성능 > 진단 | 예 | 예(광고) | 필수(광고 SDK) | 분석 | AdMob "Diagnostic information"(SDK 자동). 앱 자체 오류 수집 코드는 없음 |
 | 기기 또는 기타 ID | 예 | 예(광고) | 필수(광고 SDK) | 광고 또는 마케팅, 사기 방지·보안, 분석 | 광고 ID·앱 세트 ID(AdMob, 병합 매니페스트의 `AD_ID`); 웹뷰 쿠키의 기기 id 해시 `web/lib/bonds/identity.ts:47-50`; 동의 시 GA 쿠키 |
-| 위치 > 대략적인 위치 | 예 | 예(광고) | 필수(광고 SDK) | 광고 또는 마케팅, 분석 | AdMob: "Collects device's IP address, which may be used to estimate the general location"; 동의 시 GA가 IP로 국가·도시 추정 `web/app/privacy/page.tsx:76-77`. 앱은 위치 권한이 없음 |
+| 위치 > 대략적인 위치 | 예 | 예(광고) | 필수(광고 SDK) | 광고 또는 마케팅, 분석 | AdMob: "Collects device's IP address, which may be used to estimate the general location"; 동의 시 GA가 IP로 국가·도시 추정 `web/app/privacy/page.tsx:79-80`. 앱은 위치 권한이 없음 |
 | 위치 > 정확한 위치 | 아니요 | — | — | — | 위치 권한 없음(소스·병합 매니페스트) |
 | 사진·동영상, 오디오, 파일, 캘린더, 연락처, 건강, 웹 탐색 기록 | 아니요 | — | — | — | 해당 권한·코드 없음; `Permissions-Policy: camera=(), microphone=(), geolocation=()` `web/next.config.ts:40` |
 
@@ -45,14 +45,15 @@
 
 ## 3. 사실과 양식 사이의 빈틈 (출시 전 정리)
 1. ~~개인정보처리방침에 앱 관련 내용(Google Play 결제, AdMob, 풀이 신고)이 없다~~ → 반영됨(2026-11-13 승인, `wording-proposals` 10~13번;
-   줄 번호는 이 커밋 이후 작업 트리 기준): 위탁·국외 이전 카드 Google LLC (Google Play 결제)·(AdMob) `web/app/privacy/page.tsx:136-168`
-   (AdMob 카드의 "이전 시기와 방법"에 위 공식 표의 상호작용·진단·앱 세트 ID·계정 관련 식별자·대략적 위치 추정까지 적음), 결제 기록 `:375`,
-   풀이 신고(보관 1년) `:397-400`과 1년 뒤 삭제 `web/lib/pay/maintenance.ts:22,213-219`, 앱 광고 문단 `:569-573`. Play는 방침과 양식이 어긋나면 반려한다.
+   줄 번호는 이 커밋 이후 작업 트리 기준): 위탁·국외 이전 카드 Google LLC (Google Play 결제)·(AdMob) `web/app/privacy/page.tsx:137-169`
+   (AdMob 카드의 "이전 시기와 방법"에 위 공식 표의 상호작용·진단·앱 세트 ID·계정 관련 식별자·대략적 위치 추정까지 적음), 결제 기록 `:376`,
+   풀이 신고(보관 1년) `:400`과 1년 뒤 삭제 `web/lib/pay/maintenance.ts:22,213-219`, 앱 광고 문단 `:571-574`. Play는 방침과 양식이 어긋나면 반려한다.
 2. 앱 Google 로그인 토큰의 이메일 클레임(위 표 "미확인").
 3. Meta 픽셀: 픽셀 id가 설정되면 동의한 사람의 방문·결제 금액이 Meta로 간다 `web/lib/metaPixel.ts:8,13`. 지금 배포 스크립트에는 id가 없다
    (`scripts/ops/deploy.sh`). 켜는 날 이 양식의 "앱 상호작용 / 구매 내역 → 공유(광고)"를 고쳐야 한다.
 4. Cloudflare Web Analytics 비컨: 코드 주석에만 있다 `web/next.config.ts:15`. 대시보드에서 켜져 있으면 방침과 이 양식(앱 상호작용, 분석)에 넣는다.
-5. 계정 삭제 전용 웹 페이지가 없다. Play 요건: "provide a web link resource where users can request app account deletion … reference the app or
-   developer name" (https://support.google.com/googleplay/android-developer/answer/13327111). `/privacy#rights`는 앱 이름과 절차를 담고 있지만,
-   로그인 없이 삭제를 "요청"하는 길은 문의 메일뿐이다. 전용 안내 페이지(`/account-deletion`: 앱 이름, 탈퇴 순서, 지워지는 것·남는 것, 요청 메일)를
-   만드는 쪽이 안전하다. 문구가 법적 고지라 사장님 승인 뒤 만든다.
+5. ~~계정 삭제 전용 웹 페이지가 없다~~ → 만듦(2026-11-13 사장님 결정 "전용 페이지 만들기"): https://starlog.yeolmaeapps.kr/account-deletion
+   (`web/app/account-deletion/page.tsx`). Play 요건: "provide a web link resource where users can request app account deletion … reference the app or
+   developer name" (https://support.google.com/googleplay/android-developer/answer/13327111). 앱 이름·운영자, 탈퇴 순서(내 정보 > 회원 탈퇴),
+   로그인 없이 요청하는 곳(개인정보 보호책임자 이메일·전화), 지워지는 것·남는 것과 보관 기간을 개인정보처리방침·약관·탈퇴 확인창의 문장 그대로 옮겼고
+   새 약속은 넣지 않았다. 개인정보처리방침 권리 절에 링크 한 줄. **배포 전**: 배포 뒤 주소가 열리는지 확인하고 양식에 넣는다.

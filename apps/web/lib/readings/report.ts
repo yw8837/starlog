@@ -1,6 +1,6 @@
 /**
- * 신고 on an AI reading (the Starlog app, W2.5): what can be reported and why. Shared by POST /api/readings/report and the
- * 신고 control (components/report/ReportReading.tsx). Client-safe.
+ * 신고 on an AI reading (the Starlog app, W2.5): what can be reported and why. Shared by POST /api/readings/report, the
+ * 신고 control (components/report/ReportReading.tsx) and the operator's 신고 목록 (app/owner, api/owner/reading-reports). Client-safe.
  */
 
 /**
@@ -25,3 +25,35 @@ export const REPORT_REASON_LABEL: Record<ReportReason, string> = {
 /** A reading id the report may carry (a saved reading's, a share link's): letters, digits, _ and -, at most 64. */
 export const REPORT_READING_ID = /^[A-Za-z0-9_-]{1,64}$/;
 export const REPORT_NOTE_MAX = 500;
+
+/** Each kind's name on the operator's 신고 목록 (/owner). */
+export const REPORT_KIND_LABEL: Record<ReportKind, string> = {
+  tarot: "타로 전체 풀이",
+  saju: "사주 전체 풀이",
+  "tarot-deep": "켈틱 크로스 10장",
+  match: "프리미엄 궁합",
+  "newyear-2027": "2027 신년운세",
+  followup: "이어서 물어보기 답",
+  teaser: "맛보기",
+  daily: "오늘의 한 장",
+  shared: "공유 링크",
+  bond: "오늘의 인연 카드",
+};
+
+/** Reports per page on the operator's 신고 목록, newest first (더 보기 for the next). */
+export const OWNER_REPORTS_PAGE = 50;
+
+/**
+ * One report on the operator's 신고 목록 (GET /api/owner/reading-reports): never the reporter. `link` is the page the operator
+ * can open (a share link only: a saved reading opens on its owner's device or account alone). Times are epoch milliseconds.
+ */
+export interface OwnerReadingReport {
+  id: string;
+  kind: ReportKind;
+  readingId: string | null;
+  link: string | null;
+  reason: ReportReason;
+  note: string | null;
+  createdAt: number;
+  handledAt: number | null;
+}

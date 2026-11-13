@@ -32,6 +32,7 @@
 | 이어서 물어보기 답변 | 에뮬레이터 미확인(결제한 풀이 필요). 브라우저 e2e로 확인: 앱 표시(`<html data-app>`)를 켜면 보이고 `kind: "followup"`으로 접수 | `apps/web/e2e/pay-flow.spec.ts` |
 | 오늘의 인연 카드 | 에뮬레이터 미확인(다른 계정의 친구 필요). 브라우저 e2e로 확인: 앱 표시를 켜면 보임 | `apps/web/e2e/bonds.spec.ts` |
 | 사주 전체 풀이, 프리미엄 전체 풀이 | 에뮬레이터 미확인(결제 필요). 같은 컴포넌트 | `apps/web/app/chapter/[id]/SajuChapterView.tsx:74`, `PremiumChapterView.tsx:160` |
+| 신고 처리 | 운영자 화면(https://starlog.yeolmaeapps.kr/owner → "풀이 신고")에서 시간·종류·사유·메모를 보고 "처리 완료"로 표시. 1년 뒤 자동 삭제 | `apps/web/app/owner/ReadingReportDesk.tsx`, `apps/web/app/api/owner/reading-reports/route.ts`, `docs/runbook-payments.md` 12절 |
 | 웹(앱 아님)에서는 신고가 안 보임 | 통과(이어 묻기 답변, 풀이 본문, 인연 카드의 신고가 앱 표시 전에는 숨김) | `apps/web/lib/app/mode.test.ts`, 위 e2e 두 개 |
 
 ## 4. 로그인, 심사용 계정, 계정 삭제
@@ -42,7 +43,7 @@
 | 로그인 화면의 "Reviewer sign-in" → 심사용 양식 → 로그인됨 | 통과 | 캡처 `05a`~`05d` |
 | 일반 브라우저에서는 그 링크가 안 보임 | 통과 | `apps/web/app/globals.css`의 `html:not([data-app]) .app-only` |
 | 내 정보 → 회원 탈퇴 → 확인창 → 취소 | 통과(실제 탈퇴는 누르지 않음) | 캡처 `09-delete-dialog`, `09-after-cancel` |
-| 로그인 없이 보는 삭제 안내 주소 | https://starlog.yeolmaeapps.kr/privacy#rights (전용 페이지는 없음: `data-safety.md` 3-5) | 캡처 `02-15` |
+| 로그인 없이 보는 삭제 안내 주소 | https://starlog.yeolmaeapps.kr/account-deletion (전용 페이지: `data-safety.md` 3-5). **미확인**: 배포 전이라 새 주소 캡처 없음 | 캡처 `02-15`는 이전 주소 `/privacy#rights`의 것 |
 
 ## 5. 개인정보처리방침과 고지
 | 확인한 것 | 결과 | 증거 |

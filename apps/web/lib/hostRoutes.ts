@@ -70,7 +70,7 @@ const SEGMENT = "[^/.]+";
  * root domain serves itself and the dev-only pages (lib/hostRoutes.test.ts reads app/ to keep this list whole).
  */
 export const APP_SEGMENTS = [
-  "2027-keyword", "about", "b", "birth-card", "bonds", "chapter", "evidence", "faq", "help", "how", "invite", "login", "lucky", "me",
+  "2027-keyword", "about", "account-deletion", "b", "birth-card", "bonds", "chapter", "evidence", "faq", "help", "how", "invite", "login", "lucky", "me",
   "now", "owner", "pay", "premium", "pricing", "ranking", "refund", "s", "saju", "story", "tarot", "today",
 ] as const;
 

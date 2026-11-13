@@ -146,6 +146,16 @@ describe("test D1 with every migration applied", () => {
     expect(indexes).toEqual([{ name: "play_purchases_unconsumed" }]);
   });
 
+  it("0026 adds handled_at to reading_reports, keeping every report (NULL: not handled yet)", async () => {
+    const before = migratedTestD1({ without: "0026_" });
+    await before.prepare("INSERT INTO reading_reports (id, user_id, reading_id, kind, reason, note, created_at) VALUES ('rep_1', NULL, 'abc123def456', 'shared', 'other', '메모', 5)").run();
+    const migration = readdirSync(MIGRATIONS).find((name) => name.startsWith("0026_"))!;
+    before.exec(readFileSync(`${MIGRATIONS}${migration}`, "utf8"));
+    expect(await before.prepare("SELECT * FROM reading_reports").all()).toMatchObject({
+      results: [{ id: "rep_1", user_id: null, reading_id: "abc123def456", kind: "shared", reason: "other", note: "메모", created_at: 5, handled_at: null }],
+    });
+  });
+
   it("refuses undefined like D1", async () => {
     const db = migratedTestD1();
     await expect(db.prepare("SELECT ?").bind(undefined).first()).rejects.toThrow(/undefined/);

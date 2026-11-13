@@ -47,8 +47,8 @@ Play 한도(공식, 2026-11-12 확인): 앱 이름 30자, 간단한 설명 80자
 - 연락처 이메일·웹사이트: `apps/web/lib/config.ts:44`의 공개 연락처, 웹사이트 https://starlog.yeolmaeapps.kr
   (app-ads.txt는 스토어에 적는 개발자 웹사이트의 루트에 둬야 한다: https://support.google.com/admob/answer/9363762)
 - 개인정보처리방침 URL: https://starlog.yeolmaeapps.kr/privacy
-- 계정 삭제 URL: https://starlog.yeolmaeapps.kr/privacy#rights (전용 페이지가 없어 권리 행사 절을 가리킨다. 전용 안내 페이지를
-  만들지는 사장님 결정: `data-safety.md` 맨 아래)
+- 계정 삭제 URL: https://starlog.yeolmaeapps.kr/account-deletion (전용 안내 페이지, 2026-11-13 사장님 결정 "전용 페이지 만들기":
+  `data-safety.md` 3-5. 배포 뒤 열리는지 확인)
 
 ## 사장님이 확인할 문장 — 2026-11-13 사장님 승인, 쓴 그대로
 1. "풀이 글은 … AI가 써요": 웹의 오늘의 한 장 안내에는 같은 뜻의 문장이 있다. 스토어 설명에 넣을지. → 그대로 넣는다.

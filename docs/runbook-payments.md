@@ -180,6 +180,21 @@ Checks:
   `SELECT o.id, o.updated_at FROM orders o JOIN payments p ON p.order_id = o.id WHERE p.mode = 'play' AND o.status = 'refunding' AND COALESCE(o.fail_code, '') <> 'ACCOUNT_DELETED'`
 - Payments by kind: `SELECT mode, COUNT(*) FROM payments GROUP BY mode`. Sales per KST day with Play: section 7.
 
+When a Google Play refund fails (owner 2026-11-13: Play Console first, the bank account last):
+1. See that it failed: `pay.play_refund_stuck` in the logs, the order still `refunding` an hour after `play_purchases.refund_sent_at`, or the buyer writes in. Nothing is guessed meanwhile and the reading stays locked.
+2. Play Console first: Order management → find the order by `play_purchases.google_order_id` (GPA.…) → refund it there. If it already shows refunded, Google did it: the cron closes the order within about 10 minutes (voided purchases). If Play Console refunds it now, note the date and the Google order id in the refund log (section 8).
+3. Only if Play Console cannot refund it (the order is not found, the refund is refused, or Google's refund window has passed): answer the buyer through 문의, ask for a bank account in the buyer's own name, and send the amount by bank transfer, as the refund policy says ("Google Play에서 환불이 되지 않으면, 알려 주신 본인 명의 계좌로 환불해 드려요"). The amount is the order's (a set with one reading opened: section 8's amount).
+4. Record it as section 8's bank refund ("Card cancel window over"): the order id, the Google order id, the transfer's date and amount in the refund log, then that bullet's SQL. That SQL closes an order that is `paid`; a Play order whose refund was sent is `refunding`, and no SQL is written out for that state: do not improvise one (section 8's first rule). Leave the order as it is, note it in the refund log, and have the statement added here and reviewed before running it.
+5. Never both: before step 3, look at the order in Play Console once more, so a late Google refund and a bank transfer do not both go out.
+
+## 12. 풀이 신고 on /owner (owner 2026-11-13)
+
+- Where: https://starlog.yeolmaeapps.kr/owner on the owner-pass browser (enter STARLOG_OWNER_CODE there once), below 신고된 후기: **풀이 신고**. The API is `GET/POST /api/owner/reading-reports`, owner pass only (403 otherwise), as the review desk.
+- What it lists: the reports sent from the app's 신고 (Google Play's AI-generated content policy; `reading_reports`, migration 0025), newest first, 50 at a time (더 보기), each with its time (KST), kind, reason, note, and the reading: a share link opens (`/s/<id>`, a public page); a saved reading shows its number only (it opens on its owner's device or account, not from /owner); 맛보기 and 오늘의 한 장 carry no number. Never the reading's text (not stored) nor who sent it.
+- 처리 완료로 표시 means: you read it and did what it needed. It is a mark for the operator only: it sets `reading_reports.handled_at` (the first time is kept), and 처리 전으로 되돌리기 sets it back to NULL. It changes nothing for the reporter or the reading; a handled report is still purged a year after it was sent, and still loses its user id and note when its account is erased.
+- Not handled yet: `SELECT COUNT(*) AS n FROM reading_reports WHERE handled_at IS NULL`.
+- Migration 0026 (`handled_at`, ALTER TABLE ADD COLUMN only, no rebuild): apply it before deploying the code that reads it (docs/runbook-deploy.md). Code first would break only this list; sending 신고 does not read the column.
+
 ## Follow-ups (not in P4)
 
 Kakao 연결 끊기 알림 callback (needs the admin key), premium generators (P5), cash receipts if 계좌이체 is ever enabled, moving the device's earlier readings into an account (cut from P4), the P3 인연 link (cut from P4), a second reading-key version if the account secret must ever change.

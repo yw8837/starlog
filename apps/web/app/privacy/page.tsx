@@ -7,6 +7,7 @@ import s from "@/components/legal/legal.module.css";
 import { adsConfig } from "@/lib/ads";
 import { GA_MEASUREMENT_ID } from "@/lib/analytics";
 import { OPENING_LAST_DATE, SITE, openingFreeOn } from "@/lib/config";
+import { appHref } from "@/lib/hosts";
 import {
   BOND_LOGIN_DATE,
   GA_REVISION_DATE,
@@ -651,6 +652,7 @@ export default function PrivacyPage() {
           <li>{`${synced ? SYNC_KEPT : KEPT}는 내 정보에서 지울 수 있고, 탈퇴도 내 정보에서 할 수 있습니다.`}</li>
           {BONDS ? <li>별자리 인연에서 주인은 별을 직접 지우고 랭킹 공개를 끌 수 있습니다. 별자리 전체나 친구로 남긴 별의 삭제는 아래 개인정보 보호책임자에게 요청해 주세요.</li> : null}
           <li>운영자가 보관하는 정보에 대한 요구는 아래 개인정보 보호책임자에게 해 주시면 지체 없이 조치합니다. 법정대리인이나 위임을 받은 사람을 통해서도 요구할 수 있습니다.</li>
+          <li>탈퇴하는 방법과 탈퇴하면 지워지는 정보, 남는 정보는 <a href={appHref("/account-deletion")}>계정 삭제 안내</a>에 모아 두었습니다.</li>
         </ul>
       </LegalSection>
 
