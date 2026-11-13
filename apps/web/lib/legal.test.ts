@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SITE } from "./config";
 import {
-  APP_REVISION_DATE, BOND_LOGIN_DATE, GA_REVISION_DATE, LEGAL_EFFECTIVE_DATE, LEGAL_LINKS, KEPT_RULE_DATE, LOGIN_RULE_DATE, PRIVACY_REVISION_DATE, SYNC_REVISION_DATE, appRevisionNoticeShown, contactChannels, gaRevisionInForce,
+  APP_REVISION_DATE, APP_REVISION_NOTICED_ON, BOND_LOGIN_DATE, GA_REVISION_DATE, LEGAL_EFFECTIVE_DATE, LEGAL_LINKS, KEPT_RULE_DATE, LOGIN_RULE_DATE, PRIVACY_REVISION_DATE, SYNC_REVISION_DATE, appRevisionNoticeShown, appRevisionTitle, contactChannels, gaRevisionInForce,
   keptRuleNoticeShown, koreanDate, legalEffectiveDate, bondLoginNoticeShown, loginRuleNoticeShown, privacyEffectiveDate, privacyRevisionInForce, syncRevisionInForce, termsEffectiveDate,
 } from "./legal";
 
@@ -69,11 +69,14 @@ describe("legal helpers", () => {
   });
 
   it("says what the Android app changed (owner 2026-11-13) on top of the terms, the refund policy and the privacy policy for 30 days from its deploy day; the 시행일 shown stays", () => {
-    expect(APP_REVISION_DATE).toBe("2026-11-13");
+    expect(APP_REVISION_NOTICED_ON).toBe("2026-11-13");
+    expect(APP_REVISION_DATE).toBe("2026-11-20");
+    expect(appRevisionTitle(Date.parse("2026-11-19T23:59:59+09:00"))).toBe("2026년 11월 20일부터 바뀌는 내용 (2026년 11월 13일 공지)");
+    expect(appRevisionTitle(Date.parse("2026-11-20T00:00:00+09:00"))).toBe("2026년 11월 20일 바뀐 내용");
     const deploy = Date.parse("2026-11-13T09:00:00+09:00");
     expect(appRevisionNoticeShown(deploy)).toBe(true);
-    expect(appRevisionNoticeShown(Date.parse("2026-12-13T00:00:00+09:00") - 1)).toBe(true);
-    expect(appRevisionNoticeShown(Date.parse("2026-12-13T00:00:00+09:00"))).toBe(false);
+    expect(appRevisionNoticeShown(Date.parse("2026-12-20T00:00:00+09:00") - 1)).toBe(true);
+    expect(appRevisionNoticeShown(Date.parse("2026-12-20T00:00:00+09:00"))).toBe(false);
     // As with LOGIN_RULE_DATE, KEPT_RULE_DATE and BOND_LOGIN_DATE.
     expect(termsEffectiveDate(deploy)).toBe("2026-10-31");
     expect(privacyEffectiveDate(deploy)).toBe("2026-10-31");

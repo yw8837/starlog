@@ -8,7 +8,6 @@ import { adsConfig } from "@/lib/ads";
 import { GA_MEASUREMENT_ID } from "@/lib/analytics";
 import { OPENING_LAST_DATE, SITE, openingFreeOn } from "@/lib/config";
 import {
-  APP_REVISION_DATE,
   BOND_LOGIN_DATE,
   GA_REVISION_DATE,
   KEPT_RULE_DATE,
@@ -19,6 +18,7 @@ import {
   PRIVACY_REVISION_DATE,
   SYNC_REVISION_DATE,
   appRevisionNoticeShown,
+  appRevisionTitle,
   bondLoginNoticeShown,
   contactChannels,
   gaRevisionInForce,
@@ -265,7 +265,7 @@ export default function PrivacyPage() {
       {/* The Android app (owner 2026-11-13): in force from this deploy, said on top for 30 days (lib/legal.ts APP_REVISION_DATE). */}
       {appRevisionNoticeShown(now) ? (
         <aside className={s.note} aria-labelledby="app-revision-privacy-title">
-          <h2 id="app-revision-privacy-title" className={s.noteTitle}>{`${koreanDate(APP_REVISION_DATE)} 바뀐 내용`}</h2>
+          <h2 id="app-revision-privacy-title" className={s.noteTitle}>{appRevisionTitle(now)}</h2>
           <p>안드로이드 앱의 Google Play 결제와 환불, 무료 결과 화면 아래의 Google AdMob 광고, 풀이 신고 기록에 관한 내용을 더했어요.</p>
           <p>처리를 맡기는 곳에 Google LLC(Google Play 결제, AdMob)를 더했고, 풀이 신고 기록은 1년 동안 보관해요.</p>
         </aside>

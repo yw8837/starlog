@@ -118,14 +118,22 @@ export const bondLoginNoticeShown = (now: number = Date.now()): boolean => now <
 /**
  * The Android app (owner 2026-11-13, apps/android/store/wording-proposals.md items 1–15 as written): Google Play 결제와 환불 in
  * the terms and the refund policy, how a set paid with Google Play has its part refunded (문의), and in the privacy policy Google
- * Play and AdMob as processors, the app's ads and 풀이 신고 (kept 1 year). In force from the deploy, before the notice the terms
- * and the privacy policy promise, so, as with LOGIN_RULE_DATE, the three say what changed, dated, at their top for 30 days from
- * this day. The 시행일 shown stays. The day this goes live: move it (and the end with it) if the deploy goes out on another day.
+ * Play and AdMob as processors, the app's ads and 풀이 신고 (kept 1 year). Said on top of the three from APP_REVISION_NOTICED_ON
+ * (the deploy) and in force from APP_REVISION_DATE, the 7 days the terms promise (owner 2026-11-13 "시행일을 11월 20일로 적기"):
+ * 바뀌는 내용 before that day, 바뀐 내용 from it, for 30 days after it. The app itself is not in the store before that day.
+ * The 시행일 line each document shows stays.
  */
-export const APP_REVISION_DATE = "2026-11-13";
-const APP_REVISION_NOTICE_UNTIL_AT = Date.parse(`${APP_REVISION_DATE}T00:00:00+09:00`) + 30 * 24 * 60 * 60 * 1000;
+export const APP_REVISION_NOTICED_ON = "2026-11-13";
+export const APP_REVISION_DATE = "2026-11-20";
+const APP_REVISION_AT = Date.parse(`${APP_REVISION_DATE}T00:00:00+09:00`);
+const APP_REVISION_NOTICE_UNTIL_AT = APP_REVISION_AT + 30 * 24 * 60 * 60 * 1000;
 
 export const appRevisionNoticeShown = (now: number = Date.now()): boolean => now < APP_REVISION_NOTICE_UNTIL_AT;
+/** The notice's title: the day it takes effect, and until then the day it was announced. */
+export const appRevisionTitle = (now: number = Date.now()): string =>
+  now >= APP_REVISION_AT
+    ? `${koreanDate(APP_REVISION_DATE)} 바뀐 내용`
+    : `${koreanDate(APP_REVISION_DATE)}부터 바뀌는 내용 (${koreanDate(APP_REVISION_NOTICED_ON)} 공지)`;
 
 /**
  * The 개인정보처리방침 revision that adds the Meta pixel (owner 2026-11-10 "동의한 방문자만"): the consent banner names Meta

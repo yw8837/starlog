@@ -5,7 +5,7 @@ import { PremiumChangeNotice, PremiumLegalNotice, PremiumTerms, PremiumUpcoming,
 import s from "@/components/legal/legal.module.css";
 import { OPENING_LAST_DATE, SITE, openingFreeOn } from "@/lib/config";
 import {
-  APP_REVISION_DATE, BOND_LOGIN_DATE, KEPT_RULE_DATE, LOGIN_RULE_DATE, OPENING_ACCOUNT_DATE, SYNC_REVISION_DATE, appRevisionNoticeShown, bondLoginNoticeShown, contactChannels, keptRuleNoticeShown, koreanDate,
+  BOND_LOGIN_DATE, KEPT_RULE_DATE, LOGIN_RULE_DATE, OPENING_ACCOUNT_DATE, SYNC_REVISION_DATE, appRevisionNoticeShown, appRevisionTitle, bondLoginNoticeShown, contactChannels, keptRuleNoticeShown, koreanDate,
   loginRuleNoticeShown, premiumChangeNoticeShown, premiumLegalInForce, setRuleNoticeShown, syncRevisionInForce, termsEffectiveDate,
 } from "@/lib/legal";
 import { REFUND_DAYS } from "@/lib/pay/catalog";
@@ -113,10 +113,10 @@ function BondLoginNotice() {
  * The Android app (lib/legal.ts APP_REVISION_DATE, owner 2026-11-13): what changed in 제7조 2호 and 8호, and how a set paid
  * with Google Play has its part refunded, on top for 30 days, as the AI 풀이 login was.
  */
-function AppRevisionNotice() {
+function AppRevisionNotice({ now }: { now: number }) {
   return (
     <aside className={s.note} aria-labelledby="app-revision-title">
-      <h2 id="app-revision-title" className={s.noteTitle}>{`${koreanDate(APP_REVISION_DATE)} 바뀐 내용 · 안드로이드 앱`}</h2>
+      <h2 id="app-revision-title" className={s.noteTitle}>{`${appRevisionTitle(now)} · 안드로이드 앱`}</h2>
       <ul className={s.list}>
         <li>안드로이드 앱에서는 Google Play 결제로 결제할 수 있고, Google Play로 결제한 건의 영수증은 Google Play가 보냅니다(제7조 2호, 8호).</li>
         <li>{playSetPartRule(false)}</li>
@@ -141,7 +141,7 @@ export default function TermsPage() {
       {premiumChangeNoticeShown(now) ? <PremiumChangeNotice /> : null}
       {/* The 2027 신년운세 + 프리미엄 궁합 set (lib/legal.ts SET_RULE_DATE): from the deploy until 30 days after 12/1. */}
       {setRuleNoticeShown(now) ? <SetRuleNotice now={now} /> : null}
-      {appRevisionNoticeShown(now) ? <AppRevisionNotice /> : null}
+      {appRevisionNoticeShown(now) ? <AppRevisionNotice now={now} /> : null}
       {BONDS && bondLoginNoticeShown(now) ? <BondLoginNotice /> : null}
       {keptRuleNoticeShown(now) ? <KeptRuleNotice /> : null}
       {loginRuleNoticeShown(now) ? <LoginRuleNotice /> : null}

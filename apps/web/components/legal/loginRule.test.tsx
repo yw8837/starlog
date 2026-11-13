@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import PrivacyPage from "@/app/privacy/page";
 import RefundPage from "@/app/refund/page";
 import TermsPage from "@/app/terms/page";
-import { APP_REVISION_DATE, BOND_LOGIN_DATE, KEPT_RULE_DATE, LOGIN_RULE_DATE, koreanDate } from "@/lib/legal";
+import { BOND_LOGIN_DATE, KEPT_RULE_DATE, LOGIN_RULE_DATE, koreanDate } from "@/lib/legal";
 
 /**
  * Every AI reading result needs a login (owner 2026-11-04, final): the terms (제6조 1호) and the privacy policy change only
@@ -207,7 +207,7 @@ describe("a friend logs in to join 별자리 인연, in the policies", () => {
  * changed, dated by lib/legal.ts APP_REVISION_DATE, on top for 30 days, as with LOGIN_RULE_DATE; the 시행일 shown stays.
  */
 describe("the Android app, in the policies", () => {
-  const APP_NOTICE = `${koreanDate(APP_REVISION_DATE)} 바뀐 내용`;
+  const APP_NOTICE = "2026년 11월 20일부터 바뀌는 내용 (2026년 11월 13일 공지)";
   const appNotice = (container: HTMLElement, title = APP_NOTICE) => [...container.querySelectorAll("aside")].find((aside) => aside.querySelector("h2")?.textContent === title);
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
@@ -231,7 +231,7 @@ describe("the Android app, in the policies", () => {
     ]);
     expect(container.textContent).toContain("이 약관은 2026년 10월 31일부터 시행합니다.");
     cleanup();
-    vi.setSystemTime(Date.parse("2026-12-13T00:00:00+09:00"));
+    vi.setSystemTime(Date.parse("2026-12-20T00:00:00+09:00"));
     container = render(<TermsPage />).container;
     expect(appNotice(container, `${APP_NOTICE} · 안드로이드 앱`)).toBeUndefined();
     expect(container.querySelector("#paid")?.textContent).toContain("안드로이드 앱에서는 Google Play 결제로 할 수 있습니다.");
@@ -249,7 +249,7 @@ describe("the Android app, in the policies", () => {
     );
     expect(container.querySelector("time")?.getAttribute("datetime")).toBe("2026-10-20");
     cleanup();
-    vi.setSystemTime(Date.parse("2026-12-13T00:00:00+09:00"));
+    vi.setSystemTime(Date.parse("2026-12-20T00:00:00+09:00"));
     container = render(<RefundPage />).container;
     expect(appNotice(container)).toBeUndefined();
   });
@@ -295,7 +295,7 @@ describe("the Android app, in the policies", () => {
     );
     expect(container.querySelector("time")?.getAttribute("datetime")).toBe("2026-10-31");
     cleanup();
-    vi.setSystemTime(Date.parse("2026-12-13T00:00:00+09:00"));
+    vi.setSystemTime(Date.parse("2026-12-20T00:00:00+09:00"));
     container = render(<PrivacyPage />).container;
     expect(appNotice(container)).toBeUndefined();
     expect(container.querySelector('[aria-label="Google LLC (AdMob)"]')).not.toBeNull();

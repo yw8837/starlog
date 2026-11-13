@@ -5,7 +5,7 @@ import { PremiumChangeNotice, PremiumLegalNotice, PremiumRefund, PremiumUpcoming
 import s from "@/components/legal/legal.module.css";
 import { SITE } from "@/lib/config";
 import {
-  APP_REVISION_DATE, LOGIN_RULE_DATE, appRevisionNoticeShown, contactChannels, koreanDate, legalEffectiveDate, loginRuleNoticeShown, premiumChangeNoticeShown, premiumLegalInForce, setRuleNoticeShown,
+  LOGIN_RULE_DATE, appRevisionNoticeShown, appRevisionTitle, contactChannels, koreanDate, legalEffectiveDate, loginRuleNoticeShown, premiumChangeNoticeShown, premiumLegalInForce, setRuleNoticeShown,
 } from "@/lib/legal";
 import { REFUND_DAYS } from "@/lib/pay/catalog";
 import { pageMetadata } from "@/lib/seo";
@@ -41,7 +41,7 @@ export default function RefundPage() {
       {/* The Android app (owner 2026-11-13): Google Play 결제의 환불, said on top for 30 days (lib/legal.ts APP_REVISION_DATE). */}
       {appRevisionNoticeShown(now) ? (
         <aside className={s.note} aria-labelledby="app-revision-refund-title">
-          <h2 id="app-revision-refund-title" className={s.noteTitle}>{`${koreanDate(APP_REVISION_DATE)} 바뀐 내용`}</h2>
+          <h2 id="app-revision-refund-title" className={s.noteTitle}>{appRevisionTitle(now)}</h2>
           <p>{`${PLAY_REFUND} ${playSetPartRule()}`}</p>
         </aside>
       ) : null}

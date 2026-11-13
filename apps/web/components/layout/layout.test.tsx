@@ -48,6 +48,16 @@ describe("TabBar", () => {
     expect(hrefs(bar())).toEqual(["/", "/story", "/guide/tarot", "/me"]);
   });
 
+  it("in the Starlog app the 가이드 tab is hidden (web-only), on the app host only (owner 2026-11-13)", () => {
+    render(<TabBar active="story" />);
+    const hidden = (nav: HTMLElement) => [...nav.querySelectorAll("li.web-only")].map((li) => li.textContent);
+    expect(hidden(pills())).toEqual(["가이드"]);
+    expect(hidden(bar())).toEqual(["가이드"]);
+    cleanup();
+    render(<TabBar active="guide-tarot" host="guide" />);
+    expect(document.querySelectorAll("li.web-only")).toHaveLength(0);
+  });
+
   it("on an app page with the hosts split, only the guide tab leaves for the root domain", () => {
     vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
     render(<TabBar active="story" />);

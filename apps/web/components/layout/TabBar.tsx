@@ -159,6 +159,12 @@ function TabLabel({ tab }: { tab: Tab }) {
  * with display:none at the other width, so only one nav is ever in the accessibility tree. Render it
  * before <main>: on desktop it is the top of the page, and focus order should match.
  */
+/**
+ * The Starlog app shows no 가이드 tab (owner 2026-11-13): the guide opens in the browser, and from there the site offers the
+ * web payment, which an app on Google Play may not lead to. `web-only` hides it under <html data-app> (app/globals.css).
+ */
+const appHides = (tab: Tab, guideHost: boolean): string | undefined => (!guideHost && tab.id === "guide" ? "web-only" : undefined);
+
 export function TabBar({ active, only, host = "app" }: TabBarProps) {
   const guide = host === "guide";
   return (
@@ -173,7 +179,7 @@ export function TabBar({ active, only, host = "app" }: TabBarProps) {
             {(guide ? GUIDE_TABS : PILL_TABS).map((tab) => {
               const isActive = tab.id === active;
               return (
-                <li key={tab.id}>
+                <li key={tab.id} className={appHides(tab, guide)}>
                   <Link
                     href={linkHref(tab.href, host)}
                     prefetch={tab.out ? false : undefined}
@@ -195,7 +201,7 @@ export function TabBar({ active, only, host = "app" }: TabBarProps) {
             {(guide ? GUIDE_TABS : BAR_TABS).map((tab) => {
               const isActive = tab.id === active;
               return (
-                <li key={tab.id} className={styles.cell}>
+                <li key={tab.id} className={[styles.cell, appHides(tab, guide)].filter(Boolean).join(" ")}>
                   <Link
                     href={linkHref(tab.href, host)}
                     prefetch={tab.out ? false : undefined}

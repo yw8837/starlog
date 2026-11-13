@@ -28,6 +28,11 @@ body:has(textarea:focus, input:focus:not([type="checkbox"], [type="radio"])) .ba
   display: none;
 }
 
+/* The Starlog app hides the 가이드 tab (TabBar.tsx appHides): three tabs share the bar. */
+:global(html[data-app]) .inner {
+  grid-template-columns: repeat(3, 1fr);
+}
+
 .inner {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
