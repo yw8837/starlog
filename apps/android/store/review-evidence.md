@@ -68,3 +68,19 @@
 3. 실제 AdMob 광고 단위와 동의 창.
 4. 서명한 AAB 업로드와 사전 출시 보고서.
 5. 세트(12월 1일 판매 시작) 구매와 문의를 통한 남은 몫 환불.
+
+## 운영 사이트에서 다시 확인 (2026-11-13, 배포 `9bd07d6` 뒤, 운영 주소 디버그 APK)
+캡처와 기록은 `E:\AndroidBuild\qa\live-1113\`.
+| 확인한 것 | 결과 | 증거 |
+|---|---|---|
+| 앱 표시 `android`, UA 끝 `StarlogApp/1.0.0`, `/api/version` = `9bd07d6eebc2` | 통과 | `A1-home.png` |
+| /pricing "결제 수단과 영수증"에 "앱에서는 Google Play로 결제해요…", 토스·간편결제·신용카드 0건 | 통과 | `A2-pricing-payment-section.png` |
+| 결제 화면 3개(타로·사주·신년운세) | 로그인 화면으로 넘어감(비로그인). **버튼 문구는 운영에서 미확인**: 심사용 계정 값이 있어야 함 | `A3-checkout-*.png` |
+| 로그인 화면의 Google 버튼과 "Reviewer sign-in" | 통과 | `A4-login.png` |
+| 배너: /now 결과와 /saju/grade에서 열림, 홈에서 닫힘 | 통과 | `A5-now-banner-open.png`, `A5-home-banner-closed.png`, `A6-grade-banner-open.png` |
+| 앱 본체 WebView가 요청한 호스트 | 2개(`starlog.yeolmaeapps.kr`, `static.cloudflareinsights.com`), 토스 0건. 광고 SDK의 요청은 이 기록 밖 | `netlog.tsv` |
+
+## 스토어 스크린샷
+`graphics/phone-1.png`~`phone-8.png`: 운영 사이트를 앱에서 찍은 1080×1920 RGB(알파 없음). 상태바·제스처바를 떼고 위에서 1920px만 남겼다.
+1 홈, 2 타로 시작, 3 질문 만들기, 4 사주 주제 목록, 5 2027 신년운세, 6 별자리 인연, 7 가격 안내, 8 켈틱 크로스.
+주의: 1번에는 "오픈 기념 … 11월 30일까지" 문장이 있어 12월부터는 다시 찍어야 하고, 8번은 맨 아래 줄이 걸쳐 잘려 있다(빼도 7장).
