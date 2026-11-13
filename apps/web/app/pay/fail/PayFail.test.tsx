@@ -14,7 +14,9 @@ describe("PayFail", () => {
     render(<PayFail code="REJECT_CARD_COMPANY" message="카드사에서 결제를 거절했어요." orderId="o1" />);
     expect(screen.getByText("결제를 마치지 못했어요")).toBeTruthy();
     expect(screen.getByText("카드사에서 결제를 거절했어요.")).toBeTruthy();
-    expect(screen.getByText("청구된 금액은 없어요. 다른 카드나 간편결제로 다시 해 보세요.")).toBeTruthy();
+    expect(screen.getByText(/^청구된 금액은 없어요\./)).toBeTruthy();
+    // The Starlog app pays with Google Play: the card advice is web-only (hidden under <html data-app>).
+    expect(screen.getByText("다른 카드나 간편결제로 다시 해 보세요.").className).toBe("web-only");
     expect(await screen.findByRole("link", { name: "풀이로 돌아가기" })).toBeTruthy();
     await vi.waitFor(() => expect(screen.getByRole("link", { name: "풀이로 돌아가기" }).getAttribute("href")).toBe("/tarot/result"));
   });

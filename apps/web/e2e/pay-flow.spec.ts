@@ -102,6 +102,7 @@ test("owner mode: log in (no signup gift), pay for a tarot reading that takes fo
   const reports = page.locator("button", { hasText: /^신고$/ });
   await expect(reports).toHaveCount(2);
   await expect(reports.first()).toBeHidden();
+  await expect(reports.nth(1)).toBeHidden();
   await page.evaluate(() => { document.documentElement.dataset.app = "android"; });
   await expect(reports.first()).toBeVisible();
   const followUpBox = page.locator("#chapter-follow-up");

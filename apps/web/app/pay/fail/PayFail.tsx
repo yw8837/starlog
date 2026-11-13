@@ -26,7 +26,9 @@ export function PayFail({ code, message, orderId }: { code: string; message: str
       <div role="alert" className={s.panel}>
         <p className={s.title}>{cancelled ? "결제를 취소했어요" : "결제를 마치지 못했어요"}</p>
         {!cancelled && message ? <p>{message.slice(0, 120)}</p> : null}
-        <p>{cancelled ? "청구된 금액은 없어요." : "청구된 금액은 없어요. 다른 카드나 간편결제로 다시 해 보세요."}</p>
+        <p>
+          청구된 금액은 없어요.{cancelled ? null : <span className="web-only"> 다른 카드나 간편결제로 다시 해 보세요.</span>}
+        </p>
         <Button href={back} block>
           풀이로 돌아가기
         </Button>

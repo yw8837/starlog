@@ -16,7 +16,7 @@
 | 정부 앱 | 아니요 | 정부 서비스 아님 (answer/9514050) |
 | 금융 기능 | "My app doesn't provide any financial features" (금융 기능 없음) | 인앱 구매는 금융 기능 목록에 없다 (answer/13849271) |
 | 건강 앱 | 건강 기능 없음 | 의료·건강 기능 없음. 풀이는 건강 조언을 하지 않는다(화면 문구 확인 필요 시 `apps/web/lib/ai/prompts`의 금지 규칙) (answer/14738291) |
-| AI 생성 콘텐츠 | 해당(설문에 있으면 예). 앱 안 신고 기능 있음 | "must contain in-app user reporting or flagging features" (answer/13985936); 신고 컨트롤이 붙은 화면 15곳은 `review-evidence.md` |
+| AI 생성 콘텐츠 | 해당(설문에 있으면 예). 앱 안 신고 기능 있음 | "must contain in-app user reporting or flagging features" (answer/13985936); 신고 컨트롤이 붙은 곳(코드 14곳)은 `review-evidence.md` |
 | 뉴스 앱, COVID-19 추적 앱 등 | 아니요 | 해당 없음 |
 
 ## 앱 가격·배포

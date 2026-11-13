@@ -31,7 +31,7 @@ Normal users sign in with Kakao or Google. For review, use the ID/password login
 3. Free content without sign-in: Home > "한 장 뽑기" (one-card reading). A banner ad appears under the result.
 4. Paid content: Home > "타로 보기" > answer the questions and pick three cards > on the result tap "2,900원 결제하고 보기" >
    tick "위 내용을 확인했어요" > "Google Play로 2,900원 결제하기". The Google Play purchase sheet opens. After the purchase the full
-   reading opens automatically. Purchases are one-time consumable products (ids: tarot, saju, tarot_deep, match, newyear_2027).
+   reading opens automatically. Purchases are one-time consumable products (ids: tarot, saju). The premium products (tarot_deep, match, newyear_2027) use the same purchase flow but are not open to the reviewer account.
 5. Refund of an unopened purchase: "내 정보" > "결제한 풀이" > "환불받기".
 6. Report AI-generated text: the "신고" (Report) link under every reading.
 7. Delete the account: "내 정보" > "회원 탈퇴" (Delete account).
