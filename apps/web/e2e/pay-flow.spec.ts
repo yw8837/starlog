@@ -98,6 +98,19 @@ test("owner mode: log in (no signup gift), pay for a tarot reading that takes fo
   await field.press("Enter");
   await answered;
   await expect(followUp).toContainText("2번 남았어요", { timeout: 30_000 });
+  // The Starlog app (<html data-app>, lib/app/mode.ts): 신고 on the reading and on the follow-up answers; the public web shows neither.
+  const reports = page.locator("button", { hasText: /^신고$/ });
+  await expect(reports).toHaveCount(2);
+  await expect(reports.first()).toBeHidden();
+  await page.evaluate(() => { document.documentElement.dataset.app = "android"; });
+  await expect(reports.first()).toBeVisible();
+  const followUpBox = page.locator("#chapter-follow-up");
+  await followUpBox.getByRole("button", { name: "신고", exact: true }).click();
+  await followUpBox.getByRole("radio").first().check();
+  const reported = page.waitForResponse((r) => r.url().endsWith("/api/readings/report"));
+  await followUpBox.getByRole("form").getByRole("button", { name: "보내기" }).click();
+  expect(await (await reported).request().postDataJSON()).toMatchObject({ kind: "followup" });
+  await expect(followUpBox.getByText("신고가 접수됐어요. 확인하고 조치할게요.")).toBeVisible();
 
   // 4. A saju purchase left unopened shows in 내 정보 and refunds in full.
   await page.goto("/pay/checkout?product=saju&returnTo=%2Fme");

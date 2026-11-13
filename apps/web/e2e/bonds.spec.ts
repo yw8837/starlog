@@ -200,6 +200,13 @@ test.describe("별자리 인연 · owner", { tag: "@login" }, () => {
     await expect(page.getByText("1/4", { exact: false }).first()).toBeVisible();
     await expect(page.getByRole("list").filter({ hasText: "하늘" }).first()).toBeVisible();
     await expect(page.getByText("새 별", { exact: true }).first()).toBeVisible();
+    // The Starlog app (<html data-app>): 신고 under 오늘의 인연 카드, whose line the model writes; hidden on the public web.
+    await page.getByRole("button", { name: "오늘의 인연 카드" }).first().click();
+    const report = page.locator("button", { hasText: /^신고$/ });
+    await expect(report).toHaveCount(1, { timeout: 30_000 });
+    await expect(report).toBeHidden();
+    await page.evaluate(() => { document.documentElement.dataset.app = "android"; });
+    await expect(report).toBeVisible();
     // Spec §3 홈 화면 자리: the home badge says `양자리 1/4 · N점` while filling (the owner's own screen).
     await page.goto("/", { timeout: 120_000 });
     await expect(page.getByText(`양자리 1/4 · ${score}점`)).toBeVisible();
