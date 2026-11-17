@@ -260,7 +260,7 @@ describe("policy pages", () => {
         expect(google!.querySelector('a[href="https://policies.google.com/privacy"]')?.textContent).toBe("policies.google.com/privacy");
         const processors = container.querySelector("#processors")?.textContent ?? "";
         expect(processors).toContain("Anthropic과 Cloudflare로의 이전은 이용자가 요청한 풀이를 만들고 서비스를 제공하는 데 필요한 처리 위탁과 보관이며");
-        expect(processors).toContain("Google LLC로의 이전은 방문 통계를 허용한 분의 동의에 따른 것으로");
+        expect(processors).toContain("Google LLC(방문 통계)로의 이전은 방문 통계를 허용한 분의 동의에 따른 것이고, Google LLC(Google Play 결제)와 Google LLC(AdMob)로의 이전 근거는 각 카드에 적었습니다.");
         expect(processors).not.toContain("이 이전은 이용자가 요청한");
       });
     });

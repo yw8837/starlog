@@ -145,6 +145,8 @@ const processors = (premium: boolean, ga: boolean, synced: boolean): readonly Pr
       ["처리 항목", "결제와 환불에 필요한 구매 식별값(구매 토큰, Google 주문번호), 계정을 가린 값"],
       ["이전 시기와 방법", "안드로이드 앱에서 결제할 때 앱이 계정을 가린 값을 Google Play에 함께 보내고, 결제를 확인하거나 환불할 때 운영자의 서버가 구매 토큰으로 Google Play에 요청하며, 모두 암호화된 연결(HTTPS)로 전송"],
       ["보유·이용 기간", "Google의 개인정보처리방침과 관련 법령에서 정한 기간 동안 Google이 보관합니다."],
+      // The purchase leaves the device only when the user pays in the app (BillingManager.kt); no article number: not checked (owner 2026-11-18).
+      ["이전 근거", "이용자가 앱에서 요청한 결제와 환불을 처리하는 데 필요한 처리 위탁이며, 그 내용을 이 방침으로 알려 드립니다."],
       ["거부 방법과 거부 시 불이익", "안드로이드 앱에서 결제하지 않으면 이전되지 않습니다. 거부하시면 앱에서는 유료 풀이를 결제할 수 없습니다."],
       ["개인정보 문의", <a href="https://policies.google.com/privacy">policies.google.com/privacy</a>],
     ],
@@ -160,6 +162,8 @@ const processors = (premium: boolean, ga: boolean, synced: boolean): readonly Pr
         "안드로이드 앱이 무료 결과 화면에서 광고를 불러오고 보여 주는 동안 Google 모바일 광고 SDK가 기기에서 Google로 암호화된 연결(TLS)로 바로 보냅니다. Google은 이때 앱 실행·탭 같은 상호작용, 앱과 SDK의 성능 정보, 앱 세트 ID, 기기에 로그인한 계정과 관련된 식별자도 수집하며, IP 주소로 기기의 대략적 위치를 추정할 수 있다고 밝히고 있습니다.",
       ],
       ["보유·이용 기간", "Google의 개인정보처리방침에서 정한 기간 동안 Google이 보관합니다."],
+      // As the app behaves (owner 2026-11-18): Google's consent form shows only where UMP requires it, before the first ad (AdsController.kt start()).
+      ["이전 근거", "앱의 무료 결과 화면에 광고를 싣기 위한 처리 위탁이며, 그 내용을 이 방침으로 알려 드립니다. 유럽경제지역·영국·스위스에서는 광고가 처음 나오기 전에 뜨는 동의 창에서 고른 내용에 따릅니다."],
       [
         "거부 방법과 거부 시 불이익",
         "맞춤 광고는 기기의 설정 > Google > 광고에서 끌 수 있고, 유럽경제지역·영국·스위스에서는 앱의 내 정보 > 광고 개인정보 설정에서 동의를 바꿀 수 있습니다. 꺼도 앱 이용에 제한은 없으며, 광고 수는 줄지 않고 관심사와 관계없는 광고가 보입니다.",
@@ -540,7 +544,7 @@ export default function PrivacyPage() {
         <ul className={s.list}>
           <li>
             {ga
-              ? "Anthropic과 Cloudflare로의 이전은 이용자가 요청한 풀이를 만들고 서비스를 제공하는 데 필요한 처리 위탁과 보관이며, 「개인정보 보호법」에 따라 이 방침으로 알려 드립니다. Google LLC로의 이전은 방문 통계를 허용한 분의 동의에 따른 것으로, 허용한 경우에만 이뤄집니다."
+              ? "Anthropic과 Cloudflare로의 이전은 이용자가 요청한 풀이를 만들고 서비스를 제공하는 데 필요한 처리 위탁과 보관이며, 「개인정보 보호법」에 따라 이 방침으로 알려 드립니다. Google LLC(방문 통계)로의 이전은 방문 통계를 허용한 분의 동의에 따른 것이고, Google LLC(Google Play 결제)와 Google LLC(AdMob)로의 이전 근거는 각 카드에 적었습니다."
               : "이 이전은 이용자가 요청한 풀이를 만들고 서비스를 제공하는 데 필요한 처리 위탁과 보관이며, 「개인정보 보호법」에 따라 이 방침으로 알려 드립니다."}
           </li>
           <li>무료 풀이를 요청하면 자동화된 접근을 막기 위해 Cloudflare Turnstile이 브라우저 신호(브라우저·기기 정보와 IP 주소)로 사람이 보낸 요청인지 확인할 수 있습니다.</li>

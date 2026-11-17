@@ -52,6 +52,8 @@ export default function AccountDeletionPage() {
           <li>‘탈퇴할까요?’ 확인창에서 지워지는 것과 남는 것을 확인합니다.</li>
           <li>로그인한 계정으로 한 번 더 확인하고 탈퇴합니다.</li>
         </ol>
+        {/* Owner 2026-11-18: the app and the web keep one account per Kakao or Google login (lib/account/google.ts googleUserKey, the native route uses the same). */}
+        <p>안드로이드 앱을 지웠더라도 스타로그 웹사이트에서 같은 계정으로 로그인하면 같은 방법으로 탈퇴할 수 있습니다.</p>
         <p>
           탈퇴하면 열지 않은 결제 풀이는 전액 환불합니다. 다만 풀이를 받던 중에 이용자가 화면을 닫거나 연결이 끊겨 이용약관 제7조에 따라 환불 대상이 아닌 결제
           풀이는 환불하지 않으며, 탈퇴와 함께 더 이상 열 수 없습니다.

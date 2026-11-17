@@ -41,6 +41,7 @@ describe("account deletion page", () => {
     const { container } = render(<AccountDeletionPage />);
     const section = container.querySelector("#in-app")?.textContent ?? "";
     expect(section).toContain("회원은 언제든지 내 정보에서 탈퇴할 수 있습니다.");
+    expect(section).toContain("안드로이드 앱을 지웠더라도 스타로그 웹사이트에서 같은 계정으로 로그인하면 같은 방법으로 탈퇴할 수 있습니다.");
     expect(section).toContain("로그인한 상태에서 내 정보 > 회원 탈퇴를 누릅니다.");
     expect(section).toContain("‘탈퇴할까요?’ 확인창에서 지워지는 것과 남는 것을 확인합니다.");
     expect(section).toContain("탈퇴하면 열지 않은 결제 풀이는 전액 환불합니다.");

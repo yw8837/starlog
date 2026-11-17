@@ -207,7 +207,7 @@ describe("a friend logs in to join 별자리 인연, in the policies", () => {
  * changed, dated by lib/legal.ts APP_REVISION_DATE, on top for 30 days, as with LOGIN_RULE_DATE; the 시행일 shown stays.
  */
 describe("the Android app, in the policies", () => {
-  const APP_NOTICE = "2026년 11월 24일부터 바뀌는 내용 (2026년 11월 13일 공지)";
+  const APP_NOTICE = "2026년 11월 25일부터 바뀌는 내용 (2026년 11월 13일 공지)";
   const appNotice = (container: HTMLElement, title = APP_NOTICE) => [...container.querySelectorAll("aside")].find((aside) => aside.querySelector("h2")?.textContent === title);
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
@@ -231,7 +231,7 @@ describe("the Android app, in the policies", () => {
     ]);
     expect(container.textContent).toContain("이 약관은 2026년 10월 31일부터 시행합니다.");
     cleanup();
-    vi.setSystemTime(Date.parse("2026-12-24T00:00:00+09:00"));
+    vi.setSystemTime(Date.parse("2026-12-25T00:00:00+09:00"));
     container = render(<TermsPage />).container;
     expect(appNotice(container, `${APP_NOTICE} · 안드로이드 앱`)).toBeUndefined();
     expect(container.querySelector("#paid")?.textContent).toContain("안드로이드 앱에서는 Google Play 결제로 할 수 있습니다.");
@@ -249,7 +249,7 @@ describe("the Android app, in the policies", () => {
     );
     expect(container.querySelector("time")?.getAttribute("datetime")).toBe("2026-10-20");
     cleanup();
-    vi.setSystemTime(Date.parse("2026-12-24T00:00:00+09:00"));
+    vi.setSystemTime(Date.parse("2026-12-25T00:00:00+09:00"));
     container = render(<RefundPage />).container;
     expect(appNotice(container)).toBeUndefined();
   });
@@ -267,6 +267,7 @@ describe("the Android app, in the policies", () => {
       "처리 항목": "결제와 환불에 필요한 구매 식별값(구매 토큰, Google 주문번호), 계정을 가린 값",
       "이전 시기와 방법": "안드로이드 앱에서 결제할 때 앱이 계정을 가린 값을 Google Play에 함께 보내고, 결제를 확인하거나 환불할 때 운영자의 서버가 구매 토큰으로 Google Play에 요청하며, 모두 암호화된 연결(HTTPS)로 전송",
       "보유·이용 기간": "Google의 개인정보처리방침과 관련 법령에서 정한 기간 동안 Google이 보관합니다.",
+      "이전 근거": "이용자가 앱에서 요청한 결제와 환불을 처리하는 데 필요한 처리 위탁이며, 그 내용을 이 방침으로 알려 드립니다.",
       "거부 방법과 거부 시 불이익": "안드로이드 앱에서 결제하지 않으면 이전되지 않습니다. 거부하시면 앱에서는 유료 풀이를 결제할 수 없습니다.",
       "개인정보 문의": "policies.google.com/privacy",
     });
@@ -277,6 +278,7 @@ describe("the Android app, in the policies", () => {
       "이전 시기와 방법":
         "안드로이드 앱이 무료 결과 화면에서 광고를 불러오고 보여 주는 동안 Google 모바일 광고 SDK가 기기에서 Google로 암호화된 연결(TLS)로 바로 보냅니다. Google은 이때 앱 실행·탭 같은 상호작용, 앱과 SDK의 성능 정보, 앱 세트 ID, 기기에 로그인한 계정과 관련된 식별자도 수집하며, IP 주소로 기기의 대략적 위치를 추정할 수 있다고 밝히고 있습니다.",
       "보유·이용 기간": "Google의 개인정보처리방침에서 정한 기간 동안 Google이 보관합니다.",
+      "이전 근거": "앱의 무료 결과 화면에 광고를 싣기 위한 처리 위탁이며, 그 내용을 이 방침으로 알려 드립니다. 유럽경제지역·영국·스위스에서는 광고가 처음 나오기 전에 뜨는 동의 창에서 고른 내용에 따릅니다.",
       "거부 방법과 거부 시 불이익":
         "맞춤 광고는 기기의 설정 > Google > 광고에서 끌 수 있고, 유럽경제지역·영국·스위스에서는 앱의 내 정보 > 광고 개인정보 설정에서 동의를 바꿀 수 있습니다. 꺼도 앱 이용에 제한은 없으며, 광고 수는 줄지 않고 관심사와 관계없는 광고가 보입니다.",
       "개인정보 문의": "policies.google.com/privacy",
@@ -295,7 +297,7 @@ describe("the Android app, in the policies", () => {
     );
     expect(container.querySelector("time")?.getAttribute("datetime")).toBe("2026-10-31");
     cleanup();
-    vi.setSystemTime(Date.parse("2026-12-24T00:00:00+09:00"));
+    vi.setSystemTime(Date.parse("2026-12-25T00:00:00+09:00"));
     container = render(<PrivacyPage />).container;
     expect(appNotice(container)).toBeUndefined();
     expect(container.querySelector('[aria-label="Google LLC (AdMob)"]')).not.toBeNull();

@@ -119,12 +119,12 @@ export const bondLoginNoticeShown = (now: number = Date.now()): boolean => now <
  * The Android app (owner 2026-11-13, apps/android/store/wording-proposals.md items 1–15 as written): Google Play 결제와 환불 in
  * the terms and the refund policy, how a set paid with Google Play has its part refunded (문의), and in the privacy policy Google
  * Play and AdMob as processors, the app's ads and 풀이 신고 (kept 1 year). Said on top of the three from APP_REVISION_NOTICED_ON
- * (the deploy) and in force from APP_REVISION_DATE, the 7 days the terms promise (owner 2026-11-17 "11월 24일로 바꾸기": the day this goes live + 7):
+ * (the deploy) and in force from APP_REVISION_DATE, the 7 days the terms promise (owner 2026-11-18 "11월 25일로 바꾸기": the day its last wording goes live + 7):
  * 바뀌는 내용 before that day, 바뀐 내용 from it, for 30 days after it. The app itself is not in the store before that day.
  * The 시행일 line each document shows stays.
  */
 export const APP_REVISION_NOTICED_ON = "2026-11-13";
-export const APP_REVISION_DATE = "2026-11-24";
+export const APP_REVISION_DATE = "2026-11-25";
 const APP_REVISION_AT = Date.parse(`${APP_REVISION_DATE}T00:00:00+09:00`);
 const APP_REVISION_NOTICE_UNTIL_AT = APP_REVISION_AT + 30 * 24 * 60 * 60 * 1000;
 
