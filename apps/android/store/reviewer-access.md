@@ -35,7 +35,7 @@ Normal users sign in with Kakao or Google. For review, use the ID/password login
 5. Refund of an unopened purchase: "내 정보" > "결제한 풀이" > "환불받기".
 6. Report AI-generated text: the "신고" (Report) link under every reading.
 7. Delete the account: "내 정보" > "회원 탈퇴" (Delete account).
-Readings are written in Korean. Guide articles open in the external browser on purpose.
+Readings are written in Korean. The app has no guide tab. Links that lead to our guide site or other sites open in the external browser on purpose.
 ```
 
 ## 확인 필요

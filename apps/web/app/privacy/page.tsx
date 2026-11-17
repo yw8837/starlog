@@ -263,7 +263,7 @@ export default function PrivacyPage() {
           <p>전에 방문 통계만 허용하셨다면 한 번 더 여쭤봐요. 거부해도 이용에 제한은 없어요.</p>
         </aside>
       ) : null}
-      {/* The Android app (owner 2026-11-13): in force from this deploy, said on top for 30 days (lib/legal.ts APP_REVISION_DATE). */}
+      {/* The Android app (owner 2026-11-13): announced from the deploy, in force from APP_REVISION_DATE, said on top until 30 days after it (lib/legal.ts). */}
       {appRevisionNoticeShown(now) ? (
         <aside className={s.note} aria-labelledby="app-revision-privacy-title">
           <h2 id="app-revision-privacy-title" className={s.noteTitle}>{appRevisionTitle(now)}</h2>

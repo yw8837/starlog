@@ -62,7 +62,7 @@ describe("account deletion page", () => {
     const { container } = render(<AccountDeletionPage />);
     const deleted = container.querySelector("#deleted")?.textContent ?? "";
     expect(deleted).toContain("계정에 보관한 풀이(로그인한 상태로 연 풀이와 계정으로 옮긴 풀이)는 지체 없이 파기합니다.");
-    expect(deleted).toContain("그 계정의 풀이 후기와 도움돼요·신고 기록은 지체 없이 파기합니다.");
+    expect(deleted).toContain("그 계정의 풀이 후기와, 후기에 남긴 도움돼요·신고 기록은 지체 없이 파기합니다.");
     const kept = container.querySelector("#kept")?.textContent ?? "";
     expect(kept).toContain("대금결제 및 재화 등의 공급에 관한 기록은 5년, 소비자의 불만 또는 분쟁처리에 관한 기록은 3년 동안 보관합니다.");
     expect(kept).toContain("풀이 신고(안드로이드 앱) 기록은 계정과 메모를 지운 채 1년 동안 보관합니다.");

@@ -19,17 +19,18 @@
 
 ## 2. 데이터 유형별 답
 "공유"는 Google 정의상 제3자에게 넘기는 것이다. 서비스 제공자(우리 대신 처리하는 곳)에게 보내는 것과 사용자가 직접 시작한 이전은
-공유에서 빠진다(같은 도움말의 예외 조항: 입력 화면에서 다시 확인할 것). 아래 "공유"는 그 예외를 적용하기 전의 사실을 적었다.
+공유에서 빠진다(같은 도움말의 예외 조항). 아래 "공유"는 그 예외를 적용한 답이다: AI 처리 업체로 가는 것은 공유가 아니고, AdMob 유형 4개만 공유다.
+양식에 실제로 넣은 값은 4절에 있다(이 표의 필수/선택·목적과 다른 칸은 4절이 맞다).
 
 | 유형 (양식 이름) | 수집 | 공유 | 필수/선택 | 목적 | 무엇을, 근거 |
 |---|---|---|---|---|---|
 | 개인 정보 > 사용자 ID | 예 | 아니요 | 필수(로그인 시) | 앱 기능, 계정 관리 | Kakao 회원번호·Google sub를 되돌릴 수 없는 값으로만 저장 `web/lib/account/secrets.ts:81-84`, `web/lib/account/google.ts:161-164`; Play 결제에 계정을 가린 값 `web/lib/pay/play.ts:46` |
 | 개인 정보 > 이름 | 예 | 아니요 | 필수(Kakao 로그인 시) | 앱 기능, 계정 관리 | Kakao 닉네임만 `web/lib/account/kakao.ts:94-96`. 실명은 받지 않음 |
-| 개인 정보 > 이메일 주소 | 아니요 | — | — | — | 요청·저장 코드 없음: Kakao scope 없음 `web/lib/account/kakao.ts:43-51`, Google 웹은 `scope=openid` `web/lib/account/google.ts:73`. **미확인**: 앱의 Google 계정 선택창이 주는 토큰에 이메일이 실리는지(서버는 `sub`만 사용 `web/lib/account/googleIdToken.ts`). 실계정으로 토큰을 한 번 확인한 뒤 확정 |
-| 개인 정보 > 기타 정보 | 예 | 예(AI 처리 업체) | 선택(사주를 볼 때) | 앱 기능 | 생년월일·시·성별·양음력·출생 지역 `web/lib/api/sajuRequest.ts:27-30`; 풀이 생성에 계산값을 보냄 `web/app/privacy/page.tsx:95`, `web/lib/ai/prompts/saju.ts:509-514`; 로그인 풀이만 암호화 저장 `web/lib/readings/store.ts:12-14` |
+| 개인 정보 > 이메일 주소 | 예(임시 처리) | 아니요 | 필수(Google 로그인 시) | 계정 관리 | 2026-11-17 사장님 결정 "수집함 + 일시 처리로 답하기". 서버는 Google 토큰에서 `sub`만 쓰고 토큰을 저장·기록하지 않는다 `web/lib/account/googleIdToken.ts`. 도움말: "User data transmitted off device that is processed ephemerally needs to be included in your form response, but ... will not be disclosed" (answer/10787469). 요청·저장 코드는 없음: Kakao scope 없음 `web/lib/account/kakao.ts:43-51`, Google 웹은 `scope=openid` `web/lib/account/google.ts:73`. **미확인**: 앱의 Google 계정 선택창이 주는 토큰에 이메일이 실제로 실리는지(실계정 필요) |
+| 개인 정보 > 기타 정보 | 예 | 아니요(AI 처리 업체는 서비스 제공자 예외) | 선택(사주를 볼 때) | 앱 기능 | 생년월일·시·성별·양음력·출생 지역 `web/lib/api/sajuRequest.ts:27-30`; 풀이 생성에 계산값을 보냄 `web/app/privacy/page.tsx:95`, `web/lib/ai/prompts/saju.ts:509-514`; 로그인 풀이만 암호화 저장 `web/lib/readings/store.ts:12-14` |
 | 금융 정보 > 구매 내역 | 예 | 아니요 | 필수(결제 시) | 앱 기능, 사기 방지·보안·규정 준수 | 주문·결제·Play 구매 식별값 `web/migrations/0002_accounts_payments.sql:43-73`, `web/migrations/0024_play_payments.sql`; 5년 보관 `web/lib/pay/maintenance.ts:20` |
 | 금융 정보 > 사용자 결제 정보 | 아니요 | — | — | — | 카드 정보는 Google Play가 처리하고 앱·서버는 받지 않음 `android/.../BillingManager.kt` (토큰과 주문번호만) |
-| 메시지 > 기타 인앱 메시지 | 예 | 예(AI 처리 업체) | 선택 | 앱 기능 | 타로 질문·메모·이어서 묻기 `web/lib/ai/prompts/tarot.ts:18-34`; 로그인 풀이만 암호화 저장 |
+| 메시지 > 기타 인앱 메시지 | 예 | 아니요(AI 처리 업체는 서비스 제공자 예외) | 선택 | 앱 기능 | 타로 질문·메모·이어서 묻기 `web/lib/ai/prompts/tarot.ts:18-34`; 로그인 풀이만 암호화 저장 |
 | 앱 활동 > 기타 사용자 생성 콘텐츠 | 예 | 아니요 | 선택 | 앱 기능 | 후기(별점·본문, 공개) `web/migrations/0005_reviews.sql:5-18`; 별자리 인연 닉네임·메시지 `web/migrations/0001_bonds.sql`; 풀이 신고 메모(최대 500자) `web/lib/readings/report.ts:27`, `web/app/api/readings/report/route.ts:35-38` |
 | 앱 활동 > 앱 상호작용 | 예 | 예(광고) | 선택(통계) / 필수(광고 SDK) | 분석, 광고 또는 마케팅 | 동의한 사람의 페이지 조회(GA4) `web/lib/analytics.ts:18,43-49`, `web/components/seo/GoogleAnalytics.tsx:80`; AdMob "User product interactions" |
 | 앱 정보 및 성능 > 진단 | 예 | 예(광고) | 필수(광고 SDK) | 분석 | AdMob "Diagnostic information"(SDK 자동). 앱 자체 오류 수집 코드는 없음 |
@@ -48,7 +49,7 @@
    줄 번호는 이 커밋 이후 작업 트리 기준): 위탁·국외 이전 카드 Google LLC (Google Play 결제)·(AdMob) `web/app/privacy/page.tsx:137-169`
    (AdMob 카드의 "이전 시기와 방법"에 위 공식 표의 상호작용·진단·앱 세트 ID·계정 관련 식별자·대략적 위치 추정까지 적음), 결제 기록 `:376`,
    풀이 신고(보관 1년) `:400`과 1년 뒤 삭제 `web/lib/pay/maintenance.ts:22,213-219`, 앱 광고 문단 `:571-574`. Play는 방침과 양식이 어긋나면 반려한다.
-2. 앱 Google 로그인 토큰의 이메일 클레임(위 표 "미확인").
+2. 앱 Google 로그인 토큰의 이메일: 양식에는 "수집됨, 임시 처리"로 답했다(2026-11-17 사장님 결정, 위 표). 토큰에 이메일이 실제로 실리는지는 실계정으로 아직 확인하지 못했다.
 3. Meta 픽셀: 픽셀 id가 설정되면 동의한 사람의 방문·결제 금액이 Meta로 간다 `web/lib/metaPixel.ts:8,13`. 지금 배포 스크립트에는 id가 없다
    (`scripts/ops/deploy.sh`). 켜는 날 이 양식의 "앱 상호작용 / 구매 내역 → 공유(광고)"를 고쳐야 한다.
 4. Cloudflare Web Analytics 비컨: 코드 주석에만 있다 `web/next.config.ts:15`. 대시보드에서 켜져 있으면 방침과 이 양식(앱 상호작용, 분석)에 넣는다.
@@ -56,4 +57,24 @@
    (`web/app/account-deletion/page.tsx`). Play 요건: "provide a web link resource where users can request app account deletion … reference the app or
    developer name" (https://support.google.com/googleplay/android-developer/answer/13327111). 앱 이름·운영자, 탈퇴 순서(내 정보 > 회원 탈퇴),
    로그인 없이 요청하는 곳(개인정보 보호책임자 이메일·전화), 지워지는 것·남는 것과 보관 기간을 개인정보처리방침·약관·탈퇴 확인창의 문장 그대로 옮겼고
-   새 약속은 넣지 않았다. 개인정보처리방침 권리 절에 링크 한 줄. **배포 전**: 배포 뒤 주소가 열리는지 확인하고 양식에 넣는다.
+   새 약속은 넣지 않았다. 개인정보처리방침 권리 절에 링크 한 줄. **배포 전**: 양식에는 이미 넣었고 콘솔이 404 경고를 띄운다. 배포 뒤 주소가 열리고 경고가 사라지는지 확인한다.
+
+## 4. Play Console에 실제로 넣은 값 (2026-11-17, 메인 세션이 입력, 임시저장 상태)
+최종 저장은 타겟층을 먼저 답해야 열리고, 타겟층은 로그인 세부정보(심사용 아이디·비밀번호)를 먼저 끝내야 열린다.
+계정 생성 방법: OAuth. 전송 중 암호화: 예. 계정 삭제 URL: https://starlog.yeolmaeapps.kr/account-deletion
+
+| 유형 | 수집/공유 | 저장 여부 | 필수/선택 | 목적 |
+|---|---|---|---|---|
+| 이름 | 수집 | 저장 | 필수 | 앱 기능, 계정 관리 |
+| 사용자 ID | 수집 | 저장 | 필수 | 앱 기능, 계정 관리 |
+| 이메일 주소 | 수집 | 임시 처리 | 필수 | 계정 관리 |
+| 기타 정보 | 수집 | 저장 | 선택 | 앱 기능 |
+| 구매 내역 | 수집 | 저장 | 필수 | 앱 기능, 사기 예방 |
+| 대략적인 위치 | 수집 + 공유 | — | 필수 | 애널리틱스, 광고 |
+| 기타 인앱 메시지 | 수집 | 저장 | 선택 | 앱 기능 |
+| 진단 | 수집 + 공유 | — | 필수 | 애널리틱스 |
+| 앱 상호작용 | 수집 + 공유 | — | 필수 | 애널리틱스, 광고 |
+| 기타 사용자 제작 콘텐츠 | 수집 | 저장 | 선택 | 앱 기능 |
+| 기기 또는 기타 ID | 수집 + 공유 | — | 필수 | 애널리틱스, 광고, 사기 예방 |
+
+"—"는 메인 세션이 전해 준 값에 저장 여부가 없던 칸이다(양식 화면에서 확인).
