@@ -544,7 +544,7 @@ export default function PrivacyPage() {
         <ul className={s.list}>
           <li>
             {ga
-              ? "Anthropic과 Cloudflare로의 이전은 이용자가 요청한 풀이를 만들고 서비스를 제공하는 데 필요한 처리 위탁과 보관이며, 「개인정보 보호법」에 따라 이 방침으로 알려 드립니다. Google LLC(방문 통계)로의 이전은 방문 통계를 허용한 분의 동의에 따른 것이고, Google LLC(Google Play 결제)와 Google LLC(AdMob)로의 이전 근거는 각 카드에 적었습니다."
+              ? "Anthropic과 Cloudflare로의 이전은 이용자가 요청한 풀이를 만들고 서비스를 제공하는 데 필요한 처리 위탁과 보관이며, 「개인정보 보호법」에 따라 이 방침으로 알려 드립니다. Google LLC(방문 통계)로의 이전은 방문 통계를 허용한 분의 동의에 따른 것으로, 허용한 경우에만 이뤄집니다. Google LLC(Google Play 결제)와 Google LLC(AdMob)로의 이전 근거는 각 카드에 적었습니다."
               : "이 이전은 이용자가 요청한 풀이를 만들고 서비스를 제공하는 데 필요한 처리 위탁과 보관이며, 「개인정보 보호법」에 따라 이 방침으로 알려 드립니다."}
           </li>
           <li>무료 풀이를 요청하면 자동화된 접근을 막기 위해 Cloudflare Turnstile이 브라우저 신호(브라우저·기기 정보와 IP 주소)로 사람이 보낸 요청인지 확인할 수 있습니다.</li>
