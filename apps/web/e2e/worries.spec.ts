@@ -100,7 +100,9 @@ test("a saju worry → 생년월일 넣기 → the chart opens on its topic (moc
 test("a worry's page at a phone's width: no side scroll, the start in reach, the other questions folded", async ({ page }, info) => {
   await ownAddress(page, info);
   await page.setViewportSize({ width: 375, height: 812 });
-  await page.goto("/w/job");
+  const response = await page.goto("/w/job");
+  // A saju worry: a build with 주제별 사주 off (the gate's preview) has no such page; the dev run has it.
+  test.skip(response?.status() === 404, "주제별 사주 is off in this build");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("어떤 일이 나랑 맞지?");
   await expect(page.getByText("일하는 방식과 잘 맞는 일의 결을 봐요. 합격 여부나 날짜는 예측하지 않아요.")).toBeVisible();
   await expect(page.getByRole("link", { name: /생년월일 넣기/ })).toHaveAttribute("href", "/saju/new?topic=career");

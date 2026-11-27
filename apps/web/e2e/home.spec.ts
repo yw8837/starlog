@@ -25,7 +25,9 @@ test("home: the one hook, then the 고민 판, the free tests, the tools by name
   const today = main.getByRole("link", { name: /오늘의 한 장/ });
   const birth = main.getByRole("link", { name: /나를 닮은 타로 카드/ });
   await expect(hook).toHaveAttribute("href", "/now");
-  await expect(board.getByRole("link")).toHaveCount(7);
+  // Six worries and 고민 전체 보기; a build with 주제별 사주 off (the gate's preview) hides the three saju ones.
+  await expect(board.getByRole("link", { name: /고민 전체 보기/ })).toBeVisible();
+  expect([4, 7]).toContain(await board.getByRole("link").count());
   await expect(board.getByRole("link").first()).toHaveAttribute("href", "/w/some");
   await expect(board.getByRole("link", { name: /고민 전체 보기/ })).toHaveAttribute("href", "/worries");
   await expect(tarot).toHaveAttribute("href", "/tarot/new");
