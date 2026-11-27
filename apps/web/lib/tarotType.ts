@@ -64,3 +64,29 @@ export function nowShareText({ cardName, reversed, slug }: { cardName: string; r
   const card = `${cardName}${reversed ? "(역)" : ""}`;
   return slug ? `타로로 판정: ${NOW_TYPES[slug].name} · ${card} | ${SITE.nameKo} 지금의 한 장` : `${SITE.nameKo} 지금의 한 장 · ${card}`;
 }
+
+/**
+ * 별명 이어뽑기 (spec 2026-11-26 beyond trend §1): a /now?with= value as one of the 12 slugs, or null (anything else is
+ * ignored). A slug names a nickname, never a person, as a birth card's slug names a card.
+ */
+export function nowWithSlug(value: string | null | undefined): NowTypeSlug | null {
+  return typeof value === "string" && (NOW_TYPE_SLUGS as readonly string[]).includes(value) ? (value as NowTypeSlug) : null;
+}
+
+/** The way to /now that carries a friend's nickname (the shared /s/<id> now-view's 나도 한 장 뽑기). */
+export const nowWithHref = (slug: NowTypeSlug) => `/now?with=${slug}`;
+
+/**
+ * 둘의 별명's one line (§1 문구, from the 모노gpt draft): by whether the two nicknames share their element, then their lean.
+ * Only the cards are teased: no score, no 궁합 verdict, nothing about who the two people are to each other.
+ */
+export const PAIR_LINES = {
+  same: { same: "원소도 방향도 같네. 카드끼리 짰어?", other: "같은 원소인데 화살표가 딴 데 보네." },
+  other: { same: "다른 원소로 와서 같은 쪽에 섰네.", other: "원소도 방향도 제각각. 판 좀 넓힐까?" },
+} as const;
+
+export function pairLine(friend: NowTypeSlug, mine: NowTypeSlug): string {
+  const a = NOW_TYPES[friend];
+  const b = NOW_TYPES[mine];
+  return PAIR_LINES[a.element === b.element ? "same" : "other"][a.lean === b.lean ? "same" : "other"];
+}

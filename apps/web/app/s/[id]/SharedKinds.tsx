@@ -5,10 +5,13 @@ import { SpreadRow, faceUpCard } from "@/components/tarot/SpreadRow";
 import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
 import { RELATION_KO } from "@/lib/ai/prompts/match";
+import { SITE } from "@/lib/config";
 import { NEW_SAJU_HREF, NEW_TAROT_HREF } from "@/lib/freshStart";
 import { PREMIUM, premiumPath } from "@/lib/premium/products";
 import { topicLabel } from "@/lib/sajuTopics";
 import type { SharedNow, SharedPremium, SharedSajuFree, SharedTarotFree } from "@/lib/share/payload";
+import { NOW_TYPES, nowType, nowWithHref } from "@/lib/tarotType";
+import n from "./SharedNow.module.css";
 import t from "../../today/TodayView.module.css";
 import s from "../../chapter/[id]/ChapterView.module.css";
 import f from "../../tarot/result/FreeResult.module.css";
@@ -38,6 +41,9 @@ function TryOwn({ title, text, children }: { title: string; text: string; childr
 /** A shared 지금의 한 장 (owner 2026-10-23): the line as the title, the card in its design, why it says so; then one's own draw. */
 export function SharedNowView({ share }: { share: SharedNow }) {
   const name = sideName(share.card);
+  // 별명 이어뽑기 (spec 2026-11-26 beyond trend §1): a share that showed 타로로's nickname shows it large here, with 나도 한 장
+  // 뽑기 carrying its slug (one of 12, never a person) to /now, where the two nicknames meet. Nothing goes back to the friend.
+  const slug = share.nick && SITE.features.beyond.handoff ? nowType(share.card.cardId, share.card.orientation) : null;
   return (
     <article className={t.opened} aria-labelledby="shared-now-title">
       <header className={s.head}>
@@ -47,6 +53,18 @@ export function SharedNowView({ share }: { share: SharedNow }) {
         </h1>
         <p className={s.question}>친구가 마음속 고민에 뽑은 카드가 건넨 한 문장이에요. 적은 고민은 공유되지 않아요.</p>
       </header>
+      {slug ? (
+        <section className={n.nick} aria-labelledby="shared-nick-title">
+          <p id="shared-nick-title" className={n.nickLabel}>
+            친구가 받은 별명
+          </p>
+          <p className={n.nickName}>{NOW_TYPES[slug].name}</p>
+          <Button href={nowWithHref(slug)} block trailing="→">
+            나도 한 장 뽑기
+          </Button>
+          <p className={n.nickNote}>로그인 없이 무료. 친구한테 내 결과가 가지는 않아요.</p>
+        </section>
+      ) : null}
       <div className={t.cardBlock}>
         <TarotCard cardId={share.card.cardId} orientation={share.card.orientation} faceUp size="md" highlight className={t.card} label={name} deck={share.deck} />
         <p className={t.cardName}>{name}</p>
@@ -55,7 +73,7 @@ export function SharedNowView({ share }: { share: SharedNow }) {
         <p className={t.prose}>{share.why}</p>
       </Paper>
       <TryOwn title="나도 한 장 뽑아 보기" text="고민 하나를 떠올리고 78장 가운데 끌리는 한 장을 골라 봐요. 언제나 무료예요.">
-        <Button href="/now" block trailing="→">
+        <Button href={slug ? nowWithHref(slug) : "/now"} block trailing="→">
           나도 한 장 뽑아 보기
         </Button>
         <Button href={NEW_TAROT_HREF} variant="secondary" block>

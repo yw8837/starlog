@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { PAIR_LINES } from "@/lib/tarotType";
 import { assertVoice, voiceProblems } from "./banned";
 
 /**
@@ -128,6 +129,22 @@ const DECK: readonly string[] = [
 
 /** S18 names the login providers: the one place the exception covers (spec 2.4). */
 const LOGIN_NOTICE = "별이 되려면 마지막에 카카오나 Google 로그인이 필요해요";
+
+/**
+ * 유행 다음 세 가지 (spec 2026-11-26 beyond trend §1, §3): 별명 이어뽑기's fixed copy and its four lines (from the code), the
+ * /now button and 이어 읽기's notice. Only the cards are teased; no relation between the two people is assumed.
+ */
+const BEYOND: readonly string[] = [
+  "친구가 받은 별명", "나도 한 장 뽑기", "로그인 없이 무료. 친구한테 내 결과가 가지는 않아요.", "둘의 별명", "친구", "나", "내 별명 보내기",
+  ...Object.values(PAIR_LINES).flatMap((byLean) => Object.values(byLean)),
+  "이 카드로 이어 읽기 · 타로 3장", "아까 뽑은 카드가 첫 자리에 놓여요", "나머지 두 장만 더 뽑으면 돼요.", "새로 세 장 뽑기",
+];
+
+describe("the beyond trend copy (spec 2026-11-26 §1, §3) passes as written", () => {
+  it.each(BEYOND)("%s", (text) => {
+    expect(voiceProblems(text)).toEqual([]);
+  });
+});
 
 describe("the copy deck (spec 6절) passes as written", () => {
   it.each(DECK)("%s", (text) => {

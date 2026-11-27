@@ -3,7 +3,8 @@
 import { useState, type ReactNode } from "react";
 import { Feedback } from "@/components/tarot/Feedback";
 import { FollowUp, type AskResult } from "@/components/tarot/FollowUp";
-import { ReadingArticle, type ReadingBody } from "@/components/tarot/ReadingArticle";
+import { ReadingArticle, tarotJumpItems, type ReadingBody } from "@/components/tarot/ReadingArticle";
+import { ReadingJump } from "@/components/tarot/ReadingJump";
 import { ReadingLayout } from "@/components/tarot/ReadingLayout";
 import { PrintFoot, PrintHead, SavePdfButton, type KeptReading } from "@/components/share/SavePdfButton";
 import { ShareResultButton, type ShareActions } from "@/components/share/ShareResultButton";
@@ -90,6 +91,8 @@ export function ChapterView({ eyebrow, question, cards, reading, followUp, keepO
       >
         {checkin}
         <ChapterContents followUp={Boolean(followUp)} />
+        {/* 골라 읽기 (spec 2026-11-26 beyond trend §2): under the spread, straight to a position, 앞으로 or 할 일. */}
+        {SITE.features.beyond.jump ? <ReadingJump items={tarotJumpItems(reading)} /> : null}
         <div id="chapter-reading" className={s.anchor}>
           <ReadingArticle paid={reading} />
           {readingId !== undefined ? <ReportReading kind="tarot" readingId={readingId} /> : null}

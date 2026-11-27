@@ -493,6 +493,70 @@
   line-height: 1.5;
 }
 
+/* 둘의 별명 (spec 2026-11-26 beyond trend §1): the two nicknames side by side under 타로로 판정, on the same glass. */
+.pair {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--glass-line);
+  border-radius: 18px;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  animation: rise 600ms 300ms ease-out both;
+}
+
+.pairHead {
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.pairRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.pairSide {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+}
+
+.pairWho {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
+.pairName {
+  color: var(--ink);
+  font-family: var(--font-display), serif;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.35;
+  word-break: keep-all;
+}
+
+.pairLine {
+  margin-top: 10px;
+  color: var(--ink);
+  font-size: var(--fs-body);
+  line-height: 1.6;
+  word-break: keep-all;
+}
+
+.pairShare {
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+}
+
 /* A heavy worry: the card's facts only, quietly (spec 2.5). */
 .factsOnly {
   margin-top: 18px;
@@ -514,6 +578,23 @@
   display: grid;
   gap: 10px;
   margin-top: 24px;
+}
+
+/* 고민 전체 보기 under the two actions (spec 2026-11-26 worry catalog §12.4): a quiet text link, never a third button. */
+.worries {
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.worries:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 /* 공유하기 under the two actions, centred like them (owner 2026-10-23). */

@@ -17,6 +17,11 @@ export const DrawBody = z.object({
   templateId: z.enum(DRAW_TEMPLATES),
   // The template fixes the exact count (pickCards throws → 400); 10 is the largest spread.
   picks: z.array(z.number().int().min(0).max(77)).min(1).max(10),
+  /**
+   * 이어 읽기 (spec 2026-11-26 beyond trend §3): /now's card for the first position of a standard three-card spread; the
+   * picks then deal the other two (lib/security/drawToken.ts issueDraw: an unknown card or another spread throws → 400).
+   */
+  keep: z.object({ cardId: z.string().min(1).max(40), orientation: z.enum(["upright", "reversed"]) }).optional(),
 });
 
 /** Free text the user typed under a chip (question builder C4): trimmed, at most 30 characters. */

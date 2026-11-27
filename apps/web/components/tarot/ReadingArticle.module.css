@@ -3,6 +3,12 @@
   gap: 14px;
 }
 
+/* 골라 읽기 (spec 2026-11-26 beyond trend §2): a jump stops a little below the top edge, as the chapter's own anchors (no
+   header stays on top of the reading on any screen size). */
+.article > [id] {
+  scroll-margin-top: 16px;
+}
+
 /* Verdict sits on the sky, above the paper sections. */
 .verdict {
   padding: 18px 20px 20px;

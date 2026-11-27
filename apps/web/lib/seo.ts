@@ -8,6 +8,7 @@ import { INFO_PAGES } from "./infoPages";
 import { KEYWORD_PATH } from "./keyword2027";
 import { OG_ALT } from "./og";
 import { PREMIUM_IDS, premiumPath } from "./premium/products";
+import { WORRIES_PATH, visibleWorries, worryPath } from "./worries";
 
 /**
  * Every not-found state has this title and stays out of search: app/not-found.tsx, and each page
@@ -135,7 +136,7 @@ const PAGE_UPDATED: Readonly<Record<string, string>> = {
   "/evidence": "2026-10-23", // app/evidence/page.tsx, lib/evidence.ts, content/evidence.json and the KB sources
   "/help": "2026-10-27", // lib/helpGuide.ts
   "/faq": "2026-10-27", // lib/faq.ts
-  "/pricing": "2026-10-27", // app/pricing, lib/pricing.ts, and 오픈 기념 무료's wording in lib/helpGuide.ts
+  "/pricing": "2026-11-26", // app/pricing, lib/pricing.ts, and 오픈 기념 무료's wording in lib/helpGuide.ts; 고민으로 고르기 (lib/worries.ts)
 };
 
 const latest = (dates: ReadonlyArray<string | undefined>): string | undefined =>
@@ -183,6 +184,16 @@ export function sitemapEntries({ premium = false, now = Date.now() }: { premium?
     { path: "/saju/grade/how", changeFrequency: "monthly", priority: 0.5 },
     { path: "/pricing", lastModified: PAGE_UPDATED["/pricing"], changeFrequency: "monthly", priority: 0.5 },
     ...(premium ? PREMIUM_IDS.map((id): SitemapEntry => ({ path: premiumPath(id), changeFrequency: "monthly", priority: 0.5 })) : []),
+    // 고민 진열 (spec 2026-11-26 worry catalog §5.6) while it is on: the list and each worry's page; the two premium worries
+    // only with `premium`, like the product pages.
+    ...(SITE.features.worries
+      ? [
+          { path: WORRIES_PATH, changeFrequency: "monthly", priority: 0.7 } satisfies SitemapEntry,
+          ...visibleWorries(premium ? { "tarot-deep": { visible: true }, match: { visible: true } } : null).map(
+            (worry): SitemapEntry => ({ path: worryPath(worry.id), changeFrequency: "monthly", priority: 0.6 }),
+          ),
+        ]
+      : []),
     // No lastModified: the only date the policies carry is their 시행일, which can be ahead of today and is not when the text changed.
     ...["/refund", "/terms", "/privacy", "/account-deletion"].map((path): SitemapEntry => ({ path, changeFrequency: "yearly", priority: 0.2 })),
     // 문의: who runs the sites and where to write (no date of its own).

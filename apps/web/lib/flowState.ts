@@ -1,5 +1,6 @@
 import { useCallback, useSyncExternalStore } from "react";
-import { TOPICS_BY_WHO, type TopicDef, type When, type Who } from "@starlog/core";
+import { TOPICS_BY_WHO, getCard, type Orientation, type TopicDef, type When, type Who } from "@starlog/core";
+import { SITE } from "./config";
 import { isStale } from "./freshStart";
 import { useFlowVisit } from "./useFlowVisit";
 import { CUSTOM_MAX, WHO_MAX, cleanPart, composeFlowQuestion, flowQuote } from "./question";
@@ -45,6 +46,18 @@ export interface FlowDraw {
   chapterId?: string;
 }
 
+/**
+ * 이어 읽기 (spec 2026-11-26 beyond trend §3): the card drawn on /now, laid face up in the first position of a standard
+ * three-card spread (the server deals the others: /api/tarot/draw `keep`). `worry`: the sentence typed there, written
+ * into the builder's 무엇 직접 쓰기 when 누구 is first picked; only one that fits it (CUSTOM_MAX) is kept. In this tab's
+ * storage only, never in an address.
+ */
+export interface FlowKeep {
+  cardId: string;
+  orientation: Orientation;
+  worry?: string;
+}
+
 export interface FlowState {
   who?: Who;
   /** Detail on 누구 (not with 나), e.g. "엄마". */
@@ -65,6 +78,8 @@ export interface FlowState {
    * they were, and a premium switch that is off drops it (components/tarot/DeepSpreadGate.tsx).
    */
   spread?: "deep";
+  /** 이어 읽기: /now's card for the first position (FlowKeep); dropped while SITE.features.beyond.carry is off. */
+  keep?: FlowKeep;
   /** When the flow was last saved (ms); the builder starts clean once it is 30 minutes old. */
   savedAt?: number;
 }
@@ -111,6 +126,24 @@ function sanitizeDraw(value: unknown): FlowDraw | undefined {
   return { templateId, drawToken: value.drawToken, cards, ...(chapterId ? { chapterId } : {}) };
 }
 
+function knownCard(cardId: unknown): cardId is string {
+  if (typeof cardId !== "string") return false;
+  try {
+    getCard(cardId);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** A kept card the deck knows, on a side that exists, with a worry only when it fits 무엇 직접 쓰기; none while carry is off. */
+function sanitizeKeep(value: unknown): FlowKeep | undefined {
+  if (!SITE.features.beyond.carry || !isRecord(value) || !knownCard(value.cardId)) return undefined;
+  if (value.orientation !== "upright" && value.orientation !== "reversed") return undefined;
+  const worry = typeof value.worry === "string" && value.worry.trim() && value.worry.length <= CUSTOM_MAX ? value.worry : undefined;
+  return { cardId: value.cardId, orientation: value.orientation, ...(worry ? { worry } : {}) };
+}
+
 /** Keeps only values the catalog still knows, so stale or edited storage can never break a page. */
 export function sanitizeFlow(value: unknown): FlowState {
   if (!isRecord(value)) return EMPTY_FLOW;
@@ -134,6 +167,7 @@ export function sanitizeFlow(value: unknown): FlowState {
   const draw = sanitizeDraw(value.draw);
   const savedAt = typeof value.savedAt === "number" && Number.isFinite(value.savedAt) ? value.savedAt : undefined;
   const spread = value.spread === "deep" ? ("deep" as const) : undefined;
+  const keep = sanitizeKeep(value.keep);
   return {
     ...(who ? { who } : {}),
     ...(whoText ? { whoText } : {}),
@@ -145,6 +179,7 @@ export function sanitizeFlow(value: unknown): FlowState {
     note,
     ...(draw ? { draw } : {}),
     ...(spread ? { spread } : {}),
+    ...(keep ? { keep } : {}),
     ...(savedAt !== undefined ? { savedAt } : {}),
   };
 }
@@ -381,9 +416,20 @@ export function freshFlowOnEntry(newQuestion: boolean, now = Date.now()) {
   if (newQuestion || isStale(getSnapshot().savedAt, now)) clearFlow();
 }
 
+/** 지금의 한 장, whose 이어 읽기 writes a flow with its card and opens the builder (spec 2026-11-26 beyond trend §3). */
+export const NOW_PATH = "/now";
+
+/**
+ * Whether entering the builder or the situation step starts a new question: not on a move inside the flow, and not on
+ * /now's 이어 읽기 move, which wrote the card it hands over (any other way from /now starts clean, as before).
+ */
+export function newQuestionOnEntry(inFlow: boolean, from: string | null, flow: FlowState): boolean {
+  return !inFlow && !(from === NOW_PATH && flow.keep !== undefined);
+}
+
 /** The builder's and the situation step's entry rule (freshFlowOnEntry), before the first paint. */
 export function useFreshFlowOnEntry() {
-  useFlowVisit("tarot", (inFlow) => freshFlowOnEntry(!inFlow));
+  useFlowVisit("tarot", (inFlow, from) => freshFlowOnEntry(newQuestionOnEntry(inFlow, from, getSnapshot())));
 }
 
 /** `flow` is null until the browser snapshot is read (server render and hydration). */

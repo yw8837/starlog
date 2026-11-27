@@ -38,6 +38,9 @@ export function DrawStage({ instant }: DrawStageProps) {
         // The slots and the table wait (the deck already shuffles) until the spread is known: no pick before it.
         heading={summary && spread ? summary.question : null}
         step={{ step: 2, label: "카드 뽑기", backHref: "/tarot/new/situation", backLabel: "상황 고르기로" }}
+        // 이어 읽기 (spec 2026-11-26 beyond trend §3): /now's card face up in the first position, on the three-card spread only.
+        keep={spread === "standard" ? flow?.keep : undefined}
+        onDropKeep={() => setFlow(({ keep: _dropped, ...rest }) => rest)}
         onDealt={(draw) => setFlow((prev) => ({ ...prev, draw }))}
         onRevealed={() => router.push(withFlags(spreadResultHref(spread === "deep" ? "deep" : "standard"), { instant }))}
       />

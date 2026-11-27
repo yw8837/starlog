@@ -1,5 +1,5 @@
 import "server-only";
-import { DEFAULT_REVERSAL_RATE, TEMPLATES, createDeck, pickCards, type DrawnCard, type Orientation, type TemplateId } from "@starlog/core";
+import { DEFAULT_REVERSAL_RATE, TEMPLATES, createDeck, pickCards, type DeckState, type DrawnCard, type Orientation, type TemplateId } from "@starlog/core";
 import { keyedHash, randomId, signToken, verifyToken, type SignedPayload } from "./sign";
 
 /**
@@ -10,9 +10,22 @@ import { keyedHash, randomId, signToken, verifyToken, type SignedPayload } from 
 
 export const DRAW_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 
-interface DrawPayload extends SignedPayload {
+/**
+ * 이어 읽기 (spec 2026-11-26 beyond trend §3): the card drawn on /now, laid in the first position. The browser drew it, so
+ * the server takes it as said (asked for by hand, it lets someone choose the first card of their own reading: accepted
+ * by the spec, no effect on price or count).
+ */
+export interface KeptCard {
+  cardId: string;
+  orientation: Orientation;
+}
+
+/** The spreads a draw may keep a card in: the standard three-card ones (never 켈틱 크로스 10장, 오늘의 한 장 or 궁합's). */
+export const KEEP_TEMPLATES: ReadonlySet<TemplateId> = new Set<TemplateId>(["relationship-contact", "relationship", "work", "choice", "self-flow", "group"]);
+
+/** v1: the server dealt every position. v2 (이어 읽기): `keep` is the first position, `picks` deal the rest. */
+type DrawPayload = SignedPayload & {
   k: "draw";
-  v: 1;
   seed: string;
   rate: number;
   templateId: TemplateId;
@@ -21,33 +34,36 @@ interface DrawPayload extends SignedPayload {
   cards: Array<[string, Orientation]>;
   iat: number;
   exp: number;
-}
+} & ({ v: 1 } | { v: 2; keep: [string, Orientation] });
 
 export interface OpenedDraw {
   templateId: TemplateId;
   cards: DrawnCard[];
 }
 
-/** Draws for `picks` (indexes into the shuffled deck, tap order). Throws RangeError on invalid picks. */
-export async function issueDraw(templateId: TemplateId, picks: number[], secret: string, now: number): Promise<{ cards: DrawnCard[]; drawToken: string }> {
+/**
+ * Draws for `picks` (indexes into the shuffled deck, tap order). Throws RangeError on invalid picks. With `keep` (이어 읽기,
+ * a standard three-card spread only) that card is the first position and `picks` deal the others from the deck without
+ * it; the token is then a `v: 2` one carrying it. Without, the token is the `v: 1` one, as before.
+ */
+export async function issueDraw(templateId: TemplateId, picks: number[], secret: string, now: number, keep?: KeptCard): Promise<{ cards: DrawnCard[]; drawToken: string }> {
   const seed = randomId(16);
   const rate = DEFAULT_REVERSAL_RATE;
-  const cards = drawCards(seed, rate, templateId, picks);
-  const payload: DrawPayload = {
-    k: "draw", v: 1, seed, rate, templateId, picks,
-    cards: cards.map((c) => [c.cardId, c.orientation]),
-    iat: now, exp: now + DRAW_TOKEN_TTL_MS,
-  };
+  const cards = drawCards(seed, rate, templateId, picks, keep);
+  const common = { k: "draw" as const, seed, rate, templateId, picks, cards: cards.map((c): [string, Orientation] => [c.cardId, c.orientation]), iat: now, exp: now + DRAW_TOKEN_TTL_MS };
+  const payload: DrawPayload = keep ? { ...common, v: 2, keep: [keep.cardId, keep.orientation] } : { ...common, v: 1 };
   return { cards, drawToken: await signToken(payload, secret) };
 }
 
 /** The draw behind a token, or null when the token is forged, expired or inconsistent. */
 export async function openDraw(token: unknown, secret: string, now: number): Promise<OpenedDraw | null> {
   const p = await verifyToken<DrawPayload>(token, "draw", secret, now);
-  if (!p || p.v !== 1 || !Object.hasOwn(TEMPLATES, p.templateId) || !Array.isArray(p.picks) || !Array.isArray(p.cards)) return null;
+  if (!p || (p.v !== 1 && p.v !== 2) || !Object.hasOwn(TEMPLATES, p.templateId) || !Array.isArray(p.picks) || !Array.isArray(p.cards)) return null;
+  // v2 recomputes with its kept card (a token issued while 이어 읽기 was on still opens after it is switched off).
+  if (p.v === 2 && (!Array.isArray(p.keep) || p.keep.length !== 2)) return null;
   let cards: DrawnCard[];
   try {
-    cards = drawCards(p.seed, p.rate, p.templateId, p.picks);
+    cards = drawCards(p.seed, p.rate, p.templateId, p.picks, p.v === 2 ? { cardId: p.keep[0], orientation: p.keep[1] } : undefined);
   } catch {
     return null;
   }
@@ -55,10 +71,23 @@ export async function openDraw(token: unknown, secret: string, now: number): Pro
   return same ? { templateId: p.templateId, cards } : null;
 }
 
-function drawCards(seed: string, rate: number, templateId: TemplateId, picks: number[]): DrawnCard[] {
+function drawCards(seed: string, rate: number, templateId: TemplateId, picks: number[], keep?: KeptCard): DrawnCard[] {
   if (typeof seed !== "string" || typeof rate !== "number") throw new RangeError("Bad draw");
   if (!picks.every((index) => Number.isInteger(index))) throw new RangeError("Card indexes must be integers");
-  return pickCards(createDeck(seed, rate), TEMPLATES[templateId], picks);
+  const deck = createDeck(seed, rate);
+  const template = TEMPLATES[templateId];
+  if (!keep) return pickCards(deck, template, picks);
+  // 이어 읽기: the kept card is taken out of the deck, the picks deal positions 2..n from what is left, as today.
+  if (!KEEP_TEMPLATES.has(templateId)) throw new RangeError(`Template "${templateId}" keeps no card`);
+  if (keep.orientation !== "upright" && keep.orientation !== "reversed") throw new RangeError("Bad orientation");
+  const at = deck.order.indexOf(keep.cardId);
+  if (at < 0) throw new RangeError(`Unknown card id: ${keep.cardId}`);
+  const rest: DeckState = { seed: deck.seed, order: deck.order.filter((_, i) => i !== at), orientations: deck.orientations.filter((_, i) => i !== at) };
+  const dealt = pickCards(rest, { ...template, positions: template.positions.slice(1) }, picks);
+  return [
+    { cardId: keep.cardId, position: template.positions[0]!, orientation: keep.orientation, slot: 0 },
+    ...dealt.map((card) => ({ ...card, position: template.positions[card.slot + 1]!, slot: card.slot + 1 })),
+  ];
 }
 
 /** 오늘의 한 장: fixed by the device id and the KST day, so repeat visits the same day see the same card. */

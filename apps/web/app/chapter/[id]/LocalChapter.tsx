@@ -36,6 +36,8 @@ import {
 import { pullAccountReadings } from "@/lib/storage/sync";
 import { ChapterView, type ChapterFollowUp } from "./ChapterView";
 import { PremiumRows } from "@/components/premium/PremiumRows";
+import { NextWorry } from "@/components/worries/WorryCards";
+import { nextWorryFor } from "@/lib/worries";
 import { PremiumChapterView } from "./PremiumChapterView";
 import { SajuChapterView } from "./SajuChapterView";
 import { MATCH_FOLLOWUP_DEVICE_ONLY, PREMIUM_CHAPTER_TTL_MS } from "@/lib/premium/products";
@@ -239,12 +241,17 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
   // A tarot question about love goes on to 프리미엄 궁합 first (sales 2026-11-10 item 2); a premium reading to its partner
   // product (신년 ↔ 궁합). Plain links at the normal price. After a saju reading the 2027 신년운세 + 프리미엄 궁합 set too,
   // where the server sells it (owner 2026-11-10); never after 신년 or 궁합, whose reading it would sell again.
+  // Above it, after a tarot reading whose chosen situation says so, one 다음 고민 (spec 2026-11-26 worry catalog §7, §12.5).
+  const nextWorry = whole && chapter.kind === "tarot" ? nextWorryFor(chapter) : null;
   const next = !whole ? undefined : chapter.kind === "tarot" ? (
-    <PremiumRows
-      ids={LOVE_QUESTION.test(chapter.question) ? ["match", "tarot-deep"] : ["tarot-deep"]}
-      title="더 깊게 보고 싶다면"
-      lines={{ "tarot-deep": "한 가지 고민을 카드 10장으로, 자리마다 나눠 더 깊게 봐요", match: "같은 고민을 두 사람의 사주로, 앞으로 1년까지 봐요" }}
-    />
+    <>
+      {nextWorry ? <NextWorry worry={nextWorry} /> : null}
+      <PremiumRows
+        ids={LOVE_QUESTION.test(chapter.question) ? ["match", "tarot-deep"] : ["tarot-deep"]}
+        title="더 깊게 보고 싶다면"
+        lines={{ "tarot-deep": "한 가지 고민을 카드 10장으로, 자리마다 나눠 더 깊게 봐요", match: "같은 고민을 두 사람의 사주로, 앞으로 1년까지 봐요" }}
+      />
+    </>
   ) : chapter.kind === "newyear-2027" || chapter.kind === "match" ? (
     <PremiumRows
       ids={[chapter.kind === "match" ? "newyear-2027" : "match"]}

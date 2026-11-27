@@ -1,13 +1,14 @@
 import { expect, test } from "@playwright/test";
 
 /**
- * Home layout (spec 2026-11-11 entry funnel renewal 3.1): one hook first — 타로로's question, the first screen's only gold
- * button, to 지금의 한 장 — then the 오픈 기념 line and the 2027 line, 타로 · 사주 (both above the fold with the hook), the
- * 2027 키워드 line, the two quick cards, 별자리 인연, the guide, the FAQ; and the navigation in the right place for the width
- * (bottom bar on phones, top-right pills from 1024px).
+ * Home layout (spec 2026-11-11 entry funnel renewal 3.1, with the worry catalog of spec 2026-11-26 §5.4): one hook first —
+ * 타로로's question, the first screen's only gold button, to 지금의 한 장 — then the 오픈 기념 line, the 고민 판 (six worries
+ * where the 타로 · 사주 cards were), the 2027 line, the 2027 키워드 line, the two quick cards, 도구로 바로 보기 (타로 3장 보기 ·
+ * 사주 보기), 별자리 인연, the guide, the FAQ; and the navigation in the right place for the width (bottom bar on phones,
+ * top-right pills from 1024px).
  */
 
-test("home: the one hook, then 타로 · 사주 above the fold, the free tests, 별자리 인연, guide, FAQ, in that order", async ({ page }) => {
+test("home: the one hook, then the 고민 판, the free tests, the tools by name, 별자리 인연, guide, FAQ, in that order", async ({ page }) => {
   await page.goto("/");
   const main = page.getByRole("main");
   const h1 = page.getByRole("heading", { level: 1 });
@@ -16,12 +17,17 @@ test("home: the one hook, then 타로 · 사주 above the fold, the free tests, 
 
   const hookCard = main.locator("section[aria-labelledby='home-hook-title']");
   const hook = hookCard.getByRole("link", { name: /한 장 뽑기/ });
-  const tarot = main.getByRole("link", { name: /타로 보기/ });
-  const saju = main.getByRole("link", { name: /사주 보기/ });
+  const board = main.getByRole("region", { name: "지금 무슨 고민이야?" });
+  const tools = main.getByRole("region", { name: "도구로 바로 보기" });
+  const tarot = tools.getByRole("link", { name: "타로 3장 보기" });
+  const saju = tools.getByRole("link", { name: "사주 보기" });
   const keyword = main.getByRole("link", { name: /2027년 내 키워드는\?/ });
   const today = main.getByRole("link", { name: /오늘의 한 장/ });
   const birth = main.getByRole("link", { name: /나를 닮은 타로 카드/ });
   await expect(hook).toHaveAttribute("href", "/now");
+  await expect(board.getByRole("link")).toHaveCount(7);
+  await expect(board.getByRole("link").first()).toHaveAttribute("href", "/w/some");
+  await expect(board.getByRole("link", { name: /고민 전체 보기/ })).toHaveAttribute("href", "/worries");
   await expect(tarot).toHaveAttribute("href", "/tarot/new");
   await expect(saju).toHaveAttribute("href", "/saju/start");
   await expect(keyword).toHaveAttribute("href", "/2027-keyword");
@@ -36,31 +42,26 @@ test("home: the one hook, then 타로 · 사주 above the fold, the free tests, 
   await expect(main.getByText("초대코드로 참여")).toHaveCount(0);
 
   const box = async (locator: typeof tarot) => (await locator.boundingBox())!;
-  const [hookBox, tarotBox, sajuBox, keywordBox, todayBox, birthBox] = await Promise.all([box(hookCard), box(tarot), box(saju), box(keyword), box(today), box(birth)]);
+  const [hookBox, boardBox, keywordBox, todayBox, birthBox, toolsBox] = await Promise.all([box(hookCard), box(board), box(keyword), box(today), box(birth), box(tools)]);
   const guide = await box(page.getByRole("heading", { level: 2, name: "알아 두면 좋은 이야기" }));
   const faq = await box(page.getByRole("heading", { level: 2, name: "자주 묻는 질문" }));
   const bonds = await box(main.locator("section[aria-labelledby='bonds-home-title']"));
 
-  // Reading order top to bottom (타로 and 사주 may share a row on desktop, 타로 first).
-  expect(hookBox.y + hookBox.height).toBeLessThanOrEqual(tarotBox.y);
-  expect(tarotBox.y).toBeLessThanOrEqual(sajuBox.y);
-  if (tarotBox.y === sajuBox.y) expect(tarotBox.x).toBeLessThan(sajuBox.x);
-  expect(sajuBox.y + sajuBox.height).toBeLessThanOrEqual(keywordBox.y);
+  // Reading order top to bottom.
+  expect(hookBox.y + hookBox.height).toBeLessThanOrEqual(boardBox.y);
+  expect(boardBox.y + boardBox.height).toBeLessThanOrEqual(keywordBox.y);
   expect(keywordBox.y + keywordBox.height).toBeLessThanOrEqual(todayBox.y);
-  expect(bonds.y).toBeGreaterThanOrEqual(todayBox.y + todayBox.height);
+  expect(todayBox.y + todayBox.height).toBeLessThanOrEqual(toolsBox.y);
+  expect(bonds.y).toBeGreaterThanOrEqual(toolsBox.y + toolsBox.height);
   expect(guide.y).toBeGreaterThan(bonds.y + bonds.height);
   expect(faq.y).toBeGreaterThan(guide.y);
 
-  // The hook and both paid entries above the fold, the entries visibly bigger than the quick cards.
+  // The hook on the first screen, the 고민 판 starting on it; nothing runs off the side.
   const fold = page.viewportSize()!.height;
   expect(hookBox.y).toBeGreaterThanOrEqual(0);
   expect(hookBox.y + hookBox.height).toBeLessThanOrEqual(fold);
-  expect(sajuBox.y + sajuBox.height).toBeLessThanOrEqual(fold);
-  // The entries are a step shorter beside the hook (spec 3.1 wireframe: about 120px), still clearly bigger than a quick card.
-  expect(tarotBox.width * tarotBox.height).toBeGreaterThan(1.2 * todayBox.width * todayBox.height);
-  // The spec wireframe's height, as a floor (review 2026-11-11 #7c): the 1.2x above may not hide entries shrinking under it.
-  expect(tarotBox.height).toBeGreaterThanOrEqual(120);
-  expect(sajuBox.height).toBeGreaterThanOrEqual(120);
+  expect(boardBox.y).toBeLessThan(fold);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   // The quick cards are equal halves.
   expect(Math.abs(birthBox.width - todayBox.width)).toBeLessThanOrEqual(1);
 

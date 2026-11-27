@@ -71,7 +71,7 @@ const SEGMENT = "[^/.]+";
  */
 export const APP_SEGMENTS = [
   "2027-keyword", "about", "account-deletion", "b", "birth-card", "bonds", "chapter", "evidence", "faq", "help", "how", "invite", "login", "lucky", "me",
-  "now", "owner", "pay", "premium", "pricing", "ranking", "refund", "s", "saju", "story", "tarot", "today",
+  "now", "owner", "pay", "premium", "pricing", "ranking", "refund", "s", "saju", "story", "tarot", "today", "w", "worries",
 ] as const;
 
 /** A known app path: a first segment of APP_SEGMENTS (in any letter case, as with APP_PATH), and the rest. */

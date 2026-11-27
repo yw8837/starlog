@@ -105,6 +105,19 @@ export const SITE = {
     bonds: process.env.NODE_ENV !== "production" || process.env.NEXT_PUBLIC_FEATURE_BONDS === "1",
     /** 주제별 사주 (NEXT_PUBLIC_SAJU_TOPICS): this build's mode; screens and the server call sajuTopicsMode(). */
     sajuTopics: sajuTopicsMode(),
+    /**
+     * 고민 진열 (spec 2026-11-26 worry catalog §8, default on): the home's 고민 판, /worries, /w/<id>, the /pricing block,
+     * their sitemap entries and 다음 고민 after a reading. Off: the home's 타로 보기 / 사주 보기 cards as before, and
+     * /worries and /w/* send home.
+     */
+    worries: true as boolean,
+    /**
+     * 유행 다음 세 가지 (spec 2026-11-26 beyond trend §6, each default on): `handoff` 별명 이어뽑기 (the nickname on a shared
+     * /now and its /now?with= link, 둘의 별명), `jump` 골라 읽기 (the jump row of an opened tarot reading), `carry` 이어 읽기
+     * (/now's card kept as the first of a three-card draw). Off: `carry` makes the server refuse `keep` and /now's button
+     * goes back to 카드 3장으로 보기; the other two simply do not show.
+     */
+    beyond: { handoff: true as boolean, jump: true as boolean, carry: true as boolean },
   },
 } as const;
 

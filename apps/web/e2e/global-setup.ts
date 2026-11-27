@@ -14,6 +14,8 @@ const ROUTES = [
   "/tarot/new/situation",
   "/tarot/draw",
   "/tarot/result",
+  "/worries",
+  "/w/some",
   "/now",
   "/login",
   "/chapter/sample",

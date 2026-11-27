@@ -130,6 +130,45 @@ describe("/pricing", () => {
     expect(metadata.description).not.toContain("준비 중");
   });
 
+  // Spec 2026-11-26 worry catalog §5.5: under the price summary, each worry with the reading it opens at that reading's price.
+  it("offers 고민으로 고르기 under the price summary, each worry's method and price from SITE, and the way to all of them", () => {
+    const { container } = render(<PricingPage />);
+    const block = container.querySelector("#worries")!;
+    expect(block.querySelector("h2")!.textContent).toBe("고민으로 고르기");
+    expect(container.querySelector("#readings")!.compareDocumentPosition(block) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+    const items = [...block.querySelectorAll("li")];
+    expect(items.map((li) => li.textContent)).toEqual([
+      "이거 썸 맞아? · 타로 3장 · 3,100원",
+      "답 없는 톡, 먼저 할까 · 타로 3장 · 3,100원",
+      "끝났는데 보고 싶어 · 타로 3장 · 3,100원",
+      "다시 만나도 될까 · 타로 3장 · 3,100원",
+      "헤어지고 멍해 · 타로 3장 · 3,100원",
+      "전 애인 소식에 울컥 · 타로 3장 · 3,100원",
+      "일보다 사람이 힘들어 · 타로 3장 · 3,100원",
+      "연애는 하고 싶은데 · 사주 연애운 · 4,100원",
+      "돈 쓰고 또 후회해 · 사주 재물운 · 4,100원",
+      "어떤 일이 나랑 맞지? · 사주 직장운 · 4,100원",
+    ]);
+    expect(items[0]!.querySelector("a")!.getAttribute("href")).toBe("/w/some");
+    expect([...block.querySelectorAll("a")].at(-1)!.getAttribute("href")).toBe("/worries");
+  });
+
+  // Spec 2026-11-26 worry catalog §8 (code review 2026-11-26 A3): off, /pricing is as it was before the catalog.
+  it("has no 고민으로 고르기 block while SITE.features.worries is off", async () => {
+    const { SITE } = await import("@/lib/config");
+    const features = SITE.features as { worries: boolean };
+    features.worries = false;
+    try {
+      const { container } = render(<PricingPage />);
+      expect(container.querySelector("#readings")).not.toBeNull();
+      expect(container.querySelector("#worries")).toBeNull();
+      expect(container.textContent).not.toContain("고민으로 고르기");
+      expect(container.querySelector('a[href^="/w/"], a[href="/worries"]')).toBeNull();
+    } finally {
+      features.worries = true;
+    }
+  });
+
   it("says one payment opens one chosen reading and that the four 운's teasers are free (saju-topics owner cut §0)", () => {
     const { container } = render(<PricingPage />);
     expect(container.textContent).toContain("사주팔자·연애운·재회운·재물운·직장운 가운데 고른 풀이 하나");

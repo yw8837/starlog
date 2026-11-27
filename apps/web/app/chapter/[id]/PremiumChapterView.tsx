@@ -3,7 +3,7 @@
 import { useMemo, type ReactNode } from "react";
 import { MatchArticle } from "@/components/premium/MatchArticle";
 import { CrossSpread } from "@/components/premium/CrossSpread";
-import { DeepTarotArticle } from "@/components/premium/DeepTarotArticle";
+import { DeepTarotArticle, deepJumpItems } from "@/components/premium/DeepTarotArticle";
 import { NewYearArticle } from "@/components/premium/NewYearArticle";
 import { ReportReading } from "@/components/report/ReportReading";
 import { ChartPanel } from "@/components/saju/ChartPanel";
@@ -11,6 +11,7 @@ import { InputLine } from "@/components/saju/InputLine";
 import { chartFor } from "@/components/saju/useSajuChart";
 import { Feedback } from "@/components/tarot/Feedback";
 import { FollowUp } from "@/components/tarot/FollowUp";
+import { ReadingJump } from "@/components/tarot/ReadingJump";
 import { ReadingLayout } from "@/components/tarot/ReadingLayout";
 import { SpreadRow, faceUpCard } from "@/components/tarot/SpreadRow";
 import { Stepper } from "@/components/tarot/Stepper";
@@ -155,6 +156,8 @@ export function PremiumChapterView({ chapter, followUp, checkin, rating, shareab
       >
         {checkin}
         <ChapterContents />
+        {/* 골라 읽기 (spec 2026-11-26 beyond trend §2): the 10-card reading's positions, 교차, 시기, 할 일 (tarot only). */}
+        {chapter.kind === "tarot-deep" && SITE.features.beyond.jump ? <ReadingJump items={deepJumpItems(chapter.reading)} /> : null}
         <div id="chapter-reading" className={s.anchor}>
           {article}
           {readingId !== undefined ? <ReportReading kind={chapter.kind} readingId={readingId} /> : null}

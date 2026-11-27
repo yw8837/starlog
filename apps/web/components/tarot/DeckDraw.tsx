@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { DEFAULT_REVERSAL_RATE, TEMPLATES, createDeck, getCard, type DeckState } from "@starlog/core";
 import { CardTable } from "@/components/tarot/CardTable";
 import { ShuffleStage } from "@/components/tarot/ShuffleStage";
@@ -36,6 +36,14 @@ type DeckDrawProps = {
   onDealt: (draw: DealtDraw) => void;
   /** Every card is face up and the hold is over: move on. */
   onRevealed: () => void;
+  /**
+   * 이어 읽기 (spec 2026-11-26 beyond trend §3): /now's card, face up in the first position from the start; the table
+   * holds the other 77 and only the other positions are picked; the server deals them around it (/api/tarot/draw `keep`).
+   * A standard three-card spread only; any other ignores it.
+   */
+  keep?: { cardId: string; orientation: "upright" | "reversed" };
+  /** The way out when the server refuses the kept card (code review 2026-11-27): the page drops it, three cards are picked. */
+  onDropKeep?: () => void;
 };
 
 const FLIP_GAP_MS = 400;
@@ -72,12 +80,23 @@ const UndoIcon = () => (
  * The page owns where the draw is kept and where it goes next (the standard tarot flow, the 10-card
  * reading). Renders the screen's children; the page gives the screen box.
  */
-export function DeckDraw({ instant, templateId, heading, step, onDealt, onRevealed }: DeckDrawProps) {
+export function DeckDraw({ instant, templateId, heading, step, onDealt, onRevealed, keep: asked, onDropKeep }: DeckDrawProps) {
   const known = heading !== null;
   const template = TEMPLATES[templateId];
-  const max = template.positions.length;
+  const total = template.positions.length;
+  const keep = asked && total === 3 && templateId !== "deep-tarot" ? asked : undefined;
+  // The positions left to pick (all of them, unless the first one holds the kept card).
+  const offset = keep ? 1 : 0;
+  const max = total - offset;
 
-  const [deck, setDeck] = useState<DeckState | null>(null);
+  const [shuffled, setDeck] = useState<DeckState | null>(null);
+  // With a kept card, the table is the deck without it: the picks are indexes into those 77, as the server deals them.
+  const keptId = keep?.cardId;
+  const deck = useMemo<DeckState | null>(() => {
+    if (!shuffled || !keptId) return shuffled;
+    const at = shuffled.order.indexOf(keptId);
+    return { seed: shuffled.seed, order: shuffled.order.filter((_, i) => i !== at), orientations: shuffled.orientations.filter((_, i) => i !== at) };
+  }, [shuffled, keptId]);
   const [phase, setPhase] = useState<Phase>(instant ? "pick" : "shuffle");
   const [picked, setPicked] = useState<number[]>([]);
   const [drawn, setDrawn] = useState<DrawnCardData[] | null>(null);
@@ -109,11 +128,12 @@ export function DeckDraw({ instant, templateId, heading, step, onDealt, onReveal
     if (phase !== "reveal" || !drawn) return;
     const quick = instant || prefersReducedMotion();
     const gap = quick ? 0 : FLIP_GAP_MS;
-    const timers = drawn.map((_, i) => window.setTimeout(() => setRevealed(i + 1), gap * i));
-    const settle = quick ? (instant ? 0 : HOLD_MS) : gap * (drawn.length - 1) + FLIP_MS + HOLD_MS;
+    // A kept card is already face up, so the first flip that shows is the one after it.
+    const timers = drawn.map((_, i) => window.setTimeout(() => setRevealed(i + 1), gap * Math.max(0, i - offset)));
+    const settle = quick ? (instant ? 0 : HOLD_MS) : gap * (drawn.length - 1 - offset) + FLIP_MS + HOLD_MS;
     timers.push(window.setTimeout(() => revealedRef.current(), settle));
     return () => timers.forEach((t) => window.clearTimeout(t));
-  }, [phase, drawn, instant]);
+  }, [phase, drawn, instant, offset]);
 
   // The table only ever adds a card; taking one back is the explicit undo below.
   const pick = (index: number) => {
@@ -141,7 +161,7 @@ export function DeckDraw({ instant, templateId, heading, step, onDealt, onReveal
     if (!known || picked.length !== max || dealing) return;
     setDealing(true);
     setDealError(null);
-    const result = await postJson<DrawResponse>("/api/tarot/draw", { templateId, picks: picked });
+    const result = await postJson<DrawResponse>("/api/tarot/draw", { templateId, picks: picked, ...(keep ? { keep: { cardId: keep.cardId, orientation: keep.orientation } } : {}) });
     setDealing(false);
     if (!result.ok) {
       setDealError(describeApiError(result.error, "tarot-draw"));
@@ -154,9 +174,12 @@ export function DeckDraw({ instant, templateId, heading, step, onDealt, onReveal
   };
 
   const slots: SpreadCard[] = template.positions.map((position, slot) => {
-    const deckIndex = picked[slot];
-    const card = drawn?.[slot] ?? (deck && deckIndex !== undefined ? { cardId: deck.order[deckIndex], orientation: deck.orientations[deckIndex] } : undefined);
-    const faceUp = slot < revealed;
+    const deckIndex = picked[slot - offset];
+    const card =
+      drawn?.[slot] ??
+      (keep && slot === 0 ? keep : deck && deckIndex !== undefined ? { cardId: deck.order[deckIndex], orientation: deck.orientations[deckIndex] } : undefined);
+    // The kept card lies face up from the start.
+    const faceUp = (keep !== undefined && slot === 0) || slot < revealed;
     return {
       position,
       cardId: card?.cardId,
@@ -185,7 +208,7 @@ export function DeckDraw({ instant, templateId, heading, step, onDealt, onReveal
           ? "카드를 모두 뒤집었어요"
           : "카드를 뒤집는 중이에요";
 
-  const many = max > 5;
+  const many = total > 5;
   return (
     <>
       <Stepper {...step} />
@@ -201,7 +224,7 @@ export function DeckDraw({ instant, templateId, heading, step, onDealt, onReveal
       {known ? (
         // A soft glow comes up behind the slots while the cards turn over.
         <div ref={spreadRef} className={s.spread} data-glow={phase === "reveal" ? "" : undefined}>
-          <SpreadRow cards={slots} size={many ? "sm" : "md"} columns={slotColumns(max)} className={max === 1 ? s.single : many ? s.grid : s.slots} />
+          <SpreadRow cards={slots} size={many ? "sm" : "md"} columns={slotColumns(total)} className={total === 1 ? s.single : many ? s.grid : s.slots} />
         </div>
       ) : null}
 
@@ -212,11 +235,13 @@ export function DeckDraw({ instant, templateId, heading, step, onDealt, onReveal
           </div>
         ) : phase === "pick" && deck && known ? (
           <CardTable
+            key={keep ? "kept" : "all"}
+            count={deck.order.length}
             picked={picked}
             max={max}
             onPick={pick}
-            // A slot's card (SpreadRow: position name, card, meta).
-            slotFor={(order) => spreadRef.current?.querySelectorAll("li")[order]?.children[1] ?? null}
+            // A slot's card (SpreadRow: position name, card, meta); after the kept card's slot when there is one.
+            slotFor={(order) => spreadRef.current?.querySelectorAll("li")[order + offset]?.children[1] ?? null}
             onReshuffled={reshuffled}
             onShufflingChange={setShuffling}
             disabled={dealing}
@@ -229,6 +254,21 @@ export function DeckDraw({ instant, templateId, heading, step, onDealt, onReveal
         {phase === "pick" && picked.length === max ? (
           <Button block onClick={reveal} disabled={dealing} trailing="→">
             {dealError ? "다시 시도" : "결과 보기"}
+          </Button>
+        ) : null}
+        {phase === "pick" && dealError && keep && onDropKeep ? (
+          // The table becomes the whole deck again, so the picks (indexes into the 77) start over.
+          <Button
+            variant="secondary"
+            size="md"
+            block
+            onClick={() => {
+              setPicked([]);
+              setDealError(null);
+              onDropKeep();
+            }}
+          >
+            새로 세 장 뽑기
           </Button>
         ) : null}
         {phase === "pick" ? (

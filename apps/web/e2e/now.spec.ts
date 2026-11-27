@@ -72,11 +72,12 @@ test("지금의 한 장: how-to, a question, a short shuffle, one card, an answe
   await expect(verdict).toContainText("카드 원소와 기울기로 정해지는 별명이에요");
   await expect(verdict).toContainText(/(불|물|바람|흙) 카드 · (가 보기|조금 더 지켜보기|다른 길도 살펴보기) 쪽/);
 
-  // The way on says where it goes: the 3-card question builder (N6, N7).
+  // The way on says where it goes: the 3-card question builder (N6, N7), carrying this card on as the first of the three
+  // (이어 읽기, spec 2026-11-26 beyond trend §3: the flow holds it, the address is the builder's plain one).
   await expect(page.getByText("이 고민, 카드 3장으로 더 볼래?")).toBeVisible();
-  const upsell = page.getByRole("link", { name: /카드 3장으로 보기/ });
+  const upsell = page.getByRole("link", { name: /이 카드로 이어 읽기 · 타로 3장/ });
   await expect(upsell).toBeVisible();
-  await expect(upsell).toHaveAttribute("href", "/tarot/new?new=1");
+  await expect(upsell).toHaveAttribute("href", "/tarot/new");
 
   // How answers are made: folded until asked, with the two guide links.
   const about = page.getByRole("button", { name: "어떻게 답이 나오나요?" });
@@ -159,6 +160,6 @@ test("지금의 한 장 → 공유하기 → the link shows that card, its line 
   if (info.project.name === "mobile") await visitor.screenshot({ path: "test-results/share-shots/now-shared.png", fullPage: true });
   await (await openShared(page, path, "now-shared")).close();
   await cta.click();
-  await expect(visitor).toHaveURL(/\/now$/);
+  await expect(visitor).toHaveURL(/\/now(\?with=[a-z-]+)?$/);
   await visitor.close();
 });

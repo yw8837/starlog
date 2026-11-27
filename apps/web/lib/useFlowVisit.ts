@@ -1,14 +1,16 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { takeFlag, type FlowName } from "./freshStart";
 import { lastRoute } from "./lastRoute";
+import { TAROT_WORRY_PATHS } from "./worryPaths";
 
 /**
  * Routes a move inside each flow comes from (the result's 질문 고치기 leads back into the tarot flow). The
  * 켈틱 크로스 10장 result (lib/flowState.ts DEEP_RESULT_PATH, written out: flowState imports this file) is one
- * of the tarot flow's results.
+ * of the tarot flow's results. A tarot worry's page (/w/<id>, spec 2026-11-26 worry catalog §5.2) writes its question
+ * into the flow when its start is pressed, so the situation step it opens keeps it.
  */
 const FLOW_ROUTES: Readonly<Record<FlowName, readonly string[]>> = {
-  tarot: ["/tarot/new", "/tarot/new/situation", "/tarot/draw", "/tarot/result", "/premium/deep-tarot/result"],
+  tarot: ["/tarot/new", "/tarot/new/situation", "/tarot/draw", "/tarot/result", "/premium/deep-tarot/result", ...TAROT_WORRY_PATHS],
   saju: ["/saju/start", "/saju/new", "/saju/chart"],
 };
 
@@ -25,9 +27,10 @@ export function cameFromFlow(flow: FlowName, from: string | null, here: string):
  * `onEnter(inFlow)` says whether the route shown before was another page of the same flow (or the
  * address asks to keep with `?keep=1`, tests; `?new=1` never keeps and leaves the address). The
  * route before is read while the page first renders (lib/lastRoute.ts), so the decision does not
- * depend on the order the router mounts and unmounts pages; running it twice decides the same.
+ * depend on the order the router mounts and unmounts pages; running it twice decides the same. `from`, the route before,
+ * goes along (null on a document's first route): /now's 이어 읽기 hands the tarot builder a card (lib/flowState.ts).
  */
-export function useFlowVisit(flow: FlowName, onEnter: (inFlow: boolean) => void) {
+export function useFlowVisit(flow: FlowName, onEnter: (inFlow: boolean, from: string | null) => void) {
   // The route before, as it was when this page first rendered.
   const [first] = useState(lastRoute);
   const shown = useRef(false);
@@ -41,7 +44,7 @@ export function useFlowVisit(flow: FlowName, onEnter: (inFlow: boolean) => void)
     shown.current = true;
     const keep = new URL(window.location.href).searchParams.has("keep");
     const fresh = takeFlag("new");
-    onEnter(!fresh && (cameFromFlow(flow, from, here) || keep));
+    onEnter(!fresh && (cameFromFlow(flow, from, here) || keep), from);
     // Once per time the page is shown: a re-render must not decide again.
   }, []);
 }

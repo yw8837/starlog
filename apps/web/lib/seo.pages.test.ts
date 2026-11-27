@@ -45,6 +45,8 @@ import { metadata as tarotResultMeta } from "@/app/tarot/result/page";
 import { generateMetadata as termsMetadata } from "@/app/terms/page";
 import { generateMetadata as contactMetadata } from "@/app/contact/page";
 import { metadata as todayMeta } from "@/app/today/page";
+import { generateMetadata as worryMeta } from "@/app/w/[id]/page";
+import { metadata as worriesMeta } from "@/app/worries/page";
 import { BIRTH_CARDS } from "./birthCard";
 import { SITE } from "./config";
 import { ALL_GUIDE_ARTICLES, GUIDE_ARTICLES, findArticle } from "./guide";
@@ -53,6 +55,7 @@ import { GUIDE_HOST_PAGES, absoluteUrl, isGuidePath } from "./hosts";
 import { ILJU } from "./keyword2027";
 import { GRADE_SLUGS } from "./sajuGrade";
 import { HOME_TITLE, NOINDEX as NOINDEX_ROBOTS, SITEMAP_PATHS, sitemapEntriesFor } from "./seo";
+import { visibleWorries, worryPath } from "./worries";
 
 // The root layout loads its fonts through the Next compiler, which is not running here.
 vi.mock("next/font/google", () => ({ Gowun_Batang: () => ({ variable: "" }), Noto_Sans_KR: () => ({ variable: "" }) }));
@@ -114,6 +117,10 @@ const INDEXABLE: Array<[path: string, meta: Metadata]> = [
   // 올해의 사주 등급 and its rule page (spec 2026-11-11 B: the rule page is open to search)
   ["/saju/grade", sajuGradeMeta],
   ["/saju/grade/how", sajuGradeHowMeta],
+  // 고민 진열 (spec 2026-11-26 worry catalog §5.6): the list and each worry's page; the two premium worries join the sitemap with
+  // `premium`, like the product pages (below).
+  ["/worries", worriesMeta],
+  ...(await Promise.all(visibleWorries(null).map(async (worry) => [worryPath(worry.id), await worryMeta(params({ id: worry.id }))] as [string, Metadata]))),
 ];
 
 /**

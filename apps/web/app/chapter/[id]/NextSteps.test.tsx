@@ -3,6 +3,7 @@ import { cleanup, render, screen, waitFor, within } from "@testing-library/react
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { asMember } from "@/lib/testing/account";
 import { resetAccountForTests } from "@/lib/account/client";
+import { SITE } from "@/lib/config";
 import { TAROT_SAMPLE } from "@/lib/fixtures";
 import { resetPremiumStatusForTests } from "@/lib/premium/status";
 import { CHAPTERS_KEY } from "@/lib/storage/chapters";
@@ -155,6 +156,60 @@ describe("the next step at a reading's end", () => {
       render(<LocalChapter id={id} />);
       const after = await screen.findByRole("region", { name: "이어서 보면 좋은 풀이" });
       expect(within(after).getAllByRole("link")).toHaveLength(1);
+      cleanup();
+    }
+  });
+});
+
+/** 다음 고민 (spec 2026-11-26 worry catalog §7 as §12.5 narrowed it): one worry, only when a chosen situation says it. */
+describe("다음 고민 at a tarot reading's end", () => {
+  const nextWorry = () => screen.queryByRole("region", { name: "다음 고민" });
+
+  it("follows 썸·고백 with 연락이 뜸함 to 답 없는 톡, 먼저 할까, above 더 깊게 보고 싶다면, never gold", async () => {
+    stub(true);
+    seed([{ ...TAROT, question: "이번 달 그 사람과 나 사이는 어떻게 될까?", conditions: [{ label: "관계", value: "연락이 뜸함" }] }]);
+    render(<LocalChapter id="tarot0001" />);
+    const deeper = await screen.findByRole("region", { name: "더 깊게 보고 싶다면" });
+    const section = nextWorry()!;
+    expect(within(section).getAllByRole("link").map((a) => [a.getAttribute("href"), a.textContent])).toEqual([["/w/no-reply", "답 없는 톡, 먼저 할까타로 3장 · 2,900원"]]);
+    expect(section.compareDocumentPosition(deeper) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(section.querySelector('[class*="primary"]')).toBeNull();
+  });
+
+  it("follows 연락 with 헤어진 사이 to 다시 만나도 될까, whatever premium says", async () => {
+    stub(false);
+    seed([{ ...TAROT, question: "이번 주 그 사람에게 먼저 연락해도 될까?", conditions: [{ label: "관계", value: "헤어진 사이" }] }]);
+    render(<LocalChapter id="tarot0001" />);
+    await waitFor(() => expect(within(nextWorry()!).getByRole("link").getAttribute("href")).toBe("/w/again"));
+  });
+
+  // Spec 2026-11-26 worry catalog §8 (code review 2026-11-26 A3): off, a reading that would match ends as it did before.
+  it("adds none while SITE.features.worries is off, even after a matching situation", async () => {
+    const features = SITE.features as { worries: boolean };
+    features.worries = false;
+    try {
+      stub(true);
+      seed([{ ...TAROT, question: "이번 달 그 사람과 나 사이는 어떻게 될까?", conditions: [{ label: "관계", value: "연락이 뜸함" }] }]);
+      render(<LocalChapter id="tarot0001" />);
+      await screen.findByRole("region", { name: "더 깊게 보고 싶다면" });
+      expect(nextWorry()).toBeNull();
+      expect(document.querySelector('a[href^="/w/"]')).toBeNull();
+    } finally {
+      features.worries = true;
+    }
+  });
+
+  it("adds none without a matching situation, after crisis words, or after a saju reading", async () => {
+    stub(true);
+    seed([
+      { ...TAROT, conditions: [{ label: "관계", value: "자주 연락하거나 만남" }] },
+      { ...TAROT, id: "tarot0002", conditions: [{ label: "관계", value: "연락이 뜸함" }], note: "그냥 죽고 싶어요" },
+      SAJU,
+    ]);
+    for (const id of ["tarot0001", "tarot0002", "saju00001"]) {
+      render(<LocalChapter id={id} />);
+      await screen.findByRole("region", { name: "더 깊게 보고 싶다면" });
+      expect(nextWorry(), id).toBeNull();
       cleanup();
     }
   });

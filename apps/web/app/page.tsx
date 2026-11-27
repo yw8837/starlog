@@ -7,6 +7,7 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { Footer } from "@/components/layout/Footer";
 import { TabBar } from "@/components/layout/TabBar";
 import { NightSky } from "@/components/sky/NightSky";
+import { WorryBoard, WorryTools } from "@/components/worries/WorryCards";
 import { SITE } from "@/lib/config";
 import { websiteJsonLd } from "@/lib/jsonld";
 import { HOME_DESCRIPTION, pageMetadata } from "@/lib/seo";
@@ -21,8 +22,12 @@ export const metadata: Metadata = pageMetadata({ description: HOME_DESCRIPTION, 
  * hanji) with their characters; the 2027 키워드 line; the two free quick cards; who reads what; 별자리 인연 (while
  * SITE.features.bonds is on); the guide; four FAQ questions.
  * Desktop keeps that order: the hook full width, 타로 | 사주 side by side, the rest full width.
+ * With the worry catalog on (SITE.features.worries, spec 2026-11-26 §5.4): the hook, the 오픈 기념 line, the 고민 판 in place
+ * of the two big cards, the 2027 line, the 2027 키워드 line, the quick cards, 도구로 바로 보기 (타로 3장 보기 · 사주 보기),
+ * who reads what, 별자리 인연, the guide, the FAQ. Off, the home is the one above.
  */
 export default function HomePage() {
+  const worries = SITE.features.worries;
   return (
     <div className="page-shell with-tabbar">
       <NightSky constellation />
@@ -35,22 +40,32 @@ export default function HomePage() {
         {/* Sales 2026-11-10 item 5: 오픈 기념 무료 until 11월 30일 (by the browser's clock), and the 2027 신년운세 banner where it is on
             sale, as one line under the hook (spec 2026-11-11 Q3 default: still on the first screen). */}
         <OpeningNotice />
+        {worries ? <WorryBoard /> : null}
         <HomeYearBanner />
 
         {/* Rows are auto-placed: a row with nothing to show leaves no gap behind. */}
         <div className={s.grid}>
-          <div className={s.tarot}>
-            <TarotEntry />
-          </div>
-          <div className={s.saju}>
-            <SajuEntry />
-          </div>
+          {worries ? null : (
+            <>
+              <div className={s.tarot}>
+                <TarotEntry />
+              </div>
+              <div className={s.saju}>
+                <SajuEntry />
+              </div>
+            </>
+          )}
           <div className={s.wide}>
             <KeywordLine />
           </div>
           <div className={s.wide}>
             <QuickCards />
           </div>
+          {worries ? (
+            <div className={s.wide}>
+              <WorryTools />
+            </div>
+          ) : null}
           <div className={s.wide}>
             <HomeIntro />
           </div>

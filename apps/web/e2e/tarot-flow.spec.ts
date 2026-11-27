@@ -421,7 +421,7 @@ test.describe("question builder: toggling chips and starting clean", () => {
 
   test("home → tarot → back home → tarot starts clean; situation → back keeps the answers", async ({ page }) => {
     await page.goto("/");
-    const entry = page.getByRole("main").getByRole("link", { name: /타로 보기/ });
+    const entry = page.getByRole("main").getByRole("link", { name: /타로 3장 보기/ });
     await entry.click();
     await expect(page).toHaveURL(/\/tarot\/new$/, { timeout: NAV });
     await buildMoney(page);

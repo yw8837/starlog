@@ -1,0 +1,37 @@
+/* 별명 이어뽑기 (spec 2026-11-26 beyond trend §1): the friend's nickname, large, and the way to one's own draw. */
+.nick {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 18px 18px 16px;
+  border: 1px solid rgba(243, 220, 161, 0.5);
+  border-radius: 20px;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  text-align: center;
+}
+
+.nickLabel {
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.nickName {
+  margin-bottom: 4px;
+  color: var(--ink);
+  font-family: var(--font-display), serif;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.3;
+  word-break: keep-all;
+  text-wrap: balance;
+}
+
+.nickNote {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.5;
+}

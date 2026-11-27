@@ -4,6 +4,7 @@ import { SITE } from "@/lib/config";
 import type { ShareOgData } from "@/lib/og/cardsImage";
 import { PREMIUM } from "@/lib/premium/products";
 import { topicLabel } from "@/lib/sajuTopics";
+import { NOW_TYPES, nowType } from "@/lib/tarotType";
 import type { SharePayload } from "./payload";
 import { firstSentence, fitList } from "./preview";
 
@@ -18,6 +19,11 @@ export function shareOgData(share: SharePayload, origin: string, live: BondsShar
   const face = (deck: string, card: { cardId: string; orientation: string }) => ({ cardId: card.cardId, src: `${origin}/cards/og/${deck}/${card.cardId}.jpg`, reversed: card.orientation === "reversed" });
   const name = (card: { cardId: string; orientation: string }) => `${getCard(card.cardId).names.ko}${card.orientation === "reversed" ? "(역)" : ""}`;
   if (share.kind === "now") {
+    // 별명 이어뽑기 (spec 2026-11-26 beyond trend §1): a share that showed 타로로's nickname draws it as the headline.
+    if (share.nick && SITE.features.beyond.handoff) {
+      const slug = nowType(share.card.cardId, share.card.orientation);
+      return { label: "친구가 받은 별명", headline: NOW_TYPES[slug].name, body: clip(`${name(share.card)} · ${share.answer}`), cards: [face(share.deck, share.card)], host };
+    }
     return { label: "친구가 뽑은 지금의 한 장", headline: name(share.card), body: clip(share.answer), cards: [face(share.deck, share.card)], host };
   }
   if (share.kind === "tarot-free") {

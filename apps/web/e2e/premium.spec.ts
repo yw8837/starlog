@@ -64,7 +64,7 @@ if (MODE !== "on") {
 
     await page.goto("/");
     const main = page.getByRole("main");
-    await expect(main.getByRole("link", { name: /타로 보기/ })).toHaveAttribute("href", "/tarot/new");
+    await expect(main.getByRole("link", { name: /타로 3장 보기/ })).toHaveAttribute("href", "/tarot/new");
     await page.waitForLoadState("networkidle");
     await expect(page.getByRole("region", { name: "더 깊게 보기" })).toHaveCount(0);
     await expect(page.getByRole("contentinfo").getByRole("link", { name: "프리미엄 풀이" })).toHaveCount(0);
@@ -99,7 +99,7 @@ if (MODE !== "off") {
     test("the tarot bridge → 켈틱 크로스 10장 → the builder's chip → ten cards → the free preview → the open panel", async ({ page }) => {
       test.setTimeout(300_000);
       await page.goto("/");
-      const tarot = page.getByRole("main").getByRole("link", { name: /타로 보기/ });
+      const tarot = page.getByRole("main").getByRole("link", { name: /타로 3장 보기/ });
       await expect(tarot).toHaveAttribute("href", "/tarot/start", { timeout: NAV });
       await tarot.click();
       await expect(page.getByRole("heading", { level: 1, name: "어떤 타로를 볼까요?" })).toBeVisible({ timeout: NAV });

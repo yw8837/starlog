@@ -6,7 +6,7 @@ import source from "@content/kb/decision.ko.json";
 import { SITE, won } from "@/lib/config";
 import { drawNow } from "@/lib/decision";
 import { CRISIS_LEAD } from "@/lib/crisis";
-import { NEW_TAROT_HREF } from "@/lib/freshStart";
+import { ENTRY_TAROT_HREF, NEW_TAROT_HREF } from "@/lib/freshStart";
 import { GUIDE_MOVED_TO_HELP } from "@/lib/hostRoutes";
 import { NOW_TYPES, nowFacts, nowType } from "@/lib/tarotType";
 import { assertVoice } from "@/lib/voice/banned";
@@ -93,9 +93,10 @@ describe("지금의 한 장", () => {
     expect(screen.getByRole("region", { name: "지금의 한 장 결과" }).dataset.lean).toBe(expected.lean);
 
     // The button says where it goes (spec 6.2 N6, N7): the 3-card question builder, not a paid product's name. No price
-    // here (it shows later, in the unlock sheet and at checkout).
-    const upsell = screen.getByRole("link", { name: /카드 3장으로 보기/ });
-    expect(upsell.getAttribute("href")).toBe(NEW_TAROT_HREF);
+    // here (it shows later, in the unlock sheet and at checkout). Since spec 2026-11-26 beyond trend §3 it carries this
+    // card on as the first of the three (이어 읽기), to the builder's plain address (the flow holds the card).
+    const upsell = screen.getByRole("link", { name: /이 카드로 이어 읽기 · 타로 3장/ });
+    expect(upsell.getAttribute("href")).toBe(ENTRY_TAROT_HREF);
     expect(screen.getByText("이 고민, 카드 3장으로 더 볼래?")).toBeTruthy();
     expect(screen.queryByText(/타로 전체 풀이/)).toBeNull();
     expect(screen.queryByText(new RegExp(won(SITE.price.tarotStandardKrw)))).toBeNull();
@@ -105,6 +106,40 @@ describe("지금의 한 장", () => {
     expect(queryTableCards()).toHaveLength(0);
     expect(screen.queryByLabelText("고민 한 줄")).toBeNull();
     expect(screen.queryByRole("region", { name: "지금의 한 장 사용법" })).toBeNull();
+  });
+
+  // Spec 2026-11-26 worry catalog §12.4: the two buttons stay; under them one quiet way to every worry, none picked for the person.
+  it("adds 고민 전체 보기 under the two buttons, a plain link to /worries, and none beside the care lines", () => {
+    render(<NowOracle instant />);
+    fireEvent.change(screen.getByLabelText("고민 한 줄"), { target: { value: "오늘 먼저 연락해도 될까?" } });
+    pickSlot(6, "now-seed-first");
+    const worries = screen.getByRole("link", { name: /고민 전체 보기/ });
+    expect(worries.getAttribute("href")).toBe("/worries");
+    expect(screen.getByRole("button", { name: "한 번 더 뽑기" }).compareDocumentPosition(worries) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(worries.className).not.toMatch(/primary|secondary/);
+    expect(document.querySelector('a[href^="/w/"]')).toBeNull();
+    cleanup();
+    render(<NowOracle instant />);
+    fireEvent.change(screen.getByLabelText("고민 한 줄"), { target: { value: "요즘 살고 싶지 않아요" } });
+    pickSlot(6, "now-seed-second");
+    expect(screen.getByRole("link", { name: /카드 3장으로 보기/ })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /고민 전체 보기/ })).toBeNull();
+  });
+
+  // Spec 2026-11-26 worry catalog §8 (code review 2026-11-26 A3): off, the result is as it was before the catalog.
+  it("adds no 고민 전체 보기 while SITE.features.worries is off", () => {
+    const features = SITE.features as { worries: boolean };
+    features.worries = false;
+    try {
+      render(<NowOracle instant />);
+      fireEvent.change(screen.getByLabelText("고민 한 줄"), { target: { value: "오늘 먼저 연락해도 될까?" } });
+      pickSlot(6, "now-seed-first");
+      expect(screen.getByRole("button", { name: "한 번 더 뽑기" })).toBeTruthy();
+      expect(screen.queryByRole("link", { name: /고민 전체 보기/ })).toBeNull();
+      expect(document.querySelector('a[href="/worries"]')).toBeNull();
+    } finally {
+      features.worries = true;
+    }
   });
 
   it("names the unwritten worry when no question was typed", () => {
@@ -158,8 +193,8 @@ describe("타로로 판정 (spec 3.2, 6.2)", () => {
     // It comes after the card and its why, before the way on.
     const why = screen.getByText(expected.why);
     expect(why.compareDocumentPosition(block) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(block.compareDocumentPosition(screen.getByRole("link", { name: /카드 3장으로 보기/ })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    for (const line of [text, "이 고민, 카드 3장으로 더 볼래?", "카드 3장으로 보기"]) assertVoice(line);
+    expect(block.compareDocumentPosition(screen.getByRole("link", { name: /이 카드로 이어 읽기 · 타로 3장/ })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    for (const line of [text, "이 고민, 카드 3장으로 더 볼래?", "이 카드로 이어 읽기 · 타로 3장"]) assertVoice(line);
   });
 
   it("names it for a worry kept in mind too (nothing typed)", () => {
@@ -177,9 +212,10 @@ describe("타로로 판정 (spec 3.2, 6.2)", () => {
     expect(screen.queryByText(NOW_TYPES[slug].name)).toBeNull();
     expect(screen.queryByText(NOW_TYPES[slug].line)).toBeNull();
     expect(screen.getByText(nowFacts(slug, { polite: true }))).toBeTruthy();
-    // 타로로's casual nudge (N6) belongs to the teasing step only (review 2026-11-11 #3): the plain button stays.
+    // 타로로's casual nudge (N6) belongs to the teasing step only (review 2026-11-11 #3): the plain button stays (이어 읽기
+    // since spec 2026-11-26 beyond trend §3: only crisis words keep the old one).
     expect(screen.queryByText("이 고민, 카드 3장으로 더 볼래?")).toBeNull();
-    expect(screen.getByRole("link", { name: /카드 3장으로 보기/ })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /이 카드로 이어 읽기 · 타로 3장/ })).toBeTruthy();
     // A heavy topic keeps the card's line and why: only the nickname goes (coordinator 2026-11-11). So does its share.
     expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(expected.answer);
     expect(screen.getByText(expected.why)).toBeTruthy();

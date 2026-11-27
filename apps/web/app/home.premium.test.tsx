@@ -49,7 +49,7 @@ describe("the home's 더 깊게 보기 (plan-reconciled §4.1)", () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
       expect(screen.queryByText("더 깊게 보기")).toBeNull();
       expect(container.querySelector('a[href^="/premium/"]')).toBeNull();
-      expect(screen.getByRole("link", { name: /타로 보기/ }).getAttribute("href")).toBe("/tarot/new");
+      expect(screen.getByRole("link", { name: /타로 3장 보기/ }).getAttribute("href")).toBe("/tarot/new");
     });
   }
 
@@ -58,7 +58,7 @@ describe("the home's 더 깊게 보기 (plan-reconciled §4.1)", () => {
     const { container } = render(<HomePage />);
     await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => url === "/api/premium/status")).toBe(true));
     // The tarot entry goes on to the bridge once the status says premium is visible here.
-    await waitFor(() => expect(screen.getByRole("link", { name: /타로 보기/ }).getAttribute("href")).toBe("/tarot/start"));
+    await waitFor(() => expect(screen.getByRole("link", { name: /타로 3장 보기/ }).getAttribute("href")).toBe("/tarot/start"));
     const main = screen.getByRole("main");
     expect(screen.queryByText("더 깊게 보기")).toBeNull();
     await waitFor(() => expect([...main.querySelectorAll('a[href^="/premium/"]')].map((a) => a.getAttribute("href"))).toEqual(["/premium/newyear-2027"]));

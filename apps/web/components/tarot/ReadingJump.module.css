@@ -1,0 +1,61 @@
+/* 골라 읽기 (spec 2026-11-26 beyond trend §2): one row over the reading; more places than fit slide sideways inside it. */
+.jump {
+  min-width: 0;
+}
+
+.list {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 2px 0 6px;
+  list-style: none;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  /* More places than fit: the row fades at its end, so it reads as one that slides. */
+  padding-right: 24px;
+  mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+}
+
+.list::-webkit-scrollbar {
+  display: none;
+}
+
+.list > li {
+  flex: none;
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--glass-line);
+  border-radius: 22px;
+  background: var(--glass);
+  color: var(--ink);
+  font-size: var(--fs-sub);
+  font-weight: 500;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.link:hover {
+  border-color: var(--line-strong);
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.number {
+  color: var(--gold);
+  font-weight: 700;
+}
+
+@media print {
+  .jump {
+    display: none;
+  }
+}

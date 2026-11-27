@@ -1,0 +1,33 @@
+/* 이어 읽기: the card kept from /now, on the flow's glass, with its way out (as DeepSpreadGate's .unread). */
+.notice {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+  margin: 16px 0 0;
+  padding: 14px 16px;
+  border: 1px solid var(--glass-line);
+  border-radius: 16px;
+  background: var(--glass);
+}
+
+.title {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.card {
+  color: var(--ink);
+  font-family: var(--font-display), serif;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.text {
+  margin-bottom: 4px;
+  color: var(--ink);
+  font-size: var(--fs-sub);
+  line-height: 1.5;
+}

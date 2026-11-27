@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { SpreadChip, useFlowSpread } from "@/components/tarot/DeepSpreadGate";
+import { KeptCardNotice } from "@/components/tarot/KeptCardNotice";
 import { Stepper } from "@/components/tarot/Stepper";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
@@ -49,11 +50,14 @@ export function SituationPicker() {
       else conditions[conditionId] = option;
       return { ...prev, conditions, draw: undefined };
     });
+  // 새로 세 장 뽑기 (spec 2026-11-26 beyond trend §3): the card from /now is let go; the flow goes on as today's.
+  const dropKeep = () => setFlow(({ keep: _dropped, ...rest }) => ({ ...rest, draw: undefined }));
 
   return (
     <div className={f.screen}>
       {gate}
       <Stepper step={1} label="상황 고르기" backHref={builderHref} backLabel="질문 만들기로" />
+      {flow.keep && spread !== "deep" ? <KeptCardNotice keep={flow.keep} onDrop={dropKeep} /> : null}
 
       <div className={f.sentence}>
         <p className={f.sentenceText}>{summary.question}</p>

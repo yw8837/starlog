@@ -1,0 +1,227 @@
+/*
+ * 고민 진열 (spec 2026-11-26 worry catalog §5): quiet glass cards like the home's quick cards, never gold (the hook is the
+ * first screen's one gold button). Existing tokens only.
+ */
+
+.board {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.boardHead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.boardTitle {
+  font-size: 20px;
+  line-height: 1.35;
+}
+
+.more {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  color: var(--ink-sub);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.more:hover {
+  color: var(--ink);
+}
+
+.board > .more {
+  justify-self: end;
+}
+
+/* /worries: the category chips above the list. */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Two across on a phone, three on desktop; one column only on the narrowest phones. */
+.cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (max-width: 339px) {
+  .cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.cards > li {
+  display: grid;
+  min-width: 0;
+}
+
+.card {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 4px;
+  min-width: 0;
+  padding: 12px 12px 14px;
+  border: 1px solid var(--glass-line);
+  border-radius: 18px;
+  background: var(--glass);
+  color: var(--ink);
+  text-decoration: none;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 140ms ease;
+}
+
+.card:hover {
+  border-color: var(--line-strong);
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.reader {
+  display: flex;
+  width: fit-content;
+}
+
+.name {
+  font-size: var(--fs-body);
+  font-weight: 700;
+  line-height: 1.4;
+  word-break: keep-all;
+}
+
+.line {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.5;
+  word-break: keep-all;
+}
+
+/* A narrow card wraps "사주 재물운 · 4,900원" at the space: a rounded box rather than a stretched pill. */
+.method {
+  width: fit-content;
+  margin-top: 6px;
+  padding: 1px 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  word-break: keep-all;
+  color: var(--ink);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+/* 도구로 바로 보기: one thin row of plain links, for whoever looks for the tool by its name. */
+.tools {
+  display: grid;
+  gap: 8px;
+}
+
+.toolsTitle {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.toolLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid var(--glass-line);
+  border-radius: 999px;
+  background: var(--glass);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.tool:hover {
+  border-color: var(--line-strong);
+}
+
+.tool:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* 다음 고민 after a reading: one glass row above 더 깊게 보고 싶다면. */
+.next {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.nextTitle {
+  font-size: var(--fs-h2);
+  line-height: 1.4;
+}
+
+.nextRow {
+  display: grid;
+  gap: 4px;
+  min-height: 64px;
+  padding: 14px 18px;
+  border: 1px solid var(--glass-line);
+  border-radius: 18px;
+  background: var(--glass);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.nextRow:hover {
+  border-color: var(--line-strong);
+}
+
+.nextRow:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+@media (min-width: 1024px) {
+  .board {
+    gap: 20px;
+    margin-top: 40px;
+  }
+
+  .boardTitle {
+    font-size: 26px;
+  }
+
+  .cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .card {
+    padding: 18px 20px 20px;
+  }
+}

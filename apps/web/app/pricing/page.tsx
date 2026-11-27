@@ -13,6 +13,7 @@ import { premiumPath } from "@/lib/premium/products";
 import { approxCharsText } from "@/lib/pricing";
 import { sajuFreeLine, sajuPricingLine } from "@/lib/sajuTopicCopy";
 import { pageMetadata } from "@/lib/seo";
+import { WORRIES_PATH, methodLine, visibleWorries, worryPath } from "@/lib/worries";
 import { PremiumPricing } from "./PremiumPricing";
 
 const { price, reading, beta, features } = SITE;
@@ -71,6 +72,24 @@ export default function PricingPage() {
         </OpeningOnly>
         <p>가격이 바뀔 때는 이 페이지에 먼저 알려 드려요.</p>
       </LegalNote>
+
+      {/* 고민으로 고르기 (spec 2026-11-26 worry catalog §5.5): each worry with the reading it opens and that reading's price
+          (the same readings and prices as below); the premium ones are in 깊게 보는 풀이. */}
+      {features.worries ? (
+        <LegalSection id="worries" title="고민으로 고르기">
+          <ul className={s.list}>
+            {visibleWorries(null).map((worry) => (
+              <li key={worry.id}>
+                <Link href={worryPath(worry.id)}>{worry.name}</Link>
+                {` · ${methodLine(worry)}`}
+              </li>
+            ))}
+          </ul>
+          <p>
+            <Link href={WORRIES_PATH}>고민 전체 보기</Link>
+          </p>
+        </LegalSection>
+      ) : null}
 
       <LegalSection id="readings" title="풀이 가격">
         <div className={`${s.cards} ${s.cardsTwo}`}>

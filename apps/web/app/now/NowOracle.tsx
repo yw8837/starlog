@@ -15,10 +15,14 @@ import { createNowShareLink } from "@/lib/share/client";
 import { drawNow, type NowDraw } from "@/lib/decision";
 import { backImage, useDeckPrefs } from "@/lib/deck";
 import { guideHref } from "@/lib/hosts";
-import { NOW_TYPES, nowFacts, nowShareText, nowType } from "@/lib/tarotType";
+import { NOW_TYPES, nowFacts, nowShareText, nowType, nowWithSlug, pairLine, type NowTypeSlug } from "@/lib/tarotType";
 import { nowTone } from "@/lib/voice/tone";
 import s from "./NowOracle.module.css";
-import { NEW_TAROT_HREF } from "@/lib/freshStart";
+import { ENTRY_TAROT_HREF, NEW_TAROT_HREF } from "@/lib/freshStart";
+import { SITE } from "@/lib/config";
+import { EMPTY_FLOW, clearFlow, saveFlow } from "@/lib/flowState";
+import { CUSTOM_MAX } from "@/lib/question";
+import { WORRIES_PATH } from "@/lib/worryPaths";
 
 type Phase = "shuffle" | "pick" | "reveal";
 
@@ -138,6 +142,8 @@ export function NowOracle({ instant = false }: NowOracleProps) {
   // Open on the server and on a first visit; folded once the browser says the steps were seen.
   const [howtoOpen, setHowtoOpen] = useState(true);
   const [aboutOpen, setAboutOpen] = useState(false);
+  // 별명 이어뽑기 (spec 2026-11-26 beyond trend §1): the nickname a friend's share link carried (/now?with=<slug>), if any.
+  const [friend, setFriend] = useState<NowTypeSlug | null>(null);
   const answerRef = useRef<HTMLHeadingElement>(null);
   const howtoToggleRef = useRef<HTMLButtonElement>(null);
   const reshuffleRef = useRef<HTMLDivElement>(null);
@@ -146,6 +152,8 @@ export function NowOracle({ instant = false }: NowOracleProps) {
   useEffect(() => {
     setDeck(newDeck());
     if (howtoSeen()) setHowtoOpen(false);
+    // Read in the browser only (the page stays static); a value that is not one of the 12 slugs is ignored.
+    if (SITE.features.beyond.handoff) setFriend(nowWithSlug(new URLSearchParams(window.location.search).get("with")));
   }, []);
 
   // After 한 번 더 뽑기, focus waits on 바로 펼치기 while the deck shuffles; once the table is out, 다시 섞기 takes it.
@@ -213,6 +221,28 @@ export function NowOracle({ instant = false }: NowOracleProps) {
   // Crisis words of any tier, or a plain wish to end one's life or vanish (lib/voice/tone.ts STRONG_NEAR): no card line or
   // why, only the card's plain name and the care lines (review 2026-11-11 #4, coordinator 2026-11-11).
   const careOnly = tone.tone === "crisis" || tone.tone === "care";
+  // 둘의 별명 (§1): the friend's nickname beside this one, only where this one is shown (spicy, no care lines).
+  const pair = turned && typeSlug && nickShown && friend ? { friend, mine: typeSlug } : null;
+  // 이어 읽기 (spec 2026-11-26 beyond trend §3): this card goes first in a three-card spread. The care and crisis screens
+  // keep the plain way on (lib/crisis.ts), as does carry switched off (§6).
+  const carry = SITE.features.beyond.carry && !careOnly;
+  const carryOn = () => {
+    if (!draw) return;
+    // The flow holds the card and the worry typed (when it fits 무엇 직접 쓰기); nothing goes into the address.
+    const worry = question.trim();
+    clearFlow();
+    saveFlow({ ...EMPTY_FLOW, keep: { cardId: draw.cardId, orientation: draw.orientation, ...(worry && worry.length <= CUSTOM_MAX ? { worry } : {}) } });
+  };
+  const shareButton = (label?: string) =>
+    draw && card ? (
+      <ShareResultButton
+        key={`${draw.cardId}-${draw.orientation}-${draw.pick}`}
+        kind="now"
+        text={nowShareText({ cardName: card.names.ko, reversed, slug: nickShown ? typeSlug : null })}
+        create={() => createNowShareLink(draw, front, nickShown)}
+        {...(label ? { label } : {})}
+      />
+    ) : null;
 
   return (
     <div className={s.screen}>
@@ -379,30 +409,57 @@ export function NowOracle({ instant = false }: NowOracleProps) {
             )
           ) : null}
 
+          {/* 둘의 별명 (spec 2026-11-26 beyond trend §1): the friend's left, mine right, one fixed line about the two cards
+              only, and the share as 내 별명 보내기. Nothing is stored or sent to the friend. */}
+          {pair ? (
+            <section className={s.pair} aria-labelledby="now-pair-title">
+              <p id="now-pair-title" className={s.pairHead}>
+                둘의 별명
+              </p>
+              <div className={s.pairRow}>
+                <div className={s.pairSide}>
+                  <p className={s.pairWho}>친구</p>
+                  <p className={s.pairName}>{NOW_TYPES[pair.friend].name}</p>
+                </div>
+                <div className={s.pairSide}>
+                  <p className={s.pairWho}>나</p>
+                  <p className={s.pairName}>{NOW_TYPES[pair.mine].name}</p>
+                </div>
+              </div>
+              <p className={s.pairLine}>{pairLine(pair.friend, pair.mine)}</p>
+              <div className={s.pairShare}>{shareButton("내 별명 보내기")}</div>
+            </section>
+          ) : null}
+
           {turned ? (
             <div className={s.after}>
               <div className={s.actions}>
                 {/* 타로로's casual nudge (N6) only beside the nickname: after the facts only or the care lines, the plain button alone. */}
                 {nickShown ? <p className={s.more}>이 고민, 카드 3장으로 더 볼래?</p> : null}
-                <Button href={NEW_TAROT_HREF} block trailing="→">
-                  카드 3장으로 보기
-                </Button>
+                {carry ? (
+                  <Button href={ENTRY_TAROT_HREF} block trailing="→" onClick={carryOn}>
+                    이 카드로 이어 읽기 · 타로 3장
+                  </Button>
+                ) : (
+                  <Button href={NEW_TAROT_HREF} block trailing="→">
+                    카드 3장으로 보기
+                  </Button>
+                )}
                 <Button variant="secondary" block onClick={again}>
                   한 번 더 뽑기
                 </Button>
+                {/* Under the two buttons, the way to every worry (spec 2026-11-26 worry catalog §12.4): none picked for the
+                    person (the free question never reaches the server), and none beside the care or crisis lines. */}
+                {SITE.features.worries && !careOnly ? (
+                  <Link href={WORRIES_PATH} className={s.worries}>
+                    고민 전체 보기 <span aria-hidden="true">→</span>
+                  </Link>
+                ) : null}
               </div>
               {/* 공유하기 (owner 2026-10-23): this draw's own link, card + line + why; a new draw starts a new sheet. Not where the
                   line is hidden: the link's page would show it (coordinator 2026-11-11). */}
-              {careOnly ? null : (
-                <div className={s.share}>
-                  <ShareResultButton
-                    key={`${draw.cardId}-${draw.orientation}-${draw.pick}`}
-                    kind="now"
-                    text={nowShareText({ cardName: card.names.ko, reversed, slug: nickShown ? typeSlug : null })}
-                    create={() => createNowShareLink(draw, front, nickShown)}
-                  />
-                </div>
-              )}
+              {/* With 둘의 별명 on screen, the same share is its 내 별명 보내기 instead. */}
+              {careOnly || pair ? null : <div className={s.share}>{shareButton()}</div>}
             </div>
           ) : null}
         </section>

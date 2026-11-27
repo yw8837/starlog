@@ -31,6 +31,24 @@ export function ProseSection({ section, level = 2 }: { section: Section; level?:
 }
 
 /**
+ * 골라 읽기 (spec 2026-11-26 beyond trend §2): the fixed ids of the ten positions (card-1…) and of the headings after
+ * them in the order shown (part-1 the crossing, part-2 the axes, part-3 the column, part-4 timing, part-5 the action,
+ * part-6 the signal).
+ */
+const DEEP_PARTS = ["crossing", "axes", "staff", "timing", "action", "observation"] as const;
+const deepPart = (key: (typeof DEEP_PARTS)[number]) => `part-${DEEP_PARTS.indexOf(key) + 1}`;
+
+/** The jump row of an opened 10-card reading (§2): the ten positions by number and name, then 교차, 시기, 할 일. */
+export function deepJumpItems(reading: DeepTarotReadingData): Array<{ id: string; label: string; number?: number }> {
+  return [
+    ...reading.positions.map((section, i) => ({ id: `card-${i + 1}`, label: section.position, number: i + 1 })),
+    { id: deepPart("crossing"), label: "교차" },
+    { id: deepPart("timing"), label: "시기" },
+    { id: deepPart("action"), label: "할 일" },
+  ];
+}
+
+/**
  * The paid 10-card reading in its order: the verdict, the ten cards as dealt, each position with its
  * card (at least 100px wide), then the readings across positions (the crossing, the two axes, the
  * column, timing), today's action and the signal to watch. Headings are the code's.
@@ -50,7 +68,7 @@ export function DeepTarotArticle({ reading, cards, deck, showSpread = true }: De
       {reading.positions.map((section, i) => {
         const card = cards[i];
         return (
-          <Paper key={section.position} as="article">
+          <Paper key={section.position} as="article" id={`card-${i + 1}`} tabIndex={-1}>
             <div className={s.cardHead}>
               {card ? <TarotCard cardId={card.cardId} orientation={card.orientation} faceUp size="md" className={s.cardHeadCard} deck={deck} /> : null}
               <div>
@@ -65,17 +83,17 @@ export function DeepTarotArticle({ reading, cards, deck, showSpread = true }: De
         );
       })}
 
-      <Paper>
+      <Paper id={deepPart("crossing")} tabIndex={-1}>
         <ProseSection section={reading.crossing} />
       </Paper>
-      <Paper>
+      <Paper id={deepPart("axes")} tabIndex={-1}>
         <h2 className={r.heading}>{reading.axes.heading}</h2>
         <ProseSection section={reading.axes.vertical} level={3} />
         <ProseSection section={reading.axes.horizontal} level={3} />
       </Paper>
-      {[reading.staff, reading.timing, reading.action, reading.observation].map((section) => (
-        <Paper key={section.heading}>
-          <ProseSection section={section} />
+      {(["staff", "timing", "action", "observation"] as const).map((key) => (
+        <Paper key={key} id={deepPart(key)} tabIndex={-1}>
+          <ProseSection section={reading[key]} />
         </Paper>
       ))}
     </div>

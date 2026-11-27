@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useLayoutEffect } from "react";
 import type { When, Who } from "@starlog/core";
 import { SpreadChip, useFlowSpread } from "@/components/tarot/DeepSpreadGate";
+import { KeptCardNotice } from "@/components/tarot/KeptCardNotice";
 import { Stepper } from "@/components/tarot/Stepper";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
@@ -59,7 +60,17 @@ export function QuestionBuilder() {
     });
 
   const pickWho = (who: Who) =>
-    update((prev) => (prev.who === who ? prev : { ...prev, who, whoText: prev.whoText?.slice(0, whoMax(who)), topicId: undefined, conditions: {} }));
+    update((prev) => {
+      if (prev.who === who) return prev;
+      const next = { ...prev, who, whoText: prev.whoText?.slice(0, whoMax(who)), topicId: undefined, conditions: {} };
+      // 이어 읽기 (spec 2026-11-26 beyond trend §3): the worry typed on /now fills 무엇 직접 쓰기 once, on the first 누구.
+      if (!prev.keep?.worry || prev.topicText) return next;
+      const { worry, ...keep } = prev.keep;
+      return { ...next, topicText: worry, keep };
+    });
+
+  // 새로 세 장 뽑기: the card from /now is let go; the flow goes on as today's.
+  const dropKeep = () => update(({ keep: _dropped, ...rest }) => rest);
 
   const pickTopic = (topicId: string) =>
     update((prev) => {
@@ -79,6 +90,7 @@ export function QuestionBuilder() {
       <Stepper step={1} label="질문 만들기" backHref="/" backLabel="홈으로" />
 
       {gate}
+      {state.keep && spread !== "deep" ? <KeptCardNotice keep={state.keep} onDrop={dropKeep} /> : null}
       <div className={f.intro}>
         {spread === "deep" ? <SpreadChip>{PREMIUM["tarot-deep"].name}</SpreadChip> : null}
         <h1 className={f.title}>어떤 이야기를 타로로 볼까요?</h1>
