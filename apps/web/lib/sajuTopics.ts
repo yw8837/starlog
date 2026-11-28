@@ -127,6 +127,37 @@ export const TOPIC_SECTIONS: Readonly<Record<SajuTopicId, readonly string[]>> = 
   ],
 });
 
+/**
+ * 궁금증 한 줄 (owner 2026-11-28): the question a reader has, shown over a section's real heading where the headings are
+ * listed (the chart page's locked list, a saju worry's page). Screens only: the headings above stay as they are, since
+ * the prompts, the validator and stored readings carry them. Each asks about what its section reads
+ * (lib/ai/prompts/sajuTopicPrompts.ts 주제 안내) and promises nothing: no outcome, date, score or another person's mind
+ * (lib/sajuTopicHooks.test.ts). 계산 기준 has none.
+ */
+const SECTION_HOOKS: Readonly<Record<string, string>> = Object.freeze({
+  "나의 기본 결 · 타고난 바탕": "나는 어떤 사람일까?",
+  "사랑할 때의 나 · 가장 가까운 자리와 마음": "좋아하면 나는 어떻게 달라질까?",
+  "끌리는 사람과 맞는 사람 · 관계의 결": "끌리는 사람과 맞는 사람은 같을까?",
+  "지금의 10년 · 인연의 흐름": "지금 10년, 내 연애는 어떤 시기일까?",
+  "올해와 다가오는 해 · 만남과 관계의 결": "올해와 내년, 관계를 어떻게 대할까?",
+  "이별을 겪는 나 · 마음이 머무는 자리": "나는 이별을 어떻게 겪는 사람일까?",
+  "다시 이어진다면 · 되풀이되기 쉬운 것": "다시 만난다면 뭐가 되풀이될까?",
+  "지금의 10년 · 관계가 다시 움직이는 흐름": "지금 10년, 관계는 어떤 흐름일까?",
+  "올해와 다가오는 해 · 연락과 거리의 결": "연락과 거리, 나는 어떻게 대할까?",
+  "돈이 들어오는 길 · 다루는 힘과 만들어 내는 힘": "나는 어떤 길로 돈을 벌까?",
+  "돈을 지키는 힘 · 어울려 나누는 힘과 받쳐 주는 힘": "내 돈은 어디서 새기 쉬울까?",
+  "지금의 10년 · 돈의 흐름": "지금 10년, 돈은 어떤 흐름일까?",
+  "올해와 다가오는 해 · 쓰기와 모으기의 결": "올해는 쓸 때일까, 모을 때일까?",
+  "일하는 방식 · 약속을 지키는 힘과 드러내는 힘": "나는 어떻게 일하는 사람일까?",
+  "잘 맞는 일의 결 · 태어난 달의 바탕과 자주 쓰는 힘": "어떤 일이 나랑 맞을까?",
+  "지금의 10년 · 일의 흐름": "지금 10년, 일은 어떤 흐름일까?",
+  "올해와 다가오는 해 · 움직일 때와 다질 때": "지금은 움직일 때일까, 다질 때일까?",
+  [TOPIC_OBSERVATION_HEADING]: "앞으로 몇 주, 뭘 보면 될까?",
+});
+
+/** The question over this heading; undefined for 계산 기준 and for any text that is not a topic heading. */
+export const sectionHook = (heading: string): string | undefined => (Object.hasOwn(SECTION_HOOKS, heading) ? SECTION_HOOKS[heading] : undefined);
+
 /** The locked list on the chart page: the 한눈에 보기 card, six sections and the observation. */
 export const topicLockedToc = (topic: SajuTopicId): string[] => [SAJU_GLANCE_HEADING, ...TOPIC_SECTIONS[topic], TOPIC_OBSERVATION_HEADING];
 

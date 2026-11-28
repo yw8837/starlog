@@ -5,10 +5,12 @@ type LockedTocProps = {
   title?: string;
   /** What the whole reading holds, e.g. "소제목 11개 · 약 2,000자". */
   meta?: string;
+  /** The question over a heading (lib/sajuTopics.ts sectionHook); the real heading stays under it. */
+  hook?: (item: string) => string | undefined;
 };
 
 /** Headings of the paid reading, listed as they are (never faked or blurred text). */
-export function LockedToc({ items, title = "이어지는 풀이", meta }: LockedTocProps) {
+export function LockedToc({ items, title = "이어지는 풀이", meta, hook }: LockedTocProps) {
   return (
     <section className={s.toc} aria-labelledby="locked-toc-title">
       <h2 id="locked-toc-title" className={s.title}>
@@ -22,7 +24,14 @@ export function LockedToc({ items, title = "이어지는 풀이", meta }: Locked
               <rect x="5" y="10.5" width="14" height="10" rx="2.5" />
               <path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" />
             </svg>
-            <span>{item}</span>
+            {hook?.(item) ? (
+              <span className={s.pair}>
+                <span className={s.hook}>{hook(item)}</span>
+                <span className={s.under}>{item}</span>
+              </span>
+            ) : (
+              <span>{item}</span>
+            )}
           </li>
         ))}
       </ol>

@@ -41,6 +41,22 @@
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+/* A heading with its question: the question leads, the real heading under it. */
+.pair {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.hook {
+  font-weight: 700;
+}
+
+.under {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
 .lock {
   flex: none;
   margin-top: 2px;

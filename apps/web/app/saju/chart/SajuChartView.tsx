@@ -41,7 +41,7 @@ import { sajuTipCards } from "@/lib/reading/waitingTips";
 import { chapterRequestFields, sajuContextBody, sajuStatusBody, sajuTeaserKey, useSajuContext } from "@/lib/sajuFlow";
 import { sanitizeSajuForm, type SajuForm } from "@/lib/sajuForm";
 import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
-import { BACK_TO_OVERALL, TEASER_LIMIT_NOTICE, TOPIC_SECTIONS, UNLOCK_SCOPE_LINE, sajuStartsWithTopic, sajuTopicsVisible, topicLabel } from "@/lib/sajuTopics";
+import { BACK_TO_OVERALL, TEASER_LIMIT_NOTICE, TOPIC_SECTIONS, UNLOCK_SCOPE_LINE, sajuStartsWithTopic, sajuTopicsVisible, sectionHook, topicLabel } from "@/lib/sajuTopics";
 import { historyFor, listChapters, mergeServerReadings, saveChapter, useChapters } from "@/lib/storage/chapters";
 import { LATER_CHECK_DELAYS, OPENING_WINDOW_MS, checkDelivery, heldCredit, type DeliveryCheck, type HeldCredit } from "@/lib/storage/sync";
 import s from "./SajuChartView.module.css";
@@ -388,7 +388,7 @@ export function SajuChartView({
           전체 풀이 보러 가기<span aria-hidden="true"> ↓</span>
         </a>
         {topicRow}
-        <LockedToc items={teaser.lockedToc} meta={sajuTocMeta(teaser, approxCharsText(SITE.reading.approxChars.saju))} />
+        <LockedToc items={teaser.lockedToc} meta={sajuTocMeta(teaser, approxCharsText(SITE.reading.approxChars.saju))} {...(topic !== "overall" ? { hook: sectionHook } : {})} />
         <UnlockSheet
           kind="saju"
           topicLabel={topic !== "overall" ? topicLabel(topic) : undefined}

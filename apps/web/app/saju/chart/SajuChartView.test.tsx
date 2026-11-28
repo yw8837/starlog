@@ -219,6 +219,12 @@ describe("SajuChartView with the row 다른 운도 볼 수 있어요 (saju-topic
     expect(await screen.findByText("재물운 · 맛보기")).toBeTruthy();
     expect(screen.getByText("흙 속의 쇠")).toBeTruthy();
     expect(screen.getByText("소제목 8개 · 약 2,500~3,000자")).toBeTruthy();
+    // 궁금증 한 줄 (owner 2026-11-28): a 운's locked list leads each heading with its question, the real heading under it.
+    const locked = screen.getByRole("region", { name: "이어지는 풀이" });
+    expect(within(locked).getByText("나는 어떤 길로 돈을 벌까?")).toBeTruthy();
+    expect(within(locked).getByText(TOPIC_SECTIONS.money[1]!)).toBeTruthy();
+    // 계산 기준 has no question: its heading alone.
+    expect(within(locked).getByText(TOPIC_SECTIONS.money[5]!).previousElementSibling?.tagName.toLowerCase()).toBe("svg");
     expect(await screen.findByRole("heading", { name: "재물운 전체 풀이에 담긴 것" })).toBeTruthy();
     // The price and the pay link wait for the account (/api/me).
     expect(await screen.findByText("재물운 전체 풀이 · 4,900원")).toBeTruthy();
@@ -227,6 +233,8 @@ describe("SajuChartView with the row 다른 운도 볼 수 있어요 (saju-topic
     fireEvent.click(screen.getByRole("button", { name: "사주팔자로 돌아가기" }));
     expect(await screen.findByText("사주팔자 · 맛보기")).toBeTruthy();
     expect(screen.getByText("고요한 물")).toBeTruthy();
+    // 사주팔자's own list stays as it was: no question over a heading.
+    expect(screen.queryByText("앞으로 몇 주, 뭘 보면 될까?")).toBeNull();
     expect(screen.queryByText(UNLOCK_SCOPE_LINE)).toBeNull();
     expect(screen.getByRole("link", { name: PAY_LINK }).getAttribute("href")).toBe("/pay/checkout?product=saju&returnTo=%2Fsaju%2Fchart");
   });

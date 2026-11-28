@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SITE, won } from "@/lib/config";
 import { FLOW_KEY, saveFlow, summarizeFlow } from "@/lib/flowState";
 import { PREMIUM } from "@/lib/premium/products";
-import { TOPIC_SECTIONS } from "@/lib/sajuTopics";
+import { TOPIC_SECTIONS, sectionHook } from "@/lib/sajuTopics";
 import { assertVoice } from "@/lib/voice/banned";
 import { WORRIES, findWorry, presetFlow, worryMethod, type Worry } from "@/lib/worries";
 import MarryWorryPage, { generateMetadata as marryMetadata } from "../marry/page";
@@ -120,7 +120,9 @@ describe("a worry's page", () => {
   it("shows a saju worry's real section headings and 궁합's real parts", async () => {
     for (const [id, topic] of [["solo", "love"], ["money-leak", "money"], ["job", "career"]] as const) {
       await show(id);
-      expect([...section("이 풀이가 보는 것").querySelectorAll("ol li")].map((li) => li.textContent), id).toEqual(TOPIC_SECTIONS[topic]);
+      // Each real heading, under its question where it has one (lib/sajuTopics.ts sectionHook).
+      expect([...section("이 풀이가 보는 것").querySelectorAll("ol li")].map((li) => li.textContent), id).toEqual(TOPIC_SECTIONS[topic].map((heading) => `${sectionHook(heading) ?? ""}${heading}`));
+      expect(section("이 풀이가 보는 것").querySelectorAll("ol li strong")).toHaveLength(5);
       cleanup();
     }
     await show("marry");

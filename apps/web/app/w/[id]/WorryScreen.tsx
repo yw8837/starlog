@@ -10,7 +10,7 @@ import { won } from "@/lib/config";
 import { LANDING } from "@/lib/premium/landing";
 import { PREMIUM, premiumPath } from "@/lib/premium/products";
 import { sampleApproved } from "@/lib/premium/samples";
-import { TOPIC_SECTIONS } from "@/lib/sajuTopics";
+import { TOPIC_SECTIONS, sectionHook } from "@/lib/sajuTopics";
 import { pageMetadata } from "@/lib/seo";
 import { WORRIES_PATH, WORRY_CATEGORIES, worryMethod, worryPath, worryPremium, type Worry } from "@/lib/worries";
 import { TarotLooks, WorryStart } from "./WorryStart";
@@ -49,7 +49,10 @@ function Looks({ worry }: { worry: Worry }) {
     return (
       <ol className={s.items}>
         {TOPIC_SECTIONS[reading.topic].map((heading) => (
-          <li key={heading}>{heading}</li>
+          <li key={heading}>
+            {sectionHook(heading) ? <strong className={s.hook}>{sectionHook(heading)}</strong> : null}
+            <span className={sectionHook(heading) ? s.under : undefined}>{heading}</span>
+          </li>
         ))}
       </ol>
     );

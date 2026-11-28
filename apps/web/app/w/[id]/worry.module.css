@@ -131,3 +131,14 @@
   line-height: 1.6;
   word-break: keep-all;
 }
+
+/* A saju section with its question (lib/sajuTopics.ts sectionHook): the question leads, the real heading under it. */
+.hook {
+  display: block;
+  font-weight: 700;
+}
+
+.under {
+  display: block;
+  color: var(--ink-sub);
+}
